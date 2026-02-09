@@ -1,0 +1,13 @@
+# --- 1. Global / OS Junk (大家都需要的) ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# --- 2. Frontend (Web) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/*.log
