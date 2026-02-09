@@ -3,9 +3,11 @@
    ============================================ */
 import { AppConfig } from './config.js';
 import { GridUI } from './modules/grid-ui.js';
+import { EyeEngine } from './core/eye-engine.js';
 
 // 1. Initialize modules
 const gridUI = new GridUI();
+const eyeEngine = new EyeEngine();
 let scanTimer = null;
 let isScanning = false;
 
@@ -30,33 +32,48 @@ function stopScanning() {
     console.log('%c SYSTEM: Scanning Stopped ', 'background: #ff1744; color: white');
 }
 
+function handleBlinkAction() {
+    if (isScanning) {
+        handleSelection();
+    }
+}
+
 // 4. Simulate confirmation (Space key)
 function handleSelection() {
     stopScanning();
     const selectedId = gridUI.getCurrentId();
 
-    console.log(`User Selected: ${selectedId}`);
+    console.log(`👁️ EYE SELECTION: ${selectedId}`);
 
     const card = document.getElementById(selectedId);
     if (card) {
-        card.style.borderColor = 'white';
-        setTimeout(() => {
-            card.style.borderColor = '';
-        }, 200);
+        card.style.borderColor = '#00e676';
+        card.style.boxShadow = '0 0 30px #00e676';
     }
 
     setTimeout(() => {
+        if (card) {
+            card.style.borderColor = '';
+            card.style.boxShadow = '';
+        }
         startScanning();
     }, 2000);
 }
 
 // 5. Entry point
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     startScanning();
+
+    try {
+        await eyeEngine.init(handleBlinkAction);
+    } catch (err) {
+        console.error('Camera Init Failed:', err);
+        alert('Unable to start camera. Check permissions. Space key will simulate.');
+    }
 
     document.addEventListener('keydown', (event) => {
         if (event.code === 'Space') {
-            handleSelection();
+            handleBlinkAction();
         }
         if (event.code === 'Enter') {
             if (isScanning) stopScanning();
