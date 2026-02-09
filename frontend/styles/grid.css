@@ -20,6 +20,46 @@
 }
 
 /* ============================================
+   SUB-VIEW STYLING
+   ============================================ */
+#view-container {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 80px;
+  background: var(--bg-color);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.sub-header {
+  text-align: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 10px;
+}
+
+#view-title {
+  color: var(--accent-primary);
+  font-size: 32px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.view-status {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+
+/* ============================================
    CARD SIZING - Optimized for Eye-Tracking
    ============================================ */
 
