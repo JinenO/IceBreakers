@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- ============================================
+         IRIS FLOW - Eye Command System
+         Accessible Communication Interface for ALS Patients
+         ============================================ -->
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IRIS FLOW - Eye-tracking communication system for ALS patients">
+    <meta name="theme-color" content="#1a1d2e">
+    
+    <title>IRIS FLOW - Eye Command System</title>
+    
+    <!-- Stylesheets - Load in order: base → layout → components -->
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/grid.css">
+    <link rel="stylesheet" href="styles/overlays.css">
+    
+    <!-- Preload critical fonts for better performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+</head>
+
+<body>
+    <!-- ============================================
+         STATUS BAR - System Information Display
+         Shows real-time system status and caregiver info
+         ============================================ -->
+    <header id="status-bar" role="banner" aria-label="System Status">
+        <div class="status-left">
+            <!-- Eye-tracking active indicator with pulse animation -->
+            <div class="blink-indicator" id="eye-icon" 
+                 role="status" 
+                 aria-live="polite" 
+                 aria-label="Eye tracking active"></div>
+            
+            <!-- System status text - updates based on system state -->
+            <div class="status-text" id="status-text" 
+                 role="status" 
+                 aria-live="polite">
+                SYSTEM READY
+            </div>
+        </div>
+        
+        <div class="status-right">
+            <!-- Caregiver identification -->
+            <span class="caregiver-id" aria-label="Caregiver ID number">
+                CAREGIVER ID: 9527
+            </span>
+            
+            <!-- Settings access button -->
+            <button class="settings-trigger" 
+                    aria-label="Open Settings" 
+                    type="button">
+                ⚙️
+            </button>
+        </div>
+    </header>
+
+    <!-- ============================================
+         MAIN NAVIGATION GRID
+         Primary interface cards for eye-tracking selection
+         ============================================ -->
+    <main id="main-grid" role="main" aria-label="Communication Options">
+        
+        <!-- ============================================
+             NEEDS CARD - Food & Water Requests
+             ============================================ -->
+        <article class="card active" 
+                 id="c-needs" 
+                 role="button" 
+                 tabindex="0"
+                 aria-label="Needs - Request water or food">
+            <!-- Progress indicator for eye-tracking scan -->
+            <div class="scan-bar" 
+                 role="progressbar" 
+                 aria-valuenow="50" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100"
+                 style="width: 50%"></div>
+            
+            <!-- Card content -->
+            <div class="icon" aria-hidden="true">
+                <img src="assets/icons/needs.png" alt="Needs Icon">
+            </div>
+            <div class="label">NEEDS</div>
+            <div class="sub-label">Water / Food</div>
+            
+            <!-- Confirmation indicator -->
+            <div class="confirm-bar" role="status" aria-label="Selection confirmed"></div>
+        </article>
+
+        <!-- ============================================
+             CHAT AI CARD - Conversational Interface
+             ============================================ -->
+        <article class="card" 
+                 id="c-chat" 
+                 role="button" 
+                 tabindex="0"
+                 aria-label="Chat AI - Smart conversation assistant">
+            <div class="scan-bar" 
+                 role="progressbar" 
+                 aria-valuenow="0" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100"></div>
+            
+            <div class="icon" aria-hidden="true">
+                <img src="assets/icons/chat-ai.png" alt="Chat AI Icon">
+            </div>
+            <div class="label">CHAT AI</div>
+            <div class="sub-label">Smart Talk</div>
+            
+            <div class="confirm-bar" role="status" aria-label="Selection confirmed"></div>
+        </article>
+
+        <!-- ============================================
+             SOS CARD - Emergency Alert
+             High-priority emergency communication
+             ============================================ -->
+        <article class="card sos" 
+                 id="c-sos" 
+                 role="button" 
+                 tabindex="0"
+                 aria-label="SOS - Emergency alert (high priority)">
+            <div class="scan-bar" 
+                 role="progressbar" 
+                 aria-valuenow="0" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100"></div>
+            
+            <div class="icon" aria-hidden="true">
+                <img src="assets/icons/sos.png" alt="SOS Icon">
+            </div>
+            <div class="label">SOS</div>
+            <div class="sub-label">Emergency</div>
+            
+            <div class="confirm-bar" role="status" aria-label="Selection confirmed"></div>
+        </article>
+
+        <!-- ============================================
+             BODY CARD - Physical Comfort Needs
+             ============================================ -->
+        <article class="card" 
+                 id="c-body" 
+                 role="button" 
+                 tabindex="0"
+                 aria-label="Body - Request physical comfort adjustments">
+            <div class="scan-bar" 
+                 role="progressbar" 
+                 aria-valuenow="0" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100"></div>
+            
+            <div class="icon" aria-hidden="true">
+                <img src="assets/icons/body.png" alt="Body Icon">
+            </div>
+            <div class="label">BODY</div>
+            <div class="sub-label">Comfort</div>
+            
+            <div class="confirm-bar" role="status" aria-label="Selection confirmed"></div>
+        </article>
+
+        <!-- ============================================
+             MEDIA CARD - Entertainment Controls
+             ============================================ -->
+        <article class="card" 
+                 id="c-fun" 
+                 role="button" 
+                 tabindex="0"
+                 aria-label="Media - Control TV and entertainment">
+            <div class="scan-bar" 
+                 role="progressbar" 
+                 aria-valuenow="0" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100"></div>
+            
+            <div class="icon" aria-hidden="true">
+                <img src="assets/icons/media.png" alt="Media Icon">
+            </div>
+            <div class="label">MEDIA</div>
+            <div class="sub-label">Watch TV</div>
+            
+            <div class="confirm-bar" role="status" aria-label="Selection confirmed"></div>
+        </article>
+
+        <!-- ============================================
+             KEYBOARD CARD - Text Input
+             ============================================ -->
+        <article class="card" 
+                 id="c-kb" 
+                 role="button" 
+                 tabindex="0"
+                 aria-label="Keyboard - Type custom messages">
+            <div class="scan-bar" 
+                 role="progressbar" 
+                 aria-valuenow="0" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100"></div>
+            
+            <div class="icon" aria-hidden="true">
+                <img src="assets/icons/keyboard.png" alt="Keyboard Icon">
+            </div>
+            <div class="label">KEYBOARD</div>
+            <div class="sub-label">Type</div>
+            
+            <div class="confirm-bar" role="status" aria-label="Selection confirmed"></div>
+        </article>
+    </main>
+
+    <!-- ============================================
+         CAMERA PREVIEW - Eye-Tracking Visualization
+         Shows real-time camera feed with face mesh overlay
+         ============================================ -->
+    <aside id="camera-preview" 
+           role="complementary" 
+           aria-label="Eye tracking camera preview">
+        <!-- Placeholder for face mesh visualization -->
+        <div class="face-mesh-overlay" 
+             aria-hidden="true"></div>
+    </aside>
+
+    <!-- ============================================
+         OVERLAY: FEEDBACK - Action Confirmation
+         Displays when action is successfully sent
+         ============================================ -->
+    <div id="overlay-feedback" 
+         class="overlay" 
+         role="alert" 
+         aria-live="assertive"
+         aria-label="Action confirmed">
+        <div class="feedback-icon" aria-hidden="true">✅</div>
+        <div class="feedback-text">SENT TO CAREGIVER</div>
+    </div>
+
+    <!-- ============================================
+         OVERLAY: PRE-SOS - Emergency Warning
+         Warning state before SOS is triggered
+         ============================================ -->
+    <div id="overlay-pre-sos" 
+         class="overlay" 
+         role="alert" 
+         aria-live="assertive"
+         aria-label="Emergency alert preparing">
+        <div class="pre-sos-title">⚠️ PREPARING SOS ⚠️</div>
+        <p class="overlay-sub">OPEN EYES NOW TO TRIGGER</p>
+    </div>
+
+    <!-- ============================================
+         OVERLAY: SOS - Emergency Alert Active
+         Critical alert when SOS is activated
+         ============================================ -->
+    <div id="overlay-sos" 
+         class="overlay" 
+         role="alert" 
+         aria-live="assertive"
+         aria-label="Emergency alert sent">
+        <div class="sos-alert-box">
+            <h1>🚨 SOS SENT 🚨</h1>
+            <p>NOTIFYING EMERGENCY CONTACTS...</p>
+        </div>
+    </div>
+
+    <!-- ============================================
+         OVERLAY: SLEEP MODE - System Standby
+         Displayed when system enters low-power mode
+         ============================================ -->
+    <div id="overlay-sleep" 
+         class="overlay" 
+         role="status" 
+         aria-live="polite"
+         aria-label="System in standby mode">
+        <div class="sleep-text">System Standby... Long Blink to Wake</div>
+    </div>
+
+    <!-- ============================================
+         JAVASCRIPT - Eye-Tracking Logic
+         Include your eye-tracking scripts here
+         ============================================ -->
+    <!-- <script src="scripts/eye-tracking.js"></script> -->
+    <!-- <script src="scripts/main.js"></script> -->
+
+</body>
+</html>
