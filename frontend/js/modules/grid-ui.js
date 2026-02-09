@@ -9,7 +9,13 @@ export class GridUI {
         this.currentIndex = -1;
     }
 
+    refreshCards(selector = '#main-grid') {
+        this.cards = Array.from(document.querySelectorAll(`${selector} .card`));
+        this.currentIndex = -1;
+    }
+
     highlightNext() {
+        if (this.cards.length === 0) return null;
         if (this.currentIndex >= 0) {
             const prevCard = this.cards[this.currentIndex];
             prevCard.classList.remove('active');

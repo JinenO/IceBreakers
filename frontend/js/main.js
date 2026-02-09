@@ -52,6 +52,7 @@ let scanTimer = null;
 let isScanning = false;
 let eyesClosedStartTime = 0;
 let isEyesClosed = false;
+let currentView = 'main';
 
 // ==========================================
 // 1. Scanning control
@@ -74,6 +75,58 @@ function runScanStep() {
 function stopScanning() {
     isScanning = false;
     clearInterval(scanTimer);
+}
+
+// ==========================================
+// Navigation logic
+// ==========================================
+function openSubMenu(menuId) {
+    const menuData = SUB_MENU_DATA[menuId];
+    if (!menuData) {
+        console.warn('No sub-menu found for:', menuId);
+        return;
+    }
+
+    const subGrid = document.getElementById('sub-grid');
+    const viewTitle = document.getElementById('view-title');
+
+    subGrid.innerHTML = '';
+    viewTitle.innerText = menuData.title;
+
+    menuData.items.forEach((item) => {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.id = item.id === 'back' ? 'btn-back' : `cmd-${item.id}`;
+
+        card.innerHTML = `
+            <div class="scan-bar"></div>
+            <div class="icon"><img src="assets/icons/${item.icon}" alt=""></div>
+            <div class="label">${item.label}</div>
+            <div class="sub-label">${item.sub}</div>
+            <div class="confirm-bar"></div>
+        `;
+        subGrid.appendChild(card);
+    });
+
+    document.getElementById('main-grid').classList.add('hidden');
+    document.getElementById('view-container').classList.remove('hidden');
+
+    currentView = 'sub';
+    gridUI.refreshCards('#sub-grid');
+
+    stopScanning();
+    setTimeout(startScanning, 500);
+}
+
+function backToMain() {
+    document.getElementById('view-container').classList.add('hidden');
+    document.getElementById('main-grid').classList.remove('hidden');
+
+    currentView = 'main';
+    gridUI.refreshCards('#main-grid');
+
+    stopScanning();
+    setTimeout(startScanning, 500);
 }
 
 // ==========================================
@@ -123,12 +176,33 @@ function triggerSelection() {
     const selectedId = gridUI.getCurrentId();
     console.log(`✅ SELECTED: ${selectedId}`);
 
-    SoundUtils.playBeep(600, 'sine', 0.15);
+    SoundUtils.playBeep(880, 'sine', 0.1);
+
+    if (currentView === 'main') {
+        if (SUB_MENU_DATA[selectedId]) {
+            openSubMenu(selectedId);
+        } else {
+            console.log('No sub-menu for this item, maybe direct action.');
+        }
+    } else if (currentView === 'sub') {
+        if (selectedId === 'btn-back') {
+            backToMain();
+        } else {
+            console.log(`🚀 SENDING COMMAND: ${selectedId}`);
+
+            const card = document.getElementById(selectedId);
+            if (card) card.style.background = '#00e676';
+
+            setTimeout(() => {
+                if (card) card.style.background = '';
+                startScanning();
+            }, 1000);
+        }
+    }
 
     setTimeout(() => {
         isTriggering = false;
-        isEyesClosed = false;
-        startScanning();
+        if (!isScanning) startScanning();
     }, 1500);
 }
 
