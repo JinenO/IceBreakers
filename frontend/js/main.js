@@ -5,79 +5,105 @@ import { AppConfig } from './config.js';
 import { GridUI } from './modules/grid-ui.js';
 import { EyeEngine } from './core/eye-engine.js';
 
-// 1. Initialize modules
+// Module instances
 const gridUI = new GridUI();
 const eyeEngine = new EyeEngine();
+
+// State
 let scanTimer = null;
 let isScanning = false;
+let eyesClosedStartTime = 0;
+let isEyesClosed = false;
 
-// 2. Start scanning
+// ==========================================
+// 1. Scanning control
+// ==========================================
 function startScanning() {
     if (isScanning) return;
     isScanning = true;
-    console.log('%c SYSTEM: Scanning Started ', 'background: #00e676; color: black');
+
+    runScanStep();
+    scanTimer = setInterval(runScanStep, AppConfig.SCAN_SPEED);
+}
+
+function runScanStep() {
+    if (isEyesClosed) return;
 
     gridUI.highlightNext();
-
-    scanTimer = setInterval(() => {
-        gridUI.highlightNext();
-    }, AppConfig.SCAN_SPEED);
+    gridUI.startScanBarAnimation(AppConfig.SCAN_SPEED);
 }
 
-// 3. Stop scanning
 function stopScanning() {
-    if (!isScanning) return;
     isScanning = false;
     clearInterval(scanTimer);
-    console.log('%c SYSTEM: Scanning Stopped ', 'background: #ff1744; color: white');
 }
 
-function handleBlinkAction() {
-    if (isScanning) {
-        handleSelection();
+// ==========================================
+// 2. Eye frame callback
+// ==========================================
+function handleEyeFrame(data) {
+    const openness = data.eyeOpenness;
+    const eyeIcon = document.getElementById('eye-icon');
+
+    if (openness < AppConfig.BLINK_THRESHOLD) {
+        if (eyeIcon) eyeIcon.classList.add('active');
+
+        if (!isEyesClosed) {
+            isEyesClosed = true;
+            eyesClosedStartTime = Date.now();
+        } else {
+            const elapsed = Date.now() - eyesClosedStartTime;
+            const progress = Math.min(
+                (elapsed / AppConfig.REQUIRED_BLINK_TIME) * 100,
+                100
+            );
+
+            gridUI.updateConfirmBar(progress);
+
+            if (elapsed >= AppConfig.REQUIRED_BLINK_TIME) {
+                triggerSelection();
+            }
+        }
+    } else {
+        if (eyeIcon) eyeIcon.classList.remove('active');
+        isEyesClosed = false;
+        gridUI.updateConfirmBar(0);
     }
 }
 
-// 4. Simulate confirmation (Space key)
-function handleSelection() {
+// ==========================================
+// 3. Trigger selection
+// ==========================================
+let isTriggering = false;
+
+function triggerSelection() {
+    if (isTriggering) return;
+    isTriggering = true;
+
     stopScanning();
+
     const selectedId = gridUI.getCurrentId();
+    console.log(`✅ SELECTED: ${selectedId}`);
 
-    console.log(`👁️ EYE SELECTION: ${selectedId}`);
-
-    const card = document.getElementById(selectedId);
-    if (card) {
-        card.style.borderColor = '#00e676';
-        card.style.boxShadow = '0 0 30px #00e676';
-    }
+    const audio = new Audio('assets/sounds/success.mp3');
+    audio.play().catch(() => {});
 
     setTimeout(() => {
-        if (card) {
-            card.style.borderColor = '';
-            card.style.boxShadow = '';
-        }
+        isTriggering = false;
+        isEyesClosed = false;
         startScanning();
-    }, 2000);
+    }, 1500);
 }
 
-// 5. Entry point
+// ==========================================
+// 4. Entry point
+// ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
-    startScanning();
-
     try {
-        await eyeEngine.init(handleBlinkAction);
+        await eyeEngine.init(handleEyeFrame);
+        startScanning();
     } catch (err) {
-        console.error('Camera Init Failed:', err);
-        alert('Unable to start camera. Check permissions. Space key will simulate.');
+        console.error('Init failed:', err);
+        alert(`Camera Error: ${err.message}`);
     }
-
-    document.addEventListener('keydown', (event) => {
-        if (event.code === 'Space') {
-            handleBlinkAction();
-        }
-        if (event.code === 'Enter') {
-            if (isScanning) stopScanning();
-            else startScanning();
-        }
-    });
 });

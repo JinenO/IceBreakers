@@ -7,49 +7,56 @@ export class GridUI {
     constructor() {
         this.cards = Array.from(document.querySelectorAll('#main-grid .card'));
         this.currentIndex = -1;
-        this.totalCards = this.cards.length;
     }
 
-    /**
-     * Move to the next card.
-     * @returns {string} Current highlighted card ID
-     */
     highlightNext() {
         if (this.currentIndex >= 0) {
-            this.removeHighlight(this.currentIndex);
+            const prevCard = this.cards[this.currentIndex];
+            prevCard.classList.remove('active');
+            const prevScan = prevCard.querySelector('.scan-bar');
+            if (prevScan) {
+                prevScan.style.width = '0%';
+                prevScan.style.transition = 'none';
+            }
         }
 
-        this.currentIndex = (this.currentIndex + 1) % this.totalCards;
-        this.addHighlight(this.currentIndex);
+        this.currentIndex = (this.currentIndex + 1) % this.cards.length;
+        const currentCard = this.cards[this.currentIndex];
 
-        return this.cards[this.currentIndex].id;
+        currentCard.classList.add('active');
+
+        const scanBar = currentCard.querySelector('.scan-bar');
+        if (scanBar) {
+            scanBar.style.width = '0%';
+            scanBar.style.transition = 'none';
+            void scanBar.offsetWidth;
+        }
+
+        return currentCard.id;
     }
 
-    /**
-     * Highlight a specific index.
-     */
-    addHighlight(index) {
-        const card = this.cards[index];
-        if (card) {
-            card.classList.add('active');
+    startScanBarAnimation(duration) {
+        if (this.currentIndex === -1) return;
+        const bar = this.cards[this.currentIndex].querySelector('.scan-bar');
+        if (!bar) return;
+        bar.style.transition = `width ${duration}ms linear`;
+        bar.style.width = '100%';
+    }
+
+    updateConfirmBar(percent) {
+        if (this.currentIndex === -1) return;
+        const bar = this.cards[this.currentIndex].querySelector('.confirm-bar');
+        if (!bar) return;
+        bar.style.width = `${percent}%`;
+
+        if (percent >= 100) {
+            this.cards[this.currentIndex].classList.add('selected');
+        } else {
+            this.cards[this.currentIndex].classList.remove('selected');
         }
     }
 
-    /**
-     * Remove highlight.
-     */
-    removeHighlight(index) {
-        const card = this.cards[index];
-        if (card) {
-            card.classList.remove('active');
-        }
-    }
-
-    /**
-     * Get current selected card ID.
-     */
     getCurrentId() {
-        if (this.currentIndex === -1) return null;
-        return this.cards[this.currentIndex].id;
+        return this.cards[this.currentIndex]?.id || null;
     }
 }
