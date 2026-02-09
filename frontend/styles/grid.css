@@ -1,5 +1,4 @@
 /* ============================================
-   IRIS FLOW - Grid Layout System
    Card Grid for Eye-Tracking Navigation
    ============================================ */
 
@@ -57,6 +56,32 @@
   font-size: 12px;
   color: var(--text-muted);
   letter-spacing: 2px;
+}
+
+/* Back button styling */
+.back-card {
+  border-color: var(--text-muted) !important;
+  opacity: 0.8;
+}
+
+.back-card .label {
+  color: var(--text-secondary);
+}
+
+/* Simple enter animation */
+#view-container:not(.hidden) {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ============================================
