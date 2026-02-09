@@ -1,61 +1,66 @@
 /* ============================================
-	 IRIS FLOW - View Router Logic
-	 Handles switching between Main Grid and Sub-views
-	 ============================================ */
+   IRIS FLOW - Main Controller
+   ============================================ */
+import { AppConfig } from './config.js';
+import { GridUI } from './modules/grid-ui.js';
 
-// 1. Get DOM elements
-const mainGrid = document.getElementById('main-grid');
-const viewContainer = document.getElementById('view-container');
-const subGrid = document.getElementById('sub-grid');
-const viewTitle = document.getElementById('view-title');
+// 1. Initialize modules
+const gridUI = new GridUI();
+let scanTimer = null;
+let isScanning = false;
 
-// 2. Core view switching
-function showSubView(categoryId) {
-	const data = SUB_MENU_DATA[categoryId];
-	if (!data) return;
+// 2. Start scanning
+function startScanning() {
+    if (isScanning) return;
+    isScanning = true;
+    console.log('%c SYSTEM: Scanning Started ', 'background: #00e676; color: black');
 
-	// A. Update title
-	viewTitle.innerText = categoryId.toUpperCase();
+    gridUI.highlightNext();
 
-	// B. Clear old content and inject new cards
-	subGrid.innerHTML = '';
-	data.forEach((item) => {
-		const card = document.createElement('article');
-		card.className = `card ${item.id === 'back' ? 'back-card' : ''}`;
-		card.id = `sub-${item.id}`;
-
-		card.innerHTML = `
-			<div class="scan-bar"></div>
-			<div class="icon"><img src="assets/icons/${item.icon}" alt="${item.label}"></div>
-			<div class="label">${item.label}</div>
-			<div class="sub-label">${item.sub}</div>
-			<div class="confirm-bar"></div>
-		`;
-
-		// Click handler (temporary for testing)
-		card.onclick = () => {
-			if (item.id === 'back') {
-				hideSubView();
-			} else {
-				console.log(`Action Triggered: ${item.label}`);
-				// TODO: trigger API call
-			}
-		};
-
-		subGrid.appendChild(card);
-	});
-
-	// C. Toggle visibility
-	mainGrid.classList.add('hidden');
-	viewContainer.classList.remove('hidden');
+    scanTimer = setInterval(() => {
+        gridUI.highlightNext();
+    }, AppConfig.SCAN_SPEED);
 }
 
-function hideSubView() {
-	viewContainer.classList.add('hidden');
-	mainGrid.classList.remove('hidden');
+// 3. Stop scanning
+function stopScanning() {
+    if (!isScanning) return;
+    isScanning = false;
+    clearInterval(scanTimer);
+    console.log('%c SYSTEM: Scanning Stopped ', 'background: #ff1744; color: white');
 }
 
-// 3. Bind main cards to sub-views (temporary click testing)
-document.getElementById('c-needs').onclick = () => showSubView('needs');
-document.getElementById('c-body').onclick = () => showSubView('body');
-document.getElementById('c-media').onclick = () => showSubView('media');
+// 4. Simulate confirmation (Space key)
+function handleSelection() {
+    stopScanning();
+    const selectedId = gridUI.getCurrentId();
+
+    console.log(`User Selected: ${selectedId}`);
+
+    const card = document.getElementById(selectedId);
+    if (card) {
+        card.style.borderColor = 'white';
+        setTimeout(() => {
+            card.style.borderColor = '';
+        }, 200);
+    }
+
+    setTimeout(() => {
+        startScanning();
+    }, 2000);
+}
+
+// 5. Entry point
+document.addEventListener('DOMContentLoaded', () => {
+    startScanning();
+
+    document.addEventListener('keydown', (event) => {
+        if (event.code === 'Space') {
+            handleSelection();
+        }
+        if (event.code === 'Enter') {
+            if (isScanning) stopScanning();
+            else startScanning();
+        }
+    });
+});
