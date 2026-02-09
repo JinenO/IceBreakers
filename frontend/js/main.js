@@ -86,7 +86,7 @@ function triggerSelection() {
     const selectedId = gridUI.getCurrentId();
     console.log(`✅ SELECTED: ${selectedId}`);
 
-    SoundUtils.playBeep(600, 'triangle', 0.2);
+    SoundUtils.playBeep(600, 'sine', 0.15);
 
     setTimeout(() => {
         isTriggering = false;
@@ -99,6 +99,15 @@ function triggerSelection() {
 // 4. Entry point
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
+    document.body.addEventListener(
+        'click',
+        () => {
+            SoundUtils.unlock();
+            SoundUtils.playBeep(600, 'sine', 0.05);
+        },
+        { once: true }
+    );
+
     try {
         await eyeEngine.init(handleEyeFrame);
         startScanning();

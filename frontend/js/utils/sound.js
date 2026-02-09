@@ -1,29 +1,43 @@
+/* frontend/js/utils/sound.js */
+
+// 1. Create a shared AudioContext
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
 export const SoundUtils = {
-    // 使用浏览器自带的 Web Audio API 产生声音，不需要 mp3 文件
-    playBeep: (frequency = 800, type = 'sine', duration = 0.15) => {
-        try {
-            // 兼容性写法
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return;
-
-            const ctx = new AudioContext();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-
-            osc.type = type; // 波形: 'sine' (柔和), 'square' (刺耳), 'triangle' (清脆)
-            osc.frequency.value = frequency; // 频率: 800Hz
-
-            // 设置音量渐隐 (避免结束时有爆破音)
-            gain.gain.setValueAtTime(0.1, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-
-            osc.start();
-            osc.stop(ctx.currentTime + duration);
-        } catch (e) {
-            console.warn("Audio play failed", e);
+    // Unlock audio engine (required by browser autoplay policy)
+    unlock: () => {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume().then(() => {
+                console.log('🔊 Audio Engine Resumed!');
+            });
         }
+    },
+
+    /**
+     * Play a clean notification tone.
+     * @param {number} frequency - Default 800Hz
+     * @param {string} type - Default 'sine'
+     * @param {number} duration - Default 0.15s
+     */
+    playBeep: (frequency = 800, type = 'sine', duration = 0.15) => {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.type = type;
+        osc.frequency.value = frequency;
+
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
     }
 };
