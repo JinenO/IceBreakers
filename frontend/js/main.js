@@ -5,6 +5,43 @@ import { AppConfig } from './config.js';
 import { GridUI } from './modules/grid-ui.js';
 import { EyeEngine } from './core/eye-engine.js';
 import { SoundUtils } from './utils/sound.js';
+import { SUB_MENU_DATA, MAIN_MENU_DATA } from './data.js';
+
+// ==========================================
+// 0. Render main menu
+// ==========================================
+function renderMainGrid() {
+    const mainGrid = document.getElementById('main-grid');
+    mainGrid.innerHTML = '';
+
+    MAIN_MENU_DATA.forEach((item) => {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.id = item.id;
+        card.innerHTML = `
+            <div class="scan-bar"></div>
+            <div class="icon"><img src="assets/icons/${item.icon}" alt=""></div>
+            <div class="label">${item.label}</div>
+            <div class="sub-label">${item.sub}</div>
+            <div class="confirm-bar"></div>
+        `;
+        mainGrid.appendChild(card);
+    });
+
+    const cameraPanel = document.createElement('div');
+    cameraPanel.className = 'monitor-panel';
+    cameraPanel.id = 'camera-monitor';
+    cameraPanel.innerHTML = `
+        <div class="monitor-screen">
+            <div class="face-mesh-overlay"></div>
+            <div class="monitor-text">SYSTEM ONLINE</div>
+        </div>
+        <div class="monitor-label">EYE TRACKER</div>
+    `;
+    mainGrid.appendChild(cameraPanel);
+}
+
+renderMainGrid();
 
 // Module instances
 const gridUI = new GridUI();
