@@ -28,6 +28,10 @@
     --color-warning: #f4a261;
     --color-sos: #e63946;
     --color-sos-glow: rgba(230, 57, 70, 0.4);
+    --alert-red: var(--color-sos);
+    --bg-color: var(--bg-primary);
+    --text-main: var(--text-primary);
+    --font-stack: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     
     /* Spacing system for consistent layout */
     --space-xs: 8px;
@@ -57,9 +61,16 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-    color: var(--text-primary);
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    font-family: var(--font-stack);
     min-height: 100vh;
     overflow: hidden;
     /* Prevent text selection for cleaner eye-tracking interface */
@@ -71,17 +82,17 @@ body {
    STATUS BAR - System Information Display
    ============================================ */
 #status-bar {
-    position: fixed;
+    flex: 0 0 60px;
     top: 0;
     left: 0;
     right: 0;
     height: 60px;
-    background: var(--bg-secondary);
-    border-bottom: 2px solid var(--accent-primary);
+    background: #0a0a0a;
+    border-bottom: 1px solid #333;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 var(--space-lg);
+    padding: 0 30px;
     z-index: 100;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
@@ -314,9 +325,8 @@ body {
    CAMERA PREVIEW - Eye-tracking Visualization
    ============================================ */
 #camera-preview {
-    position: fixed;
     bottom: var(--space-md);
-    right: var(--space-md);
+    left: var(--space-md);
     width: 280px;
     height: 210px;
     background: var(--bg-card);
@@ -325,6 +335,8 @@ body {
     overflow: hidden;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     z-index: 90;
+    opacity: 0.3;
+    pointer-events: none;
 }
 
 /* Face mesh overlay for eye-tracking feedback */
@@ -351,6 +363,87 @@ body {
     color: var(--text-secondary);
     letter-spacing: 1px;
     font-weight: 600;
+}
+
+/* ============================================
+   SOS FOOTER BAR - Emergency Callout
+   ============================================ */
+#sos-bar {
+    flex: 0 0 80px;
+    height: 80px;
+    margin: 0 30px 20px 30px;
+    background: rgba(40, 0, 0, 0.6);
+    border: 2px solid var(--alert-red);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(255, 23, 68, 0.1);
+}
+
+.sos-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    z-index: 2;
+}
+
+.sos-icon {
+    font-size: 32px;
+    animation: pulse-red 2s infinite;
+}
+
+.sos-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.sos-title {
+    color: var(--alert-red);
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.sos-desc {
+    color: #aaa;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+/* Decorative warning stripes */
+.hazard-stripe {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: repeating-linear-gradient(
+        45deg,
+        var(--alert-red),
+        var(--alert-red) 10px,
+        #000 10px,
+        #000 20px
+    );
+    opacity: 0.5;
+}
+
+@keyframes pulse-red {
+    0% {
+        opacity: 0.7;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 0.7;
+        transform: scale(1);
+    }
 }
 
 /* ============================================
@@ -391,6 +484,31 @@ p {
 /* ============================================
    RESPONSIVE ADJUSTMENTS
    ============================================ */
+@media screen and (max-height: 700px) {
+    #status-bar {
+        flex: 0 0 40px;
+        padding: 0 15px;
+    }
+
+    #sos-bar {
+        flex: 0 0 60px;
+        margin: 0 20px 10px 20px;
+    }
+
+    .sos-icon img {
+        height: 32px !important;
+        width: 32px !important;
+    }
+
+    .sos-title {
+        font-size: 18px;
+    }
+
+    .sos-desc {
+        display: none;
+    }
+}
+
 @media (max-width: 1024px) {
     #status-bar {
         height: 50px;
