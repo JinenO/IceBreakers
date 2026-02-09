@@ -4,6 +4,7 @@
 import { AppConfig } from './config.js';
 import { GridUI } from './modules/grid-ui.js';
 import { EyeEngine } from './core/eye-engine.js';
+import { SoundUtils } from './utils/sound.js';
 
 // Module instances
 const gridUI = new GridUI();
@@ -85,8 +86,7 @@ function triggerSelection() {
     const selectedId = gridUI.getCurrentId();
     console.log(`✅ SELECTED: ${selectedId}`);
 
-    const audio = new Audio('assets/sounds/success.mp3');
-    audio.play().catch(() => {});
+    SoundUtils.playBeep(600, 'triangle', 0.2);
 
     setTimeout(() => {
         isTriggering = false;
