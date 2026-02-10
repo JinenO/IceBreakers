@@ -2,19 +2,38 @@
    Card Grid for Eye-Tracking Navigation
    ============================================ */
 
-/* ============================================
-   MAIN + SUB GRID CONTAINER
-   ============================================ */
-#main-grid,
-#sub-grid {
+/* =========================================
+   1. UNIFIED GRID CONTAINER (MAIN & SUB)
+   ========================================= */
+.grid-container {
+  width: 100%;
+  height: 100%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, 1fr);
-  gap: 30px;
-  width: 100%;
-  height: 100%;
+  gap: 20px;
   padding: 20px;
   box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* =========================================
+   2. LAPTOP MODE (max-height: 800px)
+   ========================================= */
+@media screen and (max-height: 800px) {
+  .grid-container {
+    gap: 1.5vh;
+    padding: 1.5vh 20px;
+    padding-bottom: 2vh;
+  }
+
+  .card {
+    padding: 5px;
+  }
+
+  .card .label {
+    font-size: 1rem;
+  }
 }
 
 #main-grid {
@@ -28,9 +47,9 @@
    SUB-VIEW STYLING
    ============================================ */
 #view-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
+  display: block;
   background-color: var(--bg-color);
 }
 
@@ -39,7 +58,7 @@
 }
 
 .sub-header {
-  flex: 0 0 80px;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -59,9 +78,7 @@
   letter-spacing: 2px;
 }
 
-#sub-grid {
-  flex: 1;
-}
+/* Sub-grid uses .grid-container for layout */
 
 /* Back button styling */
 .back-card {
@@ -469,3 +486,61 @@
     border: 2px solid #000;
   }
 }
+
+/* ============================================
+   SUB-MENU FLEX LAYOUT FIXES
+   ============================================ */
+#view-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sub-header {
+  flex: 0 0 auto;
+  padding: 10px 0;
+  background: var(--bg-color);
+  z-index: 10;
+}
+
+#sub-grid {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  row-gap: 1.5vh;
+  column-gap: 20px;
+  padding: 1vh 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+
+@media screen and (max-height: 800px) {
+
+    /* 1. 标题栏：极致压缩，只留文字高度 */
+    .sub-header {
+        flex: 0 0 35px; /* 强制高度只有 35px */
+        padding: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #sub-grid {
+        padding: 5px 20px; 
+        row-gap: 10px; 
+        column-gap: 20px;
+        flex: 1;
+        min-height: 0; 
+        height: 100%;
+        overflow: hidden; 
+    }
+  }

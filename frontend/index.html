@@ -1,106 +1,42 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- ============================================
-         IRIS FLOW - Eye Command System
-         Accessible Communication Interface for ALS Patients
-         ============================================ -->
-
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="IRIS FLOW - Eye-tracking communication system for ALS patients"
-    />
+    <meta name="description" content="IRIS FLOW - Eye-tracking communication system for ALS patients" />
     <meta name="theme-color" content="#1a1d2e" />
-
     <title>IRIS FLOW - Eye Command System</title>
-
-    <!-- Stylesheets - Load in order: base → layout → components -->
     <link rel="stylesheet" href="styles/main.css" />
     <link rel="stylesheet" href="styles/grid.css" />
+    <link rel="stylesheet" href="styles/sos.css" />
     <link rel="stylesheet" href="styles/overlays.css" />
-
-    <!-- Preload critical fonts for better performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   </head>
 
   <body>
-    <!-- ============================================
-         STATUS BAR - System Information Display
-         Shows real-time system status and caregiver info
-         ============================================ -->
     <header id="status-bar" role="banner" aria-label="System Status">
       <div class="status-left">
-        <!-- Eye-tracking active indicator with pulse animation -->
-        <div
-          class="blink-indicator"
-          id="eye-icon"
-          role="status"
-          aria-live="polite"
-          aria-label="Eye tracking active"
-        ></div>
-
-        <!-- System status text - updates based on system state -->
-        <div
-          class="status-text"
-          id="status-text"
-          role="status"
-          aria-live="polite"
-        >
-          SYSTEM READY
-        </div>
+        <div class="blink-indicator" id="eye-icon" role="status" aria-live="polite" aria-label="Eye tracking active"></div>
+        <div class="status-text" id="status-text" role="status" aria-live="polite">SYSTEM READY</div>
       </div>
-
       <div class="status-right">
-        <!-- Caregiver identification -->
-        <span class="caregiver-id" aria-label="Caregiver ID number">
-          CAREGIVER ID: 9527
-        </span>
-
-        <!-- Settings access button -->
-        <button
-          class="settings-trigger"
-          aria-label="Open Settings"
-          type="button"
-        >
-          ⚙️
-        </button>
+        <span class="caregiver-id" aria-label="Caregiver ID number">CAREGIVER ID: 9527</span>
+        <button class="settings-trigger" aria-label="Open Settings" type="button">⚙️</button>
       </div>
     </header>
 
-    <!-- ============================================
-         MAIN NAVIGATION GRID
-         Primary interface cards for eye-tracking selection
-         ============================================ -->
-    <main id="main-grid" role="main" aria-label="Communication Options"></main>
+    <div id="content-area">
+      <main id="main-grid" class="grid-container" role="main" aria-label="Communication Options"></main>
 
-    <section
-      id="view-container"
-      class="hidden"
-      role="region"
-      aria-label="Sub-menu View"
-    >
-      <div class="sub-header">
-        <h2 id="view-title">CATEGORY</h2>
-        <div class="view-status">SELECT OPTION</div>
-      </div>
+      <section id="view-container" class="hidden" role="region" aria-label="Sub-menu View">
+        <div id="sub-grid" class="grid-container"></div>
+      </section>
+    </div>
 
-      <div id="sub-grid" class="main-grid"></div>
-    </section>
-
-    <!-- ============================================
-         SOS BAR - Emergency SOS Trigger
-         Fixed footer for quick emergency access
-         ============================================ -->
     <footer id="sos-bar" role="alert" aria-label="Emergency SOS Trigger">
       <div class="sos-content">
         <div class="sos-icon" aria-hidden="true">
-          <img
-            src="assets/icons/sos.png"
-            alt="SOS Icon"
-            style="width: 48px; height: 48px"
-          />
+          <img src="assets/icons/sos.png" alt="SOS Icon" style="width: 48px; height: 48px" />
         </div>
         <div class="sos-text">
           <span class="sos-title">EMERGENCY SOS</span>
@@ -110,68 +46,33 @@
       <div class="hazard-stripe" aria-hidden="true"></div>
     </footer>
 
-    <!-- ============================================
-         OVERLAY: FEEDBACK - Action Confirmation
-         Displays when action is successfully sent
-         ============================================ -->
-    <div
-      id="overlay-feedback"
-      class="overlay"
-      role="alert"
-      aria-live="assertive"
-      aria-label="Action confirmed"
-    >
+    <div id="overlay-feedback" class="overlay" role="alert" aria-live="assertive" aria-label="Action confirmed">
       <div class="feedback-icon" aria-hidden="true">✅</div>
       <div class="feedback-text">SENT TO CAREGIVER</div>
     </div>
 
-    <!-- ============================================
-         OVERLAY: PRE-SOS - Emergency Warning
-         Warning state before SOS is triggered
-         ============================================ -->
-    <div
-      id="overlay-pre-sos"
-      class="overlay"
-      role="alert"
-      aria-live="assertive"
-      aria-label="Emergency alert preparing"
-    >
+    <div id="overlay-pre-sos" class="overlay" role="alert" aria-live="assertive" aria-label="Emergency alert preparing">
       <div class="pre-sos-title">⚠️ PREPARING SOS ⚠️</div>
       <p class="overlay-sub">OPEN EYES NOW TO TRIGGER</p>
     </div>
 
-    <!-- ============================================
-         OVERLAY: SOS - Emergency Alert Active
-         Critical alert when SOS is activated
-         ============================================ -->
-    <div
-      id="overlay-sos"
-      class="overlay"
-      role="alert"
-      aria-live="assertive"
-      aria-label="Emergency alert sent"
-    >
+    <div id="overlay-sos" class="overlay" role="alert" aria-live="assertive" aria-label="Emergency alert sent">
       <div class="sos-alert-box">
         <h1>🚨 SOS SENT 🚨</h1>
         <p>NOTIFYING EMERGENCY CONTACTS...</p>
       </div>
     </div>
 
-    <!-- ============================================
-         OVERLAY: SLEEP MODE - System Standby
-         Displayed when system enters low-power mode
-         ============================================ -->
-    <div
-      id="overlay-sleep"
-      class="overlay"
-      role="status"
-      aria-live="polite"
-      aria-label="System in standby mode"
-    >
+    <div id="overlay-sleep" class="overlay" role="status" aria-live="polite" aria-label="System in standby mode">
       <div class="sleep-text">System Standby... Long Blink to Wake</div>
     </div>
 
-    <!-- Main JavaScript Module -->
+    <div id="sos-overlay" class="sos-overlay">
+      <div class="sos-text">EMERGENCY</div>
+      <div class="sos-timer" id="sos-timer">3</div>
+      <div class="sos-cancel-hint">CLOSE EYES TO CANCEL</div>
+    </div>
+
     <script type="module" src="js/main.js"></script>
   </body>
 </html>

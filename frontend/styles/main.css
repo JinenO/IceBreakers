@@ -78,6 +78,23 @@ body {
     -webkit-user-select: none;
 }
 
+/* Layout core: header / content / footer */
+#content-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+#main-grid,
+#view-container {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+}
+
 /* ============================================
    STATUS BAR - System Information Display
    ============================================ */
@@ -537,5 +554,36 @@ p {
     
     .card .label {
         font-size: 20px;
+    }
+}
+
+/* Low-height screens - compact header/footer/sub-header */
+@media (max-height: 800px) {
+    #status-bar {
+        height: 50px;
+        flex: 0 0 50px;
+    }
+
+    #sos-bar {
+        height: 60px;
+        flex: 0 0 60px;
+    }
+
+    .sos-icon img {
+        width: 32px;
+        height: 32px;
+    }
+
+    .sos-title {
+        font-size: 18px;
+    }
+
+    .sub-header {
+        padding: 5px 0;
+    }
+
+    #view-title {
+        font-size: 20px;
+        margin: 0;
     }
 }

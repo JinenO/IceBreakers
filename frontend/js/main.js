@@ -5,6 +5,7 @@ import { AppConfig } from './config.js';
 import { GridUI } from './modules/grid-ui.js';
 import { EyeEngine } from './core/eye-engine.js';
 import { SoundUtils } from './utils/sound.js';
+import { SOSSystem } from './modules/sos.js';
 import { SUB_MENU_DATA, MAIN_MENU_DATA } from './data.js';
 
 // ==========================================
@@ -46,6 +47,8 @@ renderMainGrid();
 // Module instances
 const gridUI = new GridUI();
 const eyeEngine = new EyeEngine();
+const sosSystem = new SOSSystem();
+const statusText = document.getElementById('status-text');
 
 // State
 let scanTimer = null;
@@ -88,10 +91,12 @@ function openSubMenu(menuId) {
     }
 
     const subGrid = document.getElementById('sub-grid');
-    const viewTitle = document.getElementById('view-title');
-
     subGrid.innerHTML = '';
-    viewTitle.innerText = menuData.title;
+
+    if (statusText) {
+        statusText.innerText = menuData.title;
+        statusText.style.color = '#4fd1c5';
+    }
 
     menuData.items.forEach((item) => {
         const card = document.createElement('article');
@@ -122,6 +127,11 @@ function backToMain() {
     document.getElementById('view-container').classList.add('hidden');
     document.getElementById('main-grid').classList.remove('hidden');
 
+    if (statusText) {
+        statusText.innerText = 'SYSTEM READY';
+        statusText.style.color = '';
+    }
+
     currentView = 'main';
     gridUI.refreshCards('#main-grid');
 
@@ -134,9 +144,16 @@ function backToMain() {
 // ==========================================
 function handleEyeFrame(data) {
     const openness = data.eyeOpenness;
+    const isNowClosed = openness < AppConfig.BLINK_THRESHOLD;
     const eyeIcon = document.getElementById('eye-icon');
 
-    if (openness < AppConfig.BLINK_THRESHOLD) {
+    sosSystem.update(isNowClosed);
+
+    if (sosSystem.state === 'ARMING' || sosSystem.state === 'SENT') {
+        return;
+    }
+
+    if (isNowClosed) {
         if (eyeIcon) eyeIcon.classList.add('active');
 
         if (!isEyesClosed) {
