@@ -261,6 +261,54 @@
 }
 
 /* ============================================
+   SLEEP OVERLAY - Fullscreen Standby
+   ============================================ */
+.sleep-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.5s ease;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.sleep-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.sleep-hint {
+    color: #4fd1c5;
+    font-size: 32px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(79, 209, 197, 0.5);
+    animation: breathing 3s infinite;
+}
+
+@keyframes breathing {
+    0% {
+        opacity: 0.3;
+        transform: scale(0.95);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0.3;
+        transform: scale(0.95);
+    }
+}
+
+/* ============================================
    FEEDBACK OVERLAY 2.0 - Fullscreen Emphasis
    ============================================ */
 .feedback-overlay {

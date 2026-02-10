@@ -9,9 +9,18 @@ export class GridUI {
         this.currentIndex = -1;
     }
 
-    refreshCards(selector = '#main-grid') {
+    refreshCards(selector = '#main-grid', preserveIndex = false) {
+        const previousId = preserveIndex ? this.getCurrentId() : null;
         this.cards = Array.from(document.querySelectorAll(`${selector} .card`));
-        this.currentIndex = -1;
+
+        if (preserveIndex && previousId) {
+            const nextIndex = this.cards.findIndex(
+                (card) => card.id === previousId
+            );
+            this.currentIndex = nextIndex >= 0 ? nextIndex : -1;
+        } else {
+            this.currentIndex = -1;
+        }
     }
 
     highlightNext() {

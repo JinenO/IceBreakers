@@ -6,6 +6,7 @@ import { GridUI } from './modules/grid-ui.js';
 import { EyeEngine } from './core/eye-engine.js';
 import { SoundUtils } from './utils/sound.js';
 import { SOSSystem } from './modules/sos.js';
+import { SleepManager } from './modules/sleep-manager.js';
 import { SUB_MENU_DATA, MAIN_MENU_DATA } from './data.js';
 
 function showFeedback(message, type = 'success') {
@@ -67,6 +68,14 @@ const eyeEngine = new EyeEngine();
 const sosSystem = new SOSSystem();
 const statusText = document.getElementById('status-text');
 
+const sleepManager = new SleepManager(
+    () => stopScanning(),
+    () => {
+        SoundUtils.playBeep(600, 'sine', 0.1);
+        startScanning();
+    }
+);
+
 window.showFeedback = showFeedback;
 
 // State
@@ -75,6 +84,7 @@ let isScanning = false;
 let eyesClosedStartTime = 0;
 let isEyesClosed = false;
 let currentView = 'main';
+let isProcessingAction = false;
 
 // ==========================================
 // 1. Scanning control
@@ -88,10 +98,16 @@ function startScanning() {
 }
 
 function runScanStep() {
-    if (isEyesClosed) return;
+    if (sleepManager.isSleeping || isEyesClosed || sosSystem.state === 'ARMING') {
+        return;
+    }
+
+    gridUI.refreshCards(currentView === 'main' ? '#main-grid' : '#sub-grid', true);
 
     gridUI.highlightNext();
     gridUI.startScanBarAnimation(AppConfig.SCAN_SPEED);
+
+    sleepManager.recordRound(gridUI.currentIndex, gridUI.cards.length);
 }
 
 function stopScanning() {
@@ -162,13 +178,26 @@ function backToMain() {
 // 2. Eye frame callback
 // ==========================================
 function handleEyeFrame(data) {
-    const openness = data.eyeOpenness;
-    const isNowClosed = openness < AppConfig.BLINK_THRESHOLD;
+    const isNowClosed = data.eyeOpenness < AppConfig.BLINK_THRESHOLD;
     const eyeIcon = document.getElementById('eye-icon');
 
     sosSystem.update(isNowClosed);
 
-    if (sosSystem.state === 'ARMING' || sosSystem.state === 'SENT') {
+    if (sosSystem.state === 'ARMING') {
+        return;
+    }
+
+    if (sleepManager.isSleeping) {
+        if (isNowClosed) {
+            if (!isEyesClosed) {
+                isEyesClosed = true;
+                eyesClosedStartTime = Date.now();
+            } else if (Date.now() - eyesClosedStartTime >= 1000) {
+                sleepManager.wakeUp();
+            }
+        } else {
+            isEyesClosed = false;
+        }
         return;
     }
 
@@ -204,12 +233,19 @@ function handleEyeFrame(data) {
 let isTriggering = false;
 
 function triggerSelection() {
-    if (isTriggering) return;
+    if (isProcessingAction || isTriggering) return;
+    isProcessingAction = true;
     isTriggering = true;
 
     stopScanning();
 
     const selectedId = gridUI.getCurrentId();
+    if (!selectedId) {
+        isProcessingAction = false;
+        isTriggering = false;
+        return;
+    }
+
     console.log(`✅ SELECTED: ${selectedId}`);
 
     SoundUtils.playBeep(880, 'sine', 0.1);
@@ -217,22 +253,39 @@ function triggerSelection() {
     if (currentView === 'main') {
         if (SUB_MENU_DATA[selectedId]) {
             openSubMenu(selectedId);
+            sleepManager.resetTimer();
+            setTimeout(() => {
+                isProcessingAction = false;
+            }, 1000);
         } else {
             console.log('No sub-menu for this item, maybe direct action.');
+            sleepManager.resetTimer();
+            isProcessingAction = false;
         }
     } else if (currentView === 'sub') {
         if (selectedId === 'btn-back') {
             backToMain();
+            sleepManager.resetTimer();
+            setTimeout(() => {
+                isProcessingAction = false;
+            }, 1000);
         } else {
             console.log(`🚀 COMMAND SENT: ${selectedId}`);
             const msg = `${selectedId.toUpperCase()} SENT ✅`;
             showFeedback(msg, 'success');
+
+            setTimeout(() => {
+                    sleepManager.resetTimer();
+                isProcessingAction = false;
+                isEyesClosed = false;
+                    if (!sleepManager.isSleeping) startScanning();
+            }, 3000);
         }
     }
 
     setTimeout(() => {
         isTriggering = false;
-        if (!document.hidden) startScanning();
+           if (!document.hidden && !sleepManager.isSleeping) startScanning();
     }, 3000);
 }
 
