@@ -8,6 +8,7 @@
     <title>IRIS FLOW - Eye Command System</title>
     <link rel="stylesheet" href="styles/main.css" />
     <link rel="stylesheet" href="styles/grid.css" />
+    <link rel="stylesheet" href="styles/keyboard.css" />
     <link rel="stylesheet" href="styles/sos.css" />
     <link rel="stylesheet" href="styles/overlays.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -30,6 +31,22 @@
 
       <section id="view-container" class="hidden" role="region" aria-label="Sub-menu View">
         <div id="sub-grid" class="grid-container"></div>
+      </section>
+
+      <section id="keyboard-view" class="hidden">
+        <div class="kb-top-section">
+          <div class="kb-display-box">
+            <span id="kb-current-text"></span><span class="cursor">|</span>
+          </div>
+
+          <div id="kb-prediction-bar">
+            <div class="kb-card predict-btn" id="pred-0"></div>
+            <div class="kb-card predict-btn" id="pred-1"></div>
+            <div class="kb-card predict-btn" id="pred-2"></div>
+          </div>
+        </div>
+
+        <div id="kb-grid" class="kb-matrix"></div>
       </section>
     </div>
 

@@ -11,7 +11,9 @@ export class GridUI {
 
     refreshCards(selector = '#main-grid', preserveIndex = false) {
         const previousId = preserveIndex ? this.getCurrentId() : null;
-        this.cards = Array.from(document.querySelectorAll(`${selector} .card`));
+        this.cards = Array.from(
+            document.querySelectorAll(`${selector} .card, ${selector} .kb-card`)
+        );
 
         if (preserveIndex && previousId) {
             const nextIndex = this.cards.findIndex(

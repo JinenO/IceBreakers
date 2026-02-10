@@ -63,3 +63,13 @@ export const SUB_MENU_DATA = {
         ]
     }
 };
+
+export const KEYBOARD_DATA = {
+    groups: [
+        { id: 'group-1', label: 'A B C D E', letters: ['A', 'B', 'C', 'D', 'E'] },
+        { id: 'group-2', label: 'F G H I J', letters: ['F', 'G', 'H', 'I', 'J'] },
+        { id: 'group-3', label: 'K L M N O', letters: ['K', 'L', 'M', 'N', 'O'] },
+        { id: 'group-4', label: 'P Q R S T', letters: ['P', 'Q', 'R', 'S', 'T'] },
+        { id: 'group-5', label: 'U - Z', letters: ['U', 'V', 'W', 'X', 'Y', 'Z'] }
+    ]
+};

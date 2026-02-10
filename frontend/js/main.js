@@ -1,12 +1,11 @@
-/* ============================================
-   IRIS FLOW - Main Controller
-   ============================================ */
 import { AppConfig } from './config.js';
 import { GridUI } from './modules/grid-ui.js';
 import { EyeEngine } from './core/eye-engine.js';
 import { SoundUtils } from './utils/sound.js';
 import { SOSSystem } from './modules/sos.js';
 import { SleepManager } from './modules/sleep-manager.js';
+import { KeyboardManager } from './modules/keyboard-logic.js';
+import { renderKeyboardMatrix, handleKeyboardAction } from './modules/keyboard-ui.js';
 import { SUB_MENU_DATA, MAIN_MENU_DATA } from './data.js';
 
 function showFeedback(message, type = 'success') {
@@ -24,6 +23,20 @@ function showFeedback(message, type = 'success') {
     setTimeout(() => {
         overlay.classList.add('hidden');
     }, 3000);
+}
+
+function createCard(id, label, sub, icon) {
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.id = id;
+    card.innerHTML = `
+        <div class="scan-bar"></div>
+        <div class="icon"><img src="assets/icons/${icon}" alt=""></div>
+        <div class="label">${label}</div>
+        <div class="sub-label">${sub}</div>
+        <div class="confirm-bar"></div>
+    `;
+    return card;
 }
 
 // ==========================================
@@ -66,6 +79,7 @@ renderMainGrid();
 const gridUI = new GridUI();
 const eyeEngine = new EyeEngine();
 const sosSystem = new SOSSystem();
+const kbManager = new KeyboardManager();
 const statusText = document.getElementById('status-text');
 
 const sleepManager = new SleepManager(
@@ -85,6 +99,7 @@ let eyesClosedStartTime = 0;
 let isEyesClosed = false;
 let currentView = 'main';
 let isProcessingAction = false;
+let kbScanTarget = '#kb-grid';
 
 // ==========================================
 // 1. Scanning control
@@ -102,7 +117,14 @@ function runScanStep() {
         return;
     }
 
-    gridUI.refreshCards(currentView === 'main' ? '#main-grid' : '#sub-grid', true);
+    const selector =
+        currentView === 'keyboard'
+            ? kbScanTarget
+            : currentView === 'main'
+              ? '#main-grid'
+              : '#sub-grid';
+
+    gridUI.refreshCards(selector, true);
 
     gridUI.highlightNext();
     gridUI.startScanBarAnimation(AppConfig.SCAN_SPEED);
@@ -124,6 +146,8 @@ function openSubMenu(menuId) {
         console.warn('No sub-menu found for:', menuId);
         return;
     }
+
+    document.getElementById('keyboard-view').classList.add('hidden');
 
     const subGrid = document.getElementById('sub-grid');
     subGrid.innerHTML = '';
@@ -158,9 +182,25 @@ function openSubMenu(menuId) {
     setTimeout(startScanning, 500);
 }
 
+function openKeyboard() {
+    currentView = 'keyboard';
+    kbManager.state = 'GROUP';
+    kbScanTarget = '#kb-grid';
+
+    document.getElementById('main-grid').classList.add('hidden');
+    document.getElementById('view-container').classList.add('hidden');
+    document.getElementById('keyboard-view').classList.remove('hidden');
+
+    renderKeyboardMatrix(kbManager, gridUI);
+
+    stopScanning();
+    setTimeout(startScanning, 500);
+}
+
 function backToMain() {
     document.getElementById('view-container').classList.add('hidden');
     document.getElementById('main-grid').classList.remove('hidden');
+    document.getElementById('keyboard-view').classList.add('hidden');
 
     if (statusText) {
         statusText.innerText = 'SYSTEM READY';
@@ -234,33 +274,62 @@ let isTriggering = false;
 
 function triggerSelection() {
     if (isProcessingAction || isTriggering) return;
+
     isProcessingAction = true;
     isTriggering = true;
-
     stopScanning();
 
     const selectedId = gridUI.getCurrentId();
+
     if (!selectedId) {
         isProcessingAction = false;
         isTriggering = false;
+        startScanning();
         return;
     }
 
-    console.log(`✅ SELECTED: ${selectedId}`);
-
     SoundUtils.playBeep(880, 'sine', 0.1);
 
+    if (currentView === 'keyboard') {
+        const callbacks = {
+            onExit: () => {
+                backToMain();
+                sleepManager.resetTimer();
+            }
+        };
+
+        handleKeyboardAction(selectedId, kbManager, gridUI, (newTarget) => {
+            kbScanTarget = newTarget;
+        }, callbacks).then(() => {
+            sleepManager.resetTimer();
+            isProcessingAction = false;
+            isTriggering = false;
+            startScanning();
+        });
+        return;
+    }
+
     if (currentView === 'main') {
+        if (selectedId === 'c-kb') {
+            openKeyboard();
+            sleepManager.resetTimer();
+            setTimeout(() => {
+                isProcessingAction = false;
+                isTriggering = false;
+                startScanning();
+            }, 500);
+            return;
+        }
+
         if (SUB_MENU_DATA[selectedId]) {
             openSubMenu(selectedId);
             sleepManager.resetTimer();
             setTimeout(() => {
                 isProcessingAction = false;
-            }, 1000);
-        } else {
-            console.log('No sub-menu for this item, maybe direct action.');
-            sleepManager.resetTimer();
-            isProcessingAction = false;
+                isTriggering = false;
+                startScanning();
+            }, 500);
+            return;
         }
     } else if (currentView === 'sub') {
         if (selectedId === 'btn-back') {
@@ -268,24 +337,30 @@ function triggerSelection() {
             sleepManager.resetTimer();
             setTimeout(() => {
                 isProcessingAction = false;
-            }, 1000);
+                isTriggering = false;
+                startScanning();
+            }, 500);
+            return;
         } else {
             console.log(`🚀 COMMAND SENT: ${selectedId}`);
             const msg = `${selectedId.toUpperCase()} SENT ✅`;
             showFeedback(msg, 'success');
 
             setTimeout(() => {
-                    sleepManager.resetTimer();
+                sleepManager.resetTimer();
                 isProcessingAction = false;
+                isTriggering = false;
                 isEyesClosed = false;
-                    if (!sleepManager.isSleeping) startScanning();
+                if (!sleepManager.isSleeping) startScanning();
             }, 3000);
+            return;
         }
     }
 
     setTimeout(() => {
+        isProcessingAction = false;
         isTriggering = false;
-           if (!document.hidden && !sleepManager.isSleeping) startScanning();
+        if (!document.hidden && !sleepManager.isSleeping) startScanning();
     }, 3000);
 }
 
