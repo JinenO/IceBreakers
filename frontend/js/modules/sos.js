@@ -85,9 +85,11 @@ export class SOSSystem {
     if (this.state === 'SENT') return;
     this.state = 'SENT';
 
-    this.overlay.style.backgroundColor = 'red';
-    this.timerEl.innerText = 'SOS SENT';
-    this.timerEl.style.color = 'white';
+    this.overlay.classList.remove('visible');
+
+    if (window.showFeedback) {
+      window.showFeedback('EMERGENCY SENT 🚨', 'emergency');
+    }
 
     SoundUtils.playBeep(1200, 'square', 1.0);
 

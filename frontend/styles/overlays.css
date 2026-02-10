@@ -260,6 +260,66 @@
     }
 }
 
+/* ============================================
+   FEEDBACK OVERLAY 2.0 - Fullscreen Emphasis
+   ============================================ */
+.feedback-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.9);
+    transition: opacity 0.3s;
+}
+
+.feedback-overlay.hidden {
+    display: none;
+    opacity: 0;
+}
+
+.feedback-overlay .feedback-icon {
+    font-size: 100px;
+    margin-bottom: 20px;
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.feedback-overlay .feedback-text {
+    font-size: 40px;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+}
+
+.feedback-overlay.success .feedback-icon,
+.feedback-overlay.success .feedback-text {
+    color: #00e676;
+}
+
+.feedback-overlay.emergency .feedback-icon,
+.feedback-overlay.emergency .feedback-text {
+    color: #ff1744;
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    80% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
 /* Fade out animation for overlays */
 .overlay.fade-out {
     animation: overlay-fade-out 0.4s ease-in forwards;

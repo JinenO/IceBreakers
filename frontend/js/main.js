@@ -8,6 +8,23 @@ import { SoundUtils } from './utils/sound.js';
 import { SOSSystem } from './modules/sos.js';
 import { SUB_MENU_DATA, MAIN_MENU_DATA } from './data.js';
 
+function showFeedback(message, type = 'success') {
+    const overlay = document.getElementById('feedback-overlay');
+    const text = document.getElementById('fb-text');
+
+    if (!overlay || !text) return;
+
+    text.innerText = message;
+
+    overlay.className = 'feedback-overlay';
+    overlay.classList.add(type);
+    overlay.classList.remove('hidden');
+
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+    }, 3000);
+}
+
 // ==========================================
 // 0. Render main menu
 // ==========================================
@@ -49,6 +66,8 @@ const gridUI = new GridUI();
 const eyeEngine = new EyeEngine();
 const sosSystem = new SOSSystem();
 const statusText = document.getElementById('status-text');
+
+window.showFeedback = showFeedback;
 
 // State
 let scanTimer = null;
@@ -205,22 +224,16 @@ function triggerSelection() {
         if (selectedId === 'btn-back') {
             backToMain();
         } else {
-            console.log(`🚀 SENDING COMMAND: ${selectedId}`);
-
-            const card = document.getElementById(selectedId);
-            if (card) card.style.background = '#00e676';
-
-            setTimeout(() => {
-                if (card) card.style.background = '';
-                startScanning();
-            }, 1000);
+            console.log(`🚀 COMMAND SENT: ${selectedId}`);
+            const msg = `${selectedId.toUpperCase()} SENT ✅`;
+            showFeedback(msg, 'success');
         }
     }
 
     setTimeout(() => {
         isTriggering = false;
-        if (!isScanning) startScanning();
-    }, 1500);
+        if (!document.hidden) startScanning();
+    }, 3000);
 }
 
 // ==========================================
