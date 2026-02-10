@@ -1,0 +1,65 @@
+/* frontend/js/data.js */
+
+export const MAIN_MENU_DATA = [
+    { id: 'c-needs', icon: 'needs.png', label: 'NEEDS', sub: 'Water / Food' },
+    { id: 'c-chat', icon: 'chat-ai.png', label: 'CHAT', sub: 'Yes / No' },
+    { id: 'c-body', icon: 'body.png', label: 'BODY', sub: 'Comfort' },
+    { id: 'c-media', icon: 'media.png', label: 'MEDIA', sub: 'Fun' },
+    { id: 'c-kb', icon: 'keyboard.png', label: 'KEYBOARD', sub: 'Type' }
+];
+
+export const SUB_MENU_DATA = {
+    'c-needs': {
+        title: 'NEEDS',
+        items: [
+            { id: 'water', label: 'WATER', sub: 'Thirsty', icon: 'water.png' },
+            { id: 'food', label: 'FOOD', sub: 'Hungry', icon: 'food.png' },
+            { id: 'toilet', label: 'TOILET', sub: 'Bathroom', icon: 'toilet.png' },
+            { id: 'meds', label: 'MEDS', sub: 'Pain / Pills', icon: 'medicine.png' },
+            { id: 'suction', label: 'SUCTION', sub: 'Clear throat', icon: 'suction.png' },
+            { id: 'back', label: 'BACK', sub: 'Main Menu', icon: 'back.png' }
+        ]
+    },
+    'c-body': {
+        title: 'BODY',
+        items: [
+            { id: 'roll', label: 'ROLL OVER', sub: 'Turn body', icon: 'roll.png' },
+            { id: 'head', label: 'HEAD UP', sub: 'Adjust Pillow', icon: 'head.png' },
+            { id: 'legs', label: 'LEGS', sub: 'Move legs', icon: 'leg.png' },
+            { id: 'temp', label: 'TEMP', sub: 'Hot / Cold', icon: 'temp.png' },
+            { id: 'itch', label: 'ITCHY', sub: 'Scratch me', icon: 'itch.png' },
+            { id: 'back', label: 'BACK', sub: 'Main Menu', icon: 'back.png' }
+        ]
+    },
+    'c-media': {
+        title: 'MEDIA',
+        items: [
+            { id: 'tv', label: 'TV', sub: 'Turn on/off', icon: 'media.png' },
+            { id: 'music', label: 'MUSIC', sub: 'Playlist', icon: 'media.png' },
+            { id: 'audiobook', label: 'BOOK', sub: 'Audiobook', icon: 'media.png' },
+            { id: 'photos', label: 'PHOTOS', sub: 'Family', icon: 'media.png' },
+            { id: 'youtube', label: 'VIDEO', sub: 'Youtube', icon: 'media.png' },
+            { id: 'back', label: 'BACK', sub: 'Main Menu', icon: 'media.png' }
+        ]
+    },
+    'c-chat': {
+        title: 'QUICK CHAT',
+        items: [
+            { id: 'yes', label: 'YES', sub: 'Confirm', icon: 'chat-ai.png' },
+            { id: 'no', label: 'NO', sub: 'Decline', icon: 'chat-ai.png' },
+            { id: 'thanks', label: 'THANKS', sub: 'Thank you', icon: 'chat-ai.png' },
+            { id: 'hello', label: 'HELLO', sub: 'Greeting', icon: 'chat-ai.png' },
+            { id: 'love', label: 'LOVE YOU', sub: 'Express', icon: 'chat-ai.png' },
+            { id: 'back', label: 'BACK', sub: 'Main Menu', icon: 'chat-ai.png' }
+        ]
+    },
+    'c-kb': {
+        title: 'KEYBOARD',
+        items: [
+            { id: 'predict', label: 'PREDICT', sub: 'Smart word', icon: 'keyboard.png' },
+            { id: 'clear', label: 'CLEAR', sub: 'Delete', icon: 'keyboard.png' },
+            { id: 'speak', label: 'SPEAK', sub: 'TTS', icon: 'keyboard.png' },
+            { id: 'back', label: 'BACK', sub: 'Main Menu', icon: 'keyboard.png' }
+        ]
+    }
+};

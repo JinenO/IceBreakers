@@ -1,22 +1,109 @@
 /* ============================================
-   IRIS FLOW - Grid Layout System
    Card Grid for Eye-Tracking Navigation
    ============================================ */
 
-/* ============================================
-   MAIN GRID CONTAINER
-   ============================================ */
-#main-grid {
-  /* Fill most of the center area and leave space for SOS */
-  flex: 1;
-  min-height: 0;
+/* =========================================
+   1. UNIFIED GRID CONTAINER (MAIN & SUB)
+   ========================================= */
+.grid-container {
+  width: 100%;
+  height: 100%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, 1fr);
   gap: 20px;
-  padding: 10px 30px;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* =========================================
+   2. LAPTOP MODE (max-height: 800px)
+   ========================================= */
+@media screen and (max-height: 800px) {
+  .grid-container {
+    gap: 1.5vh;
+    padding: 1.5vh 20px;
+    padding-bottom: 2vh;
+  }
+
+  .card {
+    padding: 5px;
+  }
+
+  .card .label {
+    font-size: 1rem;
+  }
+}
+
+#main-grid {
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   z-index: 10;
+}
+
+/* ============================================
+   SUB-VIEW STYLING
+   ============================================ */
+#view-container {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background-color: var(--bg-color);
+}
+
+.hidden {
+  display: none !important;
+}
+
+.sub-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 2px solid #333;
+}
+
+#view-title {
+  color: var(--accent-primary);
+  font-size: 32px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.view-status {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+
+/* Sub-grid uses .grid-container for layout */
+
+/* Back button styling */
+.back-card {
+  border-color: var(--text-muted) !important;
+  opacity: 0.8;
+}
+
+.back-card .label {
+  color: var(--text-secondary);
+}
+
+/* Simple enter animation */
+#view-container:not(.hidden) {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ============================================
@@ -78,7 +165,7 @@
 
 .monitor-screen {
   flex: 1;
-  background: #050505;
+  background: #000;
   border: 1px solid #222;
   border-radius: 12px;
   position: relative;
@@ -89,6 +176,9 @@
 .face-mesh-overlay {
   width: 100%;
   height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
   opacity: 0.6;
 }
 
@@ -132,7 +222,7 @@
 }
 
 /* Bottom row - Secondary cards */
-#c-fun {
+#c-media {
   grid-column: 1;
   grid-row: 2;
 }
@@ -198,7 +288,7 @@
     grid-row: 2;
   }
 
-  #c-fun {
+  #c-media {
     grid-column: 2;
     grid-row: 2;
   }
@@ -233,7 +323,7 @@
   #c-needs,
   #c-chat,
   #c-body,
-  #c-fun,
+  #c-media,
   #c-kb,
   #camera-monitor {
     grid-column: 1;
@@ -248,7 +338,7 @@
   #c-body {
     grid-row: 3;
   }
-  #c-fun {
+  #c-media {
     grid-row: 4;
   }
   #c-kb {
@@ -396,3 +486,61 @@
     border: 2px solid #000;
   }
 }
+
+/* ============================================
+   SUB-MENU FLEX LAYOUT FIXES
+   ============================================ */
+#view-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sub-header {
+  flex: 0 0 auto;
+  padding: 10px 0;
+  background: var(--bg-color);
+  z-index: 10;
+}
+
+#sub-grid {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  row-gap: 1.5vh;
+  column-gap: 20px;
+  padding: 1vh 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+
+@media screen and (max-height: 800px) {
+
+    /* 1. 标题栏：极致压缩，只留文字高度 */
+    .sub-header {
+        flex: 0 0 35px; /* 强制高度只有 35px */
+        padding: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #sub-grid {
+        padding: 5px 20px; 
+        row-gap: 10px; 
+        column-gap: 20px;
+        flex: 1;
+        min-height: 0; 
+        height: 100%;
+        overflow: hidden; 
+    }
+  }
