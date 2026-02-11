@@ -50,6 +50,20 @@
             <div id="video-control-grid"></div>
           </div>
         </div>
+
+        <div id="audio-player-container" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1a202c; border-radius: 12px; z-index: 40; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            
+            <div style="text-align: center; margin-bottom: 40px;">
+                <img id="audio-cover" src="" alt="Cover" style="width: 220px; height: 220px; border-radius: 20px; object-fit: cover; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+                <h2 id="audio-title" style="color: #4fd1c5; font-size: 2.5rem; margin: 20px 0 10px 0; letter-spacing: 2px;">Song/Book Title</h2>
+                <p id="audio-sub" style="color: #a0aec0; font-size: 1.5rem; margin: 0;">Artist or Chapter</p>
+            </div>
+
+            <div id="audio-control-grid" style="display: flex; gap: 20px; justify-content: center; width: 90%; max-width: 900px; height: 160px;">
+                </div>
+
+            <audio id="main-audio" src=""></audio>
+        </div>
             
       </div>
       </div>

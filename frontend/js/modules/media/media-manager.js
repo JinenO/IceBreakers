@@ -1,11 +1,13 @@
 /* frontend/js/modules/media/media-manager.js */
 
 import { VideoPlayer } from './video-player.js';
+import { AudioPlayer } from './audio-player.js';
 
 export class MediaManager {
     constructor() {
         this.currentApp = null;
         this.videoPlayer = new VideoPlayer();
+        this.audioPlayer = new AudioPlayer();
     }
 
     open(appType, gridUI, sleepManager) {
@@ -27,8 +29,9 @@ export class MediaManager {
                 
             case 'music':
             case 'audiobook':
-                console.log('🎵 路由：准备渲染音频库');
+                console.log(`🎵 Routing: Rendering ${appType} library`);
                 if (statusText) statusText.innerText = appType === 'music' ? 'MUSIC PLAYLIST' : 'AUDIOBOOKS';
+                this.audioPlayer.renderLibrary(appType, gridUI);
                 break;
 
             case 'photos':
@@ -53,6 +56,15 @@ export class MediaManager {
         if (videoEl) {
             videoEl.pause();
             videoEl.src = '';
+        }
+
+        const audioContainer = document.getElementById('audio-player-container');
+        if (audioContainer) audioContainer.classList.add('hidden');
+
+        const audioEl = document.getElementById('main-audio');
+        if (audioEl) {
+            audioEl.pause();
+            audioEl.src = '';
         }
     }
 

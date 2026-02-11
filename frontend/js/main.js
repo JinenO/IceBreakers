@@ -133,6 +133,8 @@ function runScanStep() {
         selector = '#video-library-grid .card'; 
     } else if (currentView === 'video-panel') {
         selector = '#video-control-grid .card'; 
+    } else if (currentView === 'audio-playing') {
+        selector = '#audio-control-grid .card'; 
     }
 
     if (currentView === 'video-playing') return; 
@@ -412,6 +414,11 @@ function triggerSelection() {
             stopScanning();
             setTimeout(() => { resetTriggerState(); }, 500);
             return;
+        } else if (selectedId.startsWith('aud-')) {
+            mediaManager.audioPlayer.openPlayer(selectedId, gridUI);
+            currentView = 'audio-playing';
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+            return;
         }
     } else if (currentView === 'video-playing') {
         mediaManager.videoPlayer.showControlPanel(gridUI);
@@ -433,6 +440,16 @@ function triggerSelection() {
             setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
             return;
         }
+    } else if (currentView === 'audio-playing') {
+        const actionResult = mediaManager.audioPlayer.handleCommand(selectedId, gridUI, () => {
+            currentView = 'media-library';
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+        });
+
+        if (actionResult === 'STAY') {
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+        }
+        return;
     }
 
     setTimeout(() => {
