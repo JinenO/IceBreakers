@@ -122,12 +122,20 @@ function runScanStep() {
         return;
     }
 
-    const selector =
-        currentView === 'keyboard'
-            ? kbScanTarget
-            : currentView === 'main'
-                            ? MAIN_SCAN_SELECTOR
-                            : SUB_SCAN_SELECTOR;
+    let selector;
+    if (currentView === 'keyboard') {
+        selector = kbScanTarget;
+    } else if (currentView === 'main') {
+        selector = MAIN_SCAN_SELECTOR;
+    } else if (currentView === 'sub') {
+        selector = SUB_SCAN_SELECTOR;
+    } else if (currentView === 'media-library') {
+        selector = '#video-library-grid .card'; 
+    } else if (currentView === 'video-panel') {
+        selector = '#video-control-grid .card'; 
+    }
+
+    if (currentView === 'video-playing') return; 
 
     gridUI.refreshCards(selector, true);
 

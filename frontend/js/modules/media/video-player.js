@@ -28,14 +28,13 @@ export class VideoPlayer {
     if (Array.isArray(LOCAL_VIDEOS) && LOCAL_VIDEOS.length > 0) {
         LOCAL_VIDEOS.forEach(video => {
             const card = document.createElement('article');
-            card.className = 'card kb-card';
-            card.id = video.id || '';
+            card.className = 'card';
+            card.id = video.id;
             card.innerHTML = `
-                <div class="kb-text">
-                    <div class="kb-label" style="font-size:1.5rem;">🎬 ${video.title || 'Untitled'}</div>
-                    <div class="kb-sub">${video.sub || ''}</div>
-                </div>
                 <div class="scan-bar"></div>
+                <div class="icon" style="font-size: 2.5rem; margin-bottom: 10px;">🎬</div>
+                <div class="label">${video.title}</div>
+                <div class="sub-label">${video.sub}</div>
                 <div class="confirm-bar"></div>
             `;
             libraryGrid.appendChild(card);
@@ -50,9 +49,15 @@ export class VideoPlayer {
     }
 
         const backCard = document.createElement('article');
-        backCard.className = 'card kb-card delete';
+        backCard.className = 'card';
         backCard.id = 'media-lib-back';
-        backCard.innerHTML = `<div class="kb-text"><div class="kb-label">↩️ BACK</div></div><div class="scan-bar"></div><div class="confirm-bar"></div>`;
+        backCard.innerHTML = `
+            <div class="scan-bar"></div>
+            <div class="icon" style="font-size: 2.5rem; margin-bottom: 10px;">↩️</div>
+            <div class="label">BACK</div>
+            <div class="sub-label">Media Menu</div>
+            <div class="confirm-bar"></div>
+        `;
         libraryGrid.appendChild(backCard);
 
         gridUI.refreshCards('#video-library-grid .card');
@@ -70,7 +75,7 @@ export class VideoPlayer {
         videoEl.src = videoData.src;
         videoEl.play();
         
-        console.log(`▶️ 开始沉浸播放: ${videoData.title}`);
+        console.log(`▶️ Starting immersive playback: ${videoData.title}`);
     }
 
     showControlPanel(gridUI) {
@@ -84,61 +89,107 @@ export class VideoPlayer {
         controlGrid.innerHTML = '';
 
         const controls = [
-            { id: 'vc-restart', label: '⏮️ RESTART', sub: 'From Beginning', type: 'tool' },
-            { id: 'vc-volup', label: '🔊 VOL UP', sub: 'Louder', type: 'group' },
-            { id: 'vc-exit', label: '🛑 EXIT', sub: 'To Library', type: 'delete' },
-            
-            { id: 'vc-rewind', label: '⏪ -10 SEC', sub: 'Rewind', type: 'tool' },
-            { id: 'vc-resume', label: '▶️ RESUME', sub: 'Play Video', type: 'send' },
-            { id: 'vc-forward', label: '⏩ +10 SEC', sub: 'Skip', type: 'tool' },
-            
-            { id: 'vc-mute', label: '🔇 MUTE', sub: 'Silence', type: 'tool' },
-            { id: 'vc-voldown', label: '🔉 VOL DOWN', sub: 'Softer', type: 'group' },
-            { id: 'vc-blank', label: '', sub: '', type: 'tool' }
+            { id: 'vc-rewind', label: '-10 SEC', sub: 'Rewind', type: 'tool', icon: 'rewind.png' },
+            { id: 'vc-resume', label: 'RESUME', sub: 'Play Video', type: 'send', icon: 'play.png' },
+            { id: 'vc-forward', label: '+10 SEC', sub: 'Skip', type: 'tool', icon: 'forward.png' },
+            { id: 'vc-restart', label: 'RESTART', sub: 'From Beginning', type: 'tool', icon: 'restart.png' },
+            { id: 'vc-voldown', label: 'VOL -', sub: 'Softer', type: 'group', icon: 'vol-down.png' },
+            { id: 'vc-mute', label: 'MUTE', sub: 'Silence', type: 'tool', icon: 'mute.png' },
+            { id: 'vc-volup', label: 'VOL +', sub: 'Louder', type: 'group', icon: 'vol-up.png' },
+            { id: 'vc-exit', label: 'EXIT', sub: 'To Library', type: 'delete', icon: 'exit.png' }
         ];
 
         controls.forEach(ctrl => {
             const card = document.createElement('article');
-            card.className = `card kb-card ${ctrl.type}`;
+            card.className = `card ${ctrl.type || ''}`;
             card.id = ctrl.id;
-            if (ctrl.id === 'vc-blank') {
-                card.style.opacity = '0';
-            } else {
-                card.innerHTML = `<div class="kb-text"><div class="kb-label">${ctrl.label}</div><div class="kb-sub">${ctrl.sub}</div></div><div class="scan-bar"></div><div class="confirm-bar"></div>`;
-            }
+            card.innerHTML = `
+                <div class="scan-bar"></div>
+                <div class="icon">
+                    <img src="assets/icons/${ctrl.icon}" alt="" style="width: 50px; height: 50px; object-fit: contain;">
+                </div>
+                <div class="label">${ctrl.label}</div>
+                <div class="sub-label">${ctrl.sub}</div>
+                <div class="confirm-bar"></div>
+            `;
             controlGrid.appendChild(card);
         });
 
         gridUI.refreshCards('#video-control-grid .card');
     }
 
-    handleCommand(cmdId, gridUI, onExitCallback) {
+handleCommand(cmdId, gridUI, onExitCallback) {
         const videoEl = document.getElementById('main-video');
+        const overlay = document.getElementById('video-control-overlay');
+        let toastHTML = ''; // 准备好要显示的 HTML 内容
         
-        if (cmdId === 'vc-resume') {
-            document.getElementById('video-control-overlay').classList.add('hidden');
-            videoEl.play();
-            return 'RESUMED';
-        } else if (cmdId === 'vc-exit') {
+        const makeToast = (iconName, text) => {
+            return `<div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+                        <img src="assets/icons/${iconName}" style="width: 45px; height: 45px; object-fit: contain;">
+                        <span>${text}</span>
+                    </div>`;
+        };
+
+        if (cmdId === 'vc-exit') {
             videoEl.pause();
             videoEl.src = '';
-            this.renderLibrary(gridUI);
-            if (onExitCallback) onExitCallback();
+            this.renderLibrary(gridUI); 
+            if(onExitCallback) onExitCallback();
             return 'EXITED';
-        } else if (cmdId === 'vc-restart') {
-            videoEl.currentTime = 0;
-        } else if (cmdId === 'vc-rewind') {
-            videoEl.currentTime = Math.max(0, videoEl.currentTime - 10);
-        } else if (cmdId === 'vc-forward') {
-            videoEl.currentTime += 10;
-        } else if (cmdId === 'vc-volup') {
-            videoEl.volume = Math.min(1, videoEl.volume + 0.2);
-        } else if (cmdId === 'vc-voldown') {
-            videoEl.volume = Math.max(0, videoEl.volume - 0.2);
-        } else if (cmdId === 'vc-mute') {
-            videoEl.muted = !videoEl.muted;
         }
+
+        if (cmdId === 'vc-resume') { 
+            toastHTML = makeToast('play.png', 'PLAYING'); 
+        }
+        else if (cmdId === 'vc-restart') { 
+            videoEl.currentTime = 0; 
+            toastHTML = makeToast('restart.png', 'RESTARTED'); 
+        }
+        else if (cmdId === 'vc-rewind') { 
+            videoEl.currentTime = Math.max(0, videoEl.currentTime - 10); 
+            toastHTML = makeToast('rewind.png', '-10 SEC'); 
+        }
+        else if (cmdId === 'vc-forward') { 
+            videoEl.currentTime += 10; 
+            toastHTML = makeToast('forward.png', '+10 SEC'); 
+        }
+        else if (cmdId === 'vc-volup') { 
+            videoEl.volume = Math.min(1, videoEl.volume + 0.2); 
+            videoEl.muted = false; 
+            toastHTML = makeToast('vol-up.png', `VOL: ${Math.round(videoEl.volume * 100)}%`); 
+        }
+        else if (cmdId === 'vc-voldown') { 
+            videoEl.volume = Math.max(0, videoEl.volume - 0.2); 
+            toastHTML = makeToast('vol-down.png', `VOL: ${Math.round(videoEl.volume * 100)}%`); 
+        }
+        else if (cmdId === 'vc-mute') { 
+            videoEl.muted = !videoEl.muted; 
+            toastHTML = videoEl.muted 
+                ? makeToast('mute.png', 'MUTED') 
+                : makeToast('vol-up.png', 'UNMUTED'); 
+        }
+
+        overlay.classList.add('hidden'); 
+        videoEl.play();
+
+        this.showToast(toastHTML);
+
+        return 'RESUMED';
+    }
+
+    showToast(message) {
+        const toast = document.getElementById('video-toast');
+        if (!toast) return;
         
-        return 'STAY_IN_PANEL';
+        toast.innerHTML = message;
+        toast.classList.remove('hidden');
+        toast.style.opacity = '1';
+
+        if (this.toastTimer) clearTimeout(this.toastTimer);
+
+        this.toastTimer = setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.classList.add('hidden'), 300); 
+        }, 2000);
     }
 }

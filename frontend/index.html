@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="styles/main.css" />
     <link rel="stylesheet" href="styles/grid.css" />
     <link rel="stylesheet" href="styles/keyboard.css" />
+    <link rel="stylesheet" href="styles/media.css" />
     <link rel="stylesheet" href="styles/sos.css" />
     <link rel="stylesheet" href="styles/overlays.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -33,26 +34,25 @@
         <div id="sub-grid" class="grid-container"></div>
       </section>
 
-    <div id="media-view" class="hidden">
-        <h2 id="media-status-text" style="color: #4fd1c5; text-align: center; padding-top: 20px; font-size: 2rem;">MEDIA SYSTEM</h2>
+      <div id="media-view" class="hidden">
+      <h2 id="media-status-text">MEDIA SYSTEM</h2>
         
-        <div id="media-content-area" style="width: 100%; height: 100%; padding: 20px; box-sizing: border-box; position: relative;">
+      <div id="media-content-area">
             
-            <div id="video-library-grid" class="hidden" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: 100%; height: 100%;"></div>
+        <div id="video-library-grid" class="hidden"></div>
             
-            <div id="video-player-container" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; border-radius: 12px; overflow: hidden; z-index: 50;">
-                
-                <video id="main-video" style="width: 100%; height: 100%; object-fit: contain;" src=""></video>
+        <div id="video-player-container" class="hidden">
+          <video id="main-video" style="width: 100%; height: 100%; object-fit: contain;" src="" loop></video>
 
-                <div id="video-control-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 60; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                    <h3 style="color: #4fd1c5; margin-top: 0; font-size: 1.8rem; margin-bottom: 20px;">VIDEO CONTROLS</h3>
-                    
-                    <div id="video-control-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: 80%; height: 70%;"></div>
-                </div>
+          <div id="video-toast" class="hidden" style="position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: #4fd1c5; padding: 15px 25px; border-radius: 8px; font-size: 1.8rem; z-index: 70; transition: opacity 0.3s ease;"></div>
 
-            </div>
+          <div id="video-control-overlay" class="hidden">
+            <div id="video-control-grid"></div>
+          </div>
         </div>
-    </div>
+            
+      </div>
+      </div>
 
       <section id="keyboard-view" class="hidden">
         <div class="kb-top-section">

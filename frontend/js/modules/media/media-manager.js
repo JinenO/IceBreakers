@@ -43,9 +43,17 @@ export class MediaManager {
 
     closeAll() {
         console.log('🛑 Media Manager: 执行清场...');
-        
-        const contentArea = document.getElementById('media-content-area');
-        if (contentArea) contentArea.innerHTML = '';
+
+        const libraryGrid = document.getElementById('video-library-grid');
+        const playerContainer = document.getElementById('video-player-container');
+        if (libraryGrid) libraryGrid.classList.add('hidden');
+        if (playerContainer) playerContainer.classList.add('hidden');
+
+        const videoEl = document.getElementById('main-video');
+        if (videoEl) {
+            videoEl.pause();
+            videoEl.src = '';
+        }
     }
 
     exit() {
