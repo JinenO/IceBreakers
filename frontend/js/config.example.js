@@ -1,5 +1,6 @@
 /* frontend/js/config.example.js */
-// 🔑 配置文件模板 - 将此文件复制为 config.js 并填入你的真实 API 密钥
+// Configuration Template
+// Copy this file as config.js and insert your real API keys.
 
 export const AppConfig = {
     SCAN_SPEED: 2000,
@@ -8,9 +9,11 @@ export const AppConfig = {
     SOUND_ON: true
 };
 
-// YouTube API 密钥 - 从 https://console.cloud.google.com 获取
-// 1. 创建新项目
-// 2. 启用 YouTube Data API v3
-// 3. 创建 API 密钥（Web 浏览器应用类型）
-// 4. 复制密钥到下面
-export const YOUTUBE_API_KEY = "AIzaSy_你的真实密钥写在这里_不要提交到GitHub";
+// YouTube API Key — Get it from https://console.cloud.google.com
+// Steps:
+// 1. Create a new project
+// 2. Enable "YouTube Data API v3"
+// 3. Create an API Key (Application type: Web browser)
+// 4. Paste the key below (DO NOT commit your real key to GitHub)
+
+export const YOUTUBE_API_KEY = "YOUR_YOUTUBE_API_KEY_HERE";
