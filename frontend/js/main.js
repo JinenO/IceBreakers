@@ -7,6 +7,7 @@ import { SleepManager } from './modules/sleep-manager.js';
 import { KeyboardManager } from './modules/keyboard-logic.js';
 import { renderKeyboardMatrix, handleKeyboardAction } from './modules/keyboard-ui.js';
 import { SUB_MENU_DATA, MAIN_MENU_DATA } from './data.js';
+import { MediaManager } from './modules/media/media-manager.js';
 
 function showFeedback(message, type = 'success') {
     const overlay = document.getElementById('feedback-overlay');
@@ -80,6 +81,7 @@ const gridUI = new GridUI();
 const eyeEngine = new EyeEngine();
 const sosSystem = new SOSSystem();
 const kbManager = new KeyboardManager();
+const mediaManager = new MediaManager();
 const statusText = document.getElementById('status-text');
 
 const sleepManager = new SleepManager(
@@ -358,18 +360,69 @@ function triggerSelection() {
                 startScanning();
             }, 500);
             return;
-        } else {
-            console.log(`🚀 COMMAND SENT: ${selectedId}`);
-            const msg = `${selectedId.toUpperCase()} SENT ✅`;
-            showFeedback(msg, 'success');
-
+        }
+        
+        const mediaCommands = ['cmd-youtube', 'cmd-local', 'cmd-music', 'cmd-audiobook', 'cmd-photos'];
+        
+        if (mediaCommands.includes(selectedId)) {
+            const appType = selectedId.replace('cmd-', '');
+            
+            mediaManager.open(appType, gridUI, sleepManager);
+            
+            currentView = 'media-library';
+            
+            sleepManager.resetTimer();
             setTimeout(() => {
-                sleepManager.resetTimer();
-                isProcessingAction = false;
-                isTriggering = false;
-                isEyesClosed = false;
-                if (!sleepManager.isSleeping) startScanning();
-            }, 3000);
+                resetTriggerState();
+                startScanning();
+            }, 500);
+            return;
+        }
+        
+        console.log(`🚀 COMMAND SENT: ${selectedId}`);
+        const msg = `${selectedId.toUpperCase()} SENT ✅`;
+        showFeedback(msg, 'success');
+
+        setTimeout(() => {
+            sleepManager.resetTimer();
+            isProcessingAction = false;
+            isTriggering = false;
+            isEyesClosed = false;
+            if (!sleepManager.isSleeping) startScanning();
+        }, 3000);
+        return;
+    } else if (currentView === 'media-library') {
+        if (selectedId === 'media-lib-back') {
+            mediaManager.exit();
+            currentView = 'sub';
+            gridUI.refreshCards('#sub-grid .card');
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+            return;
+        } else if (selectedId.startsWith('vid-')) {
+            mediaManager.videoPlayer.playVideo(selectedId);
+            currentView = 'video-playing';
+            stopScanning();
+            setTimeout(() => { resetTriggerState(); }, 500);
+            return;
+        }
+    } else if (currentView === 'video-playing') {
+        mediaManager.videoPlayer.showControlPanel(gridUI);
+        currentView = 'video-panel';
+        setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+        return;
+    } else if (currentView === 'video-panel') {
+        const actionResult = mediaManager.videoPlayer.handleCommand(selectedId, gridUI, () => {
+            currentView = 'media-library';
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+        });
+
+        if (actionResult === 'RESUMED') {
+            currentView = 'video-playing';
+            stopScanning();
+            setTimeout(() => { resetTriggerState(); }, 500);
+            return;
+        } else if (actionResult === 'STAY_IN_PANEL') {
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
             return;
         }
     }
