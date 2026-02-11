@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="styles/main.css" />
     <link rel="stylesheet" href="styles/grid.css" />
     <link rel="stylesheet" href="styles/keyboard.css" />
+    <link rel="stylesheet" href="styles/media.css" />
     <link rel="stylesheet" href="styles/sos.css" />
     <link rel="stylesheet" href="styles/overlays.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -32,6 +33,40 @@
       <section id="view-container" class="hidden" role="region" aria-label="Sub-menu View">
         <div id="sub-grid" class="grid-container"></div>
       </section>
+
+      <div id="media-view" class="hidden">
+      <h2 id="media-status-text">MEDIA SYSTEM</h2>
+        
+      <div id="media-content-area">
+            
+        <div id="video-library-grid" class="hidden"></div>
+            
+        <div id="video-player-container" class="hidden">
+          <video id="main-video" style="width: 100%; height: 100%; object-fit: contain;" src="" loop></video>
+
+          <div id="video-toast" class="hidden" style="position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: #4fd1c5; padding: 15px 25px; border-radius: 8px; font-size: 1.8rem; z-index: 70; transition: opacity 0.3s ease;"></div>
+
+          <div id="video-control-overlay" class="hidden">
+            <div id="video-control-grid"></div>
+          </div>
+        </div>
+
+        <div id="audio-player-container" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1a202c; border-radius: 12px; z-index: 40; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            
+            <div style="text-align: center; margin-bottom: 40px;">
+                <img id="audio-cover" src="" alt="Cover" style="width: 220px; height: 220px; border-radius: 20px; object-fit: cover; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+                <h2 id="audio-title" style="color: #4fd1c5; font-size: 2.5rem; margin: 20px 0 10px 0; letter-spacing: 2px;">Song/Book Title</h2>
+                <p id="audio-sub" style="color: #a0aec0; font-size: 1.5rem; margin: 0;">Artist or Chapter</p>
+            </div>
+
+            <div id="audio-control-grid" style="display: flex; gap: 20px; justify-content: center; width: 90%; max-width: 900px; height: 160px;">
+                </div>
+
+            <audio id="main-audio" src=""></audio>
+        </div>
+            
+      </div>
+      </div>
 
       <section id="keyboard-view" class="hidden">
         <div class="kb-top-section">

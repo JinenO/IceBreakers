@@ -7,6 +7,7 @@ import { SleepManager } from './modules/sleep-manager.js';
 import { KeyboardManager } from './modules/keyboard-logic.js';
 import { renderKeyboardMatrix, handleKeyboardAction } from './modules/keyboard-ui.js';
 import { SUB_MENU_DATA, MAIN_MENU_DATA } from './data.js';
+import { MediaManager } from './modules/media/media-manager.js';
 
 function showFeedback(message, type = 'success') {
     const overlay = document.getElementById('feedback-overlay');
@@ -80,6 +81,7 @@ const gridUI = new GridUI();
 const eyeEngine = new EyeEngine();
 const sosSystem = new SOSSystem();
 const kbManager = new KeyboardManager();
+const mediaManager = new MediaManager();
 const statusText = document.getElementById('status-text');
 
 const sleepManager = new SleepManager(
@@ -98,6 +100,7 @@ let isScanning = false;
 let eyesClosedStartTime = 0;
 let isEyesClosed = false;
 let currentView = 'main';
+let keyboardMode = 'speak';
 let isProcessingAction = false;
 const KB_SCAN_SELECTOR = '#kb-prediction-bar .predict-btn, #kb-grid .kb-card';
 const MAIN_SCAN_SELECTOR = '#main-grid .card';
@@ -120,12 +123,22 @@ function runScanStep() {
         return;
     }
 
-    const selector =
-        currentView === 'keyboard'
-            ? kbScanTarget
-            : currentView === 'main'
-                            ? MAIN_SCAN_SELECTOR
-                            : SUB_SCAN_SELECTOR;
+    let selector;
+    if (currentView === 'keyboard') {
+        selector = kbScanTarget;
+    } else if (currentView === 'main') {
+        selector = MAIN_SCAN_SELECTOR;
+    } else if (currentView === 'sub') {
+        selector = SUB_SCAN_SELECTOR;
+    } else if (currentView === 'media-library') {
+        selector = '#video-library-grid .card'; 
+    } else if (currentView === 'video-panel') {
+        selector = '#video-control-grid .card'; 
+    } else if (currentView === 'audio-playing') {
+        selector = '#audio-control-grid .card'; 
+    }
+
+    if (currentView === 'video-playing') return; 
 
     gridUI.refreshCards(selector, true);
 
@@ -303,10 +316,41 @@ function triggerSelection() {
     if (currentView === 'keyboard') {
         const callbacks = {
             onExit: () => {
+                keyboardMode = 'speak';
+                const sendLabel = document.querySelector('#kb-send .kb-label');
+                if (sendLabel) sendLabel.innerText = 'SEND';
                 backToMain();
                 sleepManager.resetTimer();
             }
         };
+
+        if (selectedId === 'kb-send') {
+            const text = kbManager.currentText;
+            if (text.trim().length > 0) {
+                if (keyboardMode === 'youtube-search') {
+                    mediaManager.youtubePlayer.searchAndRender(text, gridUI);
+
+                    currentView = 'media-library';
+                    setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+                } else {
+                    sosSystem.speak(text);
+
+                    sleepManager.resetTimer();
+                    setTimeout(() => {
+                        resetTriggerState();
+                        if (!sleepManager.isSleeping) {
+                            startScanning();
+                        }
+                    }, 500);
+                }
+            } else {
+                resetTriggerState();
+                if (!sleepManager.isSleeping) {
+                    startScanning();
+                }
+            }
+            return;
+        }
 
         handleKeyboardAction(selectedId, kbManager, gridUI, (newTarget) => {
             kbScanTarget = newTarget;
@@ -352,26 +396,114 @@ function triggerSelection() {
         if (selectedId === 'btn-back') {
             backToMain();
             sleepManager.resetTimer();
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+            return;
+        }
+
+        if (selectedId === 'cmd-youtube') {
+            console.log('YouTube Triggered: Switching to Keyboard Search Mode');
+            keyboardMode = 'youtube-search';
+            currentView = 'keyboard';
+
+            document.getElementById('view-container').classList.add('hidden');
+            document.getElementById('keyboard-view').classList.remove('hidden');
+
+            const sendLabel = document.querySelector('#kb-send .kb-label');
+            if (sendLabel) sendLabel.innerText = 'SEARCH';
+
             setTimeout(() => {
-                isProcessingAction = false;
-                isTriggering = false;
+                resetTriggerState();
                 startScanning();
             }, 500);
             return;
-        } else {
-            console.log(`🚀 COMMAND SENT: ${selectedId}`);
-            const msg = `${selectedId.toUpperCase()} SENT ✅`;
-            showFeedback(msg, 'success');
+        }
 
-            setTimeout(() => {
-                sleepManager.resetTimer();
-                isProcessingAction = false;
-                isTriggering = false;
-                isEyesClosed = false;
-                if (!sleepManager.isSleeping) startScanning();
-            }, 3000);
+        const mediaCommands = ['cmd-local', 'cmd-music', 'cmd-audiobook', 'cmd-photos'];
+        if (mediaCommands.includes(selectedId)) {
+            const appType = selectedId.replace('cmd-', '');
+            mediaManager.open(appType, gridUI, sleepManager);
+            currentView = 'media-library';
+
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
             return;
         }
+        
+        console.log(`🚀 COMMAND SENT: ${selectedId}`);
+        const msg = `${selectedId.toUpperCase()} SENT ✅`;
+        showFeedback(msg, 'success');
+
+        setTimeout(() => {
+            sleepManager.resetTimer();
+            isProcessingAction = false;
+            isTriggering = false;
+            isEyesClosed = false;
+            if (!sleepManager.isSleeping) startScanning();
+        }, 3000);
+        return;
+    } else if (currentView === 'media-library') {
+        if (selectedId === 'media-lib-back') {
+            mediaManager.exit();
+            currentView = 'sub';
+            gridUI.refreshCards('#sub-grid .card');
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+            return;
+        } else if (selectedId === 'yt-back-to-search') {
+            keyboardMode = 'youtube-search';
+            currentView = 'keyboard';
+
+            document.getElementById('media-view').classList.add('hidden');
+            document.getElementById('keyboard-view').classList.remove('hidden');
+
+            renderKeyboardMatrix(kbManager, gridUI);
+            kbScanTarget = KB_SCAN_SELECTOR;
+
+            const sendLabel = document.querySelector('#kb-send .kb-label');
+            if (sendLabel) sendLabel.innerText = 'SEARCH';
+
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+            return;
+        } else if (selectedId.startsWith('vid-')) {
+            mediaManager.videoPlayer.playVideo(selectedId);
+            currentView = 'video-playing';
+            stopScanning();
+            setTimeout(() => { resetTriggerState(); }, 500);
+            return;
+        } else if (selectedId.startsWith('aud-')) {
+            mediaManager.audioPlayer.openPlayer(selectedId, gridUI);
+            currentView = 'audio-playing';
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+            return;
+        }
+    } else if (currentView === 'video-playing') {
+        mediaManager.videoPlayer.showControlPanel(gridUI);
+        currentView = 'video-panel';
+        setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+        return;
+    } else if (currentView === 'video-panel') {
+        const actionResult = mediaManager.videoPlayer.handleCommand(selectedId, gridUI, () => {
+            currentView = 'media-library';
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+        });
+
+        if (actionResult === 'RESUMED') {
+            currentView = 'video-playing';
+            stopScanning();
+            setTimeout(() => { resetTriggerState(); }, 500);
+            return;
+        } else if (actionResult === 'STAY_IN_PANEL') {
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+            return;
+        }
+    } else if (currentView === 'audio-playing') {
+        const actionResult = mediaManager.audioPlayer.handleCommand(selectedId, gridUI, () => {
+            currentView = 'media-library';
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+        });
+
+        if (actionResult === 'STAY') {
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+        }
+        return;
     }
 
     setTimeout(() => {

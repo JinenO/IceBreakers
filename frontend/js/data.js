@@ -32,14 +32,14 @@ export const SUB_MENU_DATA = {
         ]
     },
     'c-media': {
-        title: 'MEDIA',
+        title: 'MEDIA ENTERTAINMENT', 
         items: [
-            { id: 'tv', label: 'TV', sub: 'Turn on/off', icon: 'media.png' },
-            { id: 'music', label: 'MUSIC', sub: 'Playlist', icon: 'media.png' },
-            { id: 'audiobook', label: 'BOOK', sub: 'Audiobook', icon: 'media.png' },
-            { id: 'photos', label: 'PHOTOS', sub: 'Family', icon: 'media.png' },
-            { id: 'youtube', label: 'VIDEO', sub: 'Youtube', icon: 'media.png' },
-            { id: 'back', label: 'BACK', sub: 'Main Menu', icon: 'media.png' }
+            { id: 'local', label: 'LOCAL', sub: 'Local Movies', icon: 'tv.png' }, 
+            { id: 'youtube', label: 'YOUTUBE', sub: 'Online', icon: 'youtube.png' },
+            { id: 'music', label: 'MUSIC', sub: 'Local Playlist', icon: 'music.png' },
+            { id: 'audiobook', label: 'BOOK', sub: 'Audiobook', icon: 'book.png' },
+            { id: 'photos', label: 'PHOTOS', sub: 'Family Album', icon: 'photos.png' },
+            { id: 'back', label: 'BACK', sub: 'Main Menu', icon: 'back.png' }
         ]
     },
     'c-chat': {
