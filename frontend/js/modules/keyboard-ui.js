@@ -4,13 +4,17 @@ import { FREQUENCY_GROUPS } from './keyboard-logic.js';
 
 const KB_SCAN_SELECTOR = '#kb-prediction-bar .predict-btn, #kb-grid .kb-card';
 
-function createKbCard(className, id, label, sub) {
+function createKbCard(className, id, label, sub, icon) {
     const div = document.createElement('div');
     div.className = className;
     div.id = id;
+    const iconHtml = icon ? `<div class="kb-icon"><img src="assets/icons/${icon}" alt="${label}"></div>` : '';
     div.innerHTML = `
-        <div class="kb-label">${label}</div>
-        ${sub ? `<div class="kb-sub">${sub}</div>` : ''}
+        ${iconHtml}
+        <div class="kb-text">
+            <div class="kb-label">${label}</div>
+            ${sub ? `<div class="kb-sub">${sub}</div>` : ''}
+        </div>
         <div class="scan-bar"></div><div class="confirm-bar"></div>
     `;
     return div;
@@ -28,19 +32,15 @@ export function renderKeyboardMatrix(kbManager, gridUI) {
     }
 
     FREQUENCY_GROUPS.forEach((group) => {
-        const card = createKbCard('kb-card group', group.id, group.label, 'Group');
+        const card = createKbCard('kb-card group', group.id, group.label, '');
         kbGrid.appendChild(card);
     });
 
     const tools = [
-        { id: 'kb-space', label: 'SPACE', sub: 'Add Space', type: 'tool' },
-        {
-            id: 'kb-send',
-            label: '🚀 SEND',
-            sub: 'To Caregiver',
-            type: 'send'
-        },
-        { id: 'kb-delete', label: 'DEL', sub: 'Backspace', type: 'delete' }
+       { id: 'kb-delete', label: 'DEL', sub: 'Backspace', type: 'delete', icon: 'delete.png' },
+        { id: 'kb-tools', label: 'TOOLS', sub: 'More', type: 'tool', icon: 'tools.png' },
+        { id: 'kb-space', label: 'SPACE', sub: 'Add Space', type: 'tool', icon: 'space.png' },
+        { id: 'kb-send', label: 'SEND', sub: 'To Caregiver', type: 'send', icon: 'send.png' }
     ];
 
     tools.forEach((tool) => {
@@ -48,7 +48,8 @@ export function renderKeyboardMatrix(kbManager, gridUI) {
             `kb-card ${tool.type}`,
             tool.id,
             tool.label,
-            tool.sub
+            tool.sub,
+            tool.icon
         );
         kbGrid.appendChild(card);
     });
@@ -133,14 +134,14 @@ export function renderTools(kbManager, gridUI) {
     kbGrid.innerHTML = '';
 
     const tools = [
-        { id: 'tool-speak', label: '🔊 SPEAK', sub: 'Read Aloud', type: 'group' },
-        { id: 'tool-clear', label: '🗑️ CLEAR', sub: 'Delete All', type: 'delete' },
-        { id: 'tool-yes', label: '👍 YES', sub: 'Quick Reply', type: 'tool' },
-        { id: 'tool-no', label: '👎 NO', sub: 'Quick Reply', type: 'tool' },
-        { id: 'tool-exit', label: '🏠 EXIT', sub: 'Main Menu', type: 'delete' },
-        { id: 'tool-thanks', label: '🙏 THANKS', sub: 'Quick Reply', type: 'tool' },
-        { id: 'tool-stop', label: '🛑 STOP', sub: 'Stop Audio', type: 'tool' },
-        { id: 'tool-back', label: '↩️ BACK', sub: 'To Keyboard', type: 'group' }
+        { id: 'tool-speak', label: 'SPEAK', sub: 'Read Aloud', type: 'group', icon: 'speak.png' },
+        { id: 'tool-clear', label: 'CLEAR', sub: 'Delete All', type: 'delete', icon: 'clear.png' },
+        { id: 'tool-yes', label: 'YES', sub: 'Quick Reply', type: 'tool', icon: 'yes.png' },
+        { id: 'tool-no', label: 'NO', sub: 'Quick Reply', type: 'tool', icon: 'no.png' },
+        { id: 'tool-thanks', label: 'THANKS', sub: 'Quick Reply', type: 'tool', icon: 'thank.png' },
+        { id: 'tool-stop', label: 'STOP', sub: 'Stop Audio', type: 'tool', icon: 'stop.png' },
+        { id: 'tool-exit', label: 'EXIT', sub: 'Main Menu', type: 'delete', icon: 'exit.png' },
+        { id: 'tool-back', label: 'BACK', sub: 'To Keyboard', type: 'group', icon: 'back.png' }
     ];
 
     tools.forEach((tool) => {
@@ -148,7 +149,8 @@ export function renderTools(kbManager, gridUI) {
             `kb-card ${tool.type}`,
             tool.id,
             tool.label,
-            tool.sub
+            tool.sub,
+            tool.icon 
         );
         kbGrid.appendChild(card);
     });
@@ -197,6 +199,12 @@ export async function handleKeyboardAction(
         return;
     }
 
+    if (id === 'kb-tools') {
+        renderTools(kbManager, gridUI);
+        setScanTarget('#kb-grid .kb-card');
+        return;
+    }
+
     if (id === 'tool-speak') {
         kbManager.speak();
         return;
@@ -240,11 +248,23 @@ export async function handleKeyboardAction(
     if (id === 'kb-delete') {
         kbManager.deleteLast();
         updateDisplay(kbManager);
+        
+        const words = await kbManager.getPredictions(kbManager.currentText);
+        kbManager.currentPredictions = words;
+        
+        renderKeyboardMatrix(kbManager, gridUI);
+        setScanTarget(KB_SCAN_SELECTOR);
         return;
     }
+
     if (id === 'kb-space') {
         kbManager.addChar(' ');
         updateDisplay(kbManager);
+        
+        kbManager.currentPredictions = []; 
+        
+        renderKeyboardMatrix(kbManager, gridUI);
+        setScanTarget(KB_SCAN_SELECTOR);
         return;
     }
     if (id === 'kb-back-group') {

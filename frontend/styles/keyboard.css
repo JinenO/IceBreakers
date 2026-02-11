@@ -59,6 +59,93 @@
     gap: 12px;
 }
 
+#kb-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 10px;
+    padding: 10px 15px;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+#kb-grid .kb-card {
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border-radius: 12px;
+    position: relative;
+    background: #2a2a35;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+#kb-grid .kb-card.tool,
+#kb-grid .kb-card.delete,
+#kb-grid .kb-card.send {
+    background: #333344;
+}
+
+#kb-grid .kb-card .kb-label {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+#kb-grid .kb-card .kb-sub {
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+#kb-grid .kb-card.group .kb-text .kb-label,
+#kb-grid .kb-card.group .kb-label {
+    font-size: 1.8rem;
+    font-weight: bold;
+    letter-spacing: 4px;
+    margin: 0;
+}
+
+#kb-grid .kb-card .kb-icon img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+}
+
+@media screen and (max-height: 800px), screen and (max-width: 1024px) {
+    #kb-grid .kb-card {
+        flex-direction: row;
+        justify-content: center;
+        text-align: left;
+    }
+
+    #kb-grid .kb-card .kb-icon img {
+        width: 36px;
+        height: 36px;
+        margin-bottom: 0;
+        margin-right: 12px;
+    }
+
+    #kb-grid .kb-card .kb-text .kb-label {
+        font-size: 1.1rem;
+    }
+
+    #kb-grid .kb-card .kb-text .kb-sub {
+        font-size: 0.8rem;
+    }
+
+    #kb-grid .kb-card.group .kb-text .kb-label,
+    #kb-grid .kb-card.group .kb-label {
+        font-size: 1.5rem;
+        letter-spacing: 2px;
+    }
+}
+
 /* =========================================
    2. Card Styles (Minimal)
    ========================================= */
