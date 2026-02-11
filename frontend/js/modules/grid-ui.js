@@ -9,11 +9,10 @@ export class GridUI {
         this.currentIndex = -1;
     }
 
-    refreshCards(selector = '#main-grid', preserveIndex = false) {
+    refreshCards(selector = '#main-grid .card', preserveIndex = false) {
         const previousId = preserveIndex ? this.getCurrentId() : null;
-        this.cards = Array.from(
-            document.querySelectorAll(`${selector} .card, ${selector} .kb-card`)
-        );
+        this.cards = Array.from(document.querySelectorAll(selector));
+        console.log(`Scanner found ${this.cards.length} cards for scanning.`);
 
         if (preserveIndex && previousId) {
             const nextIndex = this.cards.findIndex(

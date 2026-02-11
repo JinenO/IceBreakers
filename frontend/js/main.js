@@ -99,7 +99,10 @@ let eyesClosedStartTime = 0;
 let isEyesClosed = false;
 let currentView = 'main';
 let isProcessingAction = false;
-let kbScanTarget = '#kb-grid';
+const KB_SCAN_SELECTOR = '#kb-prediction-bar .predict-btn, #kb-grid .kb-card';
+const MAIN_SCAN_SELECTOR = '#main-grid .card';
+const SUB_SCAN_SELECTOR = '#sub-grid .card';
+let kbScanTarget = KB_SCAN_SELECTOR;
 
 // ==========================================
 // 1. Scanning control
@@ -121,8 +124,8 @@ function runScanStep() {
         currentView === 'keyboard'
             ? kbScanTarget
             : currentView === 'main'
-              ? '#main-grid'
-              : '#sub-grid';
+                            ? MAIN_SCAN_SELECTOR
+                            : SUB_SCAN_SELECTOR;
 
     gridUI.refreshCards(selector, true);
 
@@ -176,7 +179,7 @@ function openSubMenu(menuId) {
     document.getElementById('view-container').classList.remove('hidden');
 
     currentView = 'sub';
-    gridUI.refreshCards('#sub-grid');
+    gridUI.refreshCards(SUB_SCAN_SELECTOR);
 
     stopScanning();
     setTimeout(startScanning, 500);
@@ -185,16 +188,21 @@ function openSubMenu(menuId) {
 function openKeyboard() {
     currentView = 'keyboard';
     kbManager.state = 'GROUP';
-    kbScanTarget = '#kb-grid';
+    kbScanTarget = KB_SCAN_SELECTOR;
+
+    renderKeyboardMatrix(kbManager, gridUI);
 
     document.getElementById('main-grid').classList.add('hidden');
     document.getElementById('view-container').classList.add('hidden');
     document.getElementById('keyboard-view').classList.remove('hidden');
 
-    renderKeyboardMatrix(kbManager, gridUI);
-
     stopScanning();
-    setTimeout(startScanning, 500);
+    setTimeout(() => {
+        const selector = '#kb-prediction-bar .predict-btn, #kb-grid .kb-card';
+        gridUI.refreshCards(selector);
+        gridUI.currentIndex = 2;
+        startScanning();
+    }, 100);
 }
 
 function backToMain() {
@@ -208,7 +216,7 @@ function backToMain() {
     }
 
     currentView = 'main';
-    gridUI.refreshCards('#main-grid');
+    gridUI.refreshCards(MAIN_SCAN_SELECTOR);
 
     stopScanning();
     setTimeout(startScanning, 500);
@@ -257,7 +265,10 @@ function handleEyeFrame(data) {
             gridUI.updateConfirmBar(progress);
 
             if (elapsed >= AppConfig.REQUIRED_BLINK_TIME) {
-                triggerSelection();
+                if (!isProcessingAction) {
+                    eyesClosedStartTime = Date.now() + 5000;
+                    triggerSelection();
+                }
             }
         }
     } else {
@@ -282,8 +293,7 @@ function triggerSelection() {
     const selectedId = gridUI.getCurrentId();
 
     if (!selectedId) {
-        isProcessingAction = false;
-        isTriggering = false;
+        resetTriggerState();
         startScanning();
         return;
     }
@@ -302,9 +312,16 @@ function triggerSelection() {
             kbScanTarget = newTarget;
         }, callbacks).then(() => {
             sleepManager.resetTimer();
-            isProcessingAction = false;
-            isTriggering = false;
-            startScanning();
+            isEyesClosed = false;
+            eyesClosedStartTime = 0;
+            gridUI.updateConfirmBar(0);
+
+            setTimeout(() => {
+                resetTriggerState();
+                if (!sleepManager.isSleeping) {
+                    startScanning();
+                }
+            }, 800);
         });
         return;
     }
@@ -358,10 +375,14 @@ function triggerSelection() {
     }
 
     setTimeout(() => {
-        isProcessingAction = false;
-        isTriggering = false;
+        resetTriggerState();
         if (!document.hidden && !sleepManager.isSleeping) startScanning();
     }, 3000);
+}
+
+function resetTriggerState() {
+    isProcessingAction = false;
+    isTriggering = false;
 }
 
 // ==========================================

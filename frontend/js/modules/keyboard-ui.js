@@ -2,6 +2,8 @@
 
 import { FREQUENCY_GROUPS } from './keyboard-logic.js';
 
+const KB_SCAN_SELECTOR = '#kb-prediction-bar .predict-btn, #kb-grid .kb-card';
+
 function createKbCard(className, id, label, sub) {
     const div = document.createElement('div');
     div.className = className;
@@ -21,17 +23,24 @@ export function renderKeyboardMatrix(kbManager, gridUI) {
 
     kbGrid.innerHTML = '';
 
-    if (predictionBar) predictionBar.innerHTML = '';
+    if (predictionBar && kbManager.currentPredictions?.length) {
+        updatePredictions(kbManager.currentPredictions);
+    }
 
     FREQUENCY_GROUPS.forEach((group) => {
-        const card = createKbCard('kb-card group', group.id, group.label, '');
+        const card = createKbCard('kb-card group', group.id, group.label, 'Group');
         kbGrid.appendChild(card);
     });
 
     const tools = [
         { id: 'kb-space', label: 'SPACE', sub: 'Add Space', type: 'tool' },
-        { id: 'kb-delete', label: 'DEL', sub: 'Backspace', type: 'delete' },
-        { id: 'kb-tools', label: 'TOOLS', sub: 'Speak/Clear', type: 'tool' }
+        {
+            id: 'kb-send',
+            label: '🚀 SEND',
+            sub: 'To Caregiver',
+            type: 'send'
+        },
+        { id: 'kb-delete', label: 'DEL', sub: 'Backspace', type: 'delete' }
     ];
 
     tools.forEach((tool) => {
@@ -45,7 +54,18 @@ export function renderKeyboardMatrix(kbManager, gridUI) {
     });
 
     kbManager.state = 'GROUP';
-    gridUI.refreshCards('#kb-grid');
+    const textLength = kbManager.currentText.length;
+
+    setTimeout(() => {
+        gridUI.refreshCards(KB_SCAN_SELECTOR);
+
+        if (textLength === 0) {
+            gridUI.currentIndex = 2;
+        } else {
+            gridUI.currentIndex = -1;
+        }
+    }, 10);
+
     updateDisplay(kbManager);
 }
 
@@ -77,7 +97,8 @@ export function renderLetters(groupId, kbManager, gridUI) {
     });
 
     kbManager.state = 'LETTER';
-    gridUI.refreshCards('#kb-grid');
+    gridUI.refreshCards('#kb-grid .kb-card');
+    gridUI.currentIndex = -1;
 }
 
 export function updateDisplay(kbManager) {
@@ -88,20 +109,21 @@ export function updateDisplay(kbManager) {
 }
 
 export function updatePredictions(words) {
-    const container = document.getElementById('kb-prediction-bar');
-    if (!container) return;
-    container.innerHTML = '';
+    for (let i = 0; i < 3; i += 1) {
+        const btn = document.getElementById(`pred-${i}`);
+        if (!btn) continue;
 
-    words.forEach((word, index) => {
-        const div = document.createElement('div');
-        div.className = 'kb-card predict-btn';
-        div.id = `pred-${index}`;
-        div.innerHTML = `
-            ${word}
-            <div class="scan-bar"></div><div class="confirm-bar"></div>
-        `;
-        container.appendChild(div);
-    });
+        const wordSpan = btn.querySelector('.word');
+        if (!wordSpan) continue;
+
+        if (words[i]) {
+            wordSpan.innerText = words[i];
+            btn.classList.add('has-word');
+        } else {
+            wordSpan.innerText = '';
+            btn.classList.remove('has-word');
+        }
+    }
 }
 
 export function renderTools(kbManager, gridUI) {
@@ -132,7 +154,7 @@ export function renderTools(kbManager, gridUI) {
     });
 
     kbManager.state = 'TOOLS';
-    gridUI.refreshCards('#kb-grid');
+    gridUI.refreshCards('#kb-grid .kb-card');
 }
 
 export async function handleKeyboardAction(
@@ -142,15 +164,36 @@ export async function handleKeyboardAction(
     setScanTarget,
     callbacks
 ) {
-    if (id === 'kb-tools') {
-        renderTools(kbManager, gridUI);
-        setScanTarget('#kb-grid');
+    if (id === 'kb-send') {
+        const message = kbManager.currentText.trim();
+        if (message.length === 0) {
+            return;
+        }
+
+        kbManager.speak();
+
+        if (window.showFeedback) {
+            window.showFeedback('MESSAGE SENT ✅', 'success');
+        }
+
+        console.log(
+            `📡 API CALL: Sending "${message}" to Caregiver's Phone...`
+        );
+
+        kbManager.clear();
+        updateDisplay(kbManager);
+
+        if (callbacks && callbacks.onExit) {
+            setTimeout(() => {
+                callbacks.onExit();
+            }, 3000);
+        }
         return;
     }
 
     if (id === 'tool-back') {
         renderKeyboardMatrix(kbManager, gridUI);
-        setScanTarget('#kb-grid');
+        setScanTarget(KB_SCAN_SELECTOR);
         return;
     }
 
@@ -168,7 +211,7 @@ export async function handleKeyboardAction(
         kbManager.clear();
         updateDisplay(kbManager);
         renderKeyboardMatrix(kbManager, gridUI);
-        setScanTarget('#kb-grid');
+        setScanTarget(KB_SCAN_SELECTOR);
         return;
     }
 
@@ -206,7 +249,7 @@ export async function handleKeyboardAction(
     }
     if (id === 'kb-back-group') {
         renderKeyboardMatrix(kbManager, gridUI);
-        setScanTarget('#kb-grid');
+        setScanTarget(KB_SCAN_SELECTOR);
         return;
     }
     if (id.startsWith('pred-')) {
@@ -220,13 +263,13 @@ export async function handleKeyboardAction(
 
         updateDisplay(kbManager);
         renderKeyboardMatrix(kbManager, gridUI);
-        setScanTarget('#kb-grid');
+        setScanTarget(KB_SCAN_SELECTOR);
         return;
     }
 
     if (id.startsWith('g')) {
         renderLetters(id, kbManager, gridUI);
-        setScanTarget('#kb-grid');
+        setScanTarget('#kb-grid .kb-card');
         return;
     }
 
@@ -240,15 +283,10 @@ export async function handleKeyboardAction(
 
         if (words.length > 0) {
             updatePredictions(words);
-            setScanTarget('#kb-prediction-bar');
-            gridUI.refreshCards('#kb-prediction-bar');
-
-            setTimeout(() => {
-                console.log('Prediction check timeout...');
-            }, 4000);
-        } else {
-            renderKeyboardMatrix(kbManager, gridUI);
-            setScanTarget('#kb-grid');
         }
+
+        renderKeyboardMatrix(kbManager, gridUI);
+        setScanTarget(KB_SCAN_SELECTOR);
+        return;
     }
 }

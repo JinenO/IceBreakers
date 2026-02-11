@@ -15,10 +15,10 @@
 
 /* --- Top display area --- */
 .kb-top-section {
-    flex: 2;
+    flex: 3;
     display: flex;
     gap: 15px;
-    min-height: 0;
+    min-height: 120px;
 }
 
 .kb-display-box {
@@ -47,11 +47,12 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    justify-content: space-between;
 }
 
 /* --- Keyboard matrix --- */
 .kb-matrix {
-    flex: 8;
+    flex: 7;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(2, 1fr);
@@ -112,6 +113,8 @@
 .predict-btn.active {
     border-color: #ffd700;
     color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    background: rgba(255, 215, 0, 0.1);
 }
 
 /* =========================================
@@ -159,9 +162,41 @@
    5. Special Buttons
    ========================================= */
 .predict-btn {
-    background: #111;
+    flex: 1;
+    background: #1a1a1e;
     border: 1px solid #333;
-    color: #888;
+    color: #ffd700;
+    border-radius: 8px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(14px, 2vh, 20px);
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.predict-btn.has-word {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.kb-card.send {
+    border-left: 4px solid #3d5afe;
+    background: rgba(61, 90, 254, 0.05);
+}
+
+.kb-card.send.active {
+    border-color: #3d5afe;
+    background: rgba(61, 90, 254, 0.2);
+    box-shadow: 0 0 20px rgba(61, 90, 254, 0.4);
+}
+
+.kb-card.send .kb-label {
+    color: #3d5afe;
 }
 
 @keyframes blink {
