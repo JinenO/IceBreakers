@@ -100,6 +100,7 @@ let isScanning = false;
 let eyesClosedStartTime = 0;
 let isEyesClosed = false;
 let currentView = 'main';
+let keyboardMode = 'speak';
 let isProcessingAction = false;
 const KB_SCAN_SELECTOR = '#kb-prediction-bar .predict-btn, #kb-grid .kb-card';
 const MAIN_SCAN_SELECTOR = '#main-grid .card';
@@ -315,10 +316,41 @@ function triggerSelection() {
     if (currentView === 'keyboard') {
         const callbacks = {
             onExit: () => {
+                keyboardMode = 'speak';
+                const sendLabel = document.querySelector('#kb-send .kb-label');
+                if (sendLabel) sendLabel.innerText = 'SEND';
                 backToMain();
                 sleepManager.resetTimer();
             }
         };
+
+        if (selectedId === 'kb-send') {
+            const text = kbManager.currentText;
+            if (text.trim().length > 0) {
+                if (keyboardMode === 'youtube-search') {
+                    mediaManager.youtubePlayer.searchAndRender(text, gridUI);
+
+                    currentView = 'media-library';
+                    setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+                } else {
+                    sosSystem.speak(text);
+
+                    sleepManager.resetTimer();
+                    setTimeout(() => {
+                        resetTriggerState();
+                        if (!sleepManager.isSleeping) {
+                            startScanning();
+                        }
+                    }, 500);
+                }
+            } else {
+                resetTriggerState();
+                if (!sleepManager.isSleeping) {
+                    startScanning();
+                }
+            }
+            return;
+        }
 
         handleKeyboardAction(selectedId, kbManager, gridUI, (newTarget) => {
             kbScanTarget = newTarget;
@@ -364,28 +396,35 @@ function triggerSelection() {
         if (selectedId === 'btn-back') {
             backToMain();
             sleepManager.resetTimer();
-            setTimeout(() => {
-                isProcessingAction = false;
-                isTriggering = false;
-                startScanning();
-            }, 500);
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
             return;
         }
-        
-        const mediaCommands = ['cmd-youtube', 'cmd-local', 'cmd-music', 'cmd-audiobook', 'cmd-photos'];
-        
-        if (mediaCommands.includes(selectedId)) {
-            const appType = selectedId.replace('cmd-', '');
-            
-            mediaManager.open(appType, gridUI, sleepManager);
-            
-            currentView = 'media-library';
-            
-            sleepManager.resetTimer();
+
+        if (selectedId === 'cmd-youtube') {
+            console.log('YouTube Triggered: Switching to Keyboard Search Mode');
+            keyboardMode = 'youtube-search';
+            currentView = 'keyboard';
+
+            document.getElementById('view-container').classList.add('hidden');
+            document.getElementById('keyboard-view').classList.remove('hidden');
+
+            const sendLabel = document.querySelector('#kb-send .kb-label');
+            if (sendLabel) sendLabel.innerText = 'SEARCH';
+
             setTimeout(() => {
                 resetTriggerState();
                 startScanning();
             }, 500);
+            return;
+        }
+
+        const mediaCommands = ['cmd-local', 'cmd-music', 'cmd-audiobook', 'cmd-photos'];
+        if (mediaCommands.includes(selectedId)) {
+            const appType = selectedId.replace('cmd-', '');
+            mediaManager.open(appType, gridUI, sleepManager);
+            currentView = 'media-library';
+
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
             return;
         }
         
@@ -406,6 +445,21 @@ function triggerSelection() {
             mediaManager.exit();
             currentView = 'sub';
             gridUI.refreshCards('#sub-grid .card');
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+            return;
+        } else if (selectedId === 'yt-back-to-search') {
+            keyboardMode = 'youtube-search';
+            currentView = 'keyboard';
+
+            document.getElementById('media-view').classList.add('hidden');
+            document.getElementById('keyboard-view').classList.remove('hidden');
+
+            renderKeyboardMatrix(kbManager, gridUI);
+            kbScanTarget = KB_SCAN_SELECTOR;
+
+            const sendLabel = document.querySelector('#kb-send .kb-label');
+            if (sendLabel) sendLabel.innerText = 'SEARCH';
+
             setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
             return;
         } else if (selectedId.startsWith('vid-')) {

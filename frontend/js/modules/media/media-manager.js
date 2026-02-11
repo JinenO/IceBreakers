@@ -2,12 +2,14 @@
 
 import { VideoPlayer } from './video-player.js';
 import { AudioPlayer } from './audio-player.js';
+import { YoutubePlayer } from './youtube-logic.js';
 
 export class MediaManager {
     constructor() {
         this.currentApp = null;
         this.videoPlayer = new VideoPlayer();
         this.audioPlayer = new AudioPlayer();
+        this.youtubePlayer = new YoutubePlayer();
     }
 
     open(appType, gridUI, sleepManager) {

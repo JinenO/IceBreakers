@@ -35,7 +35,7 @@ export const SUB_MENU_DATA = {
         title: 'MEDIA ENTERTAINMENT', 
         items: [
             { id: 'local', label: 'LOCAL', sub: 'Local Movies', icon: 'tv.png' }, 
-            { id: 'youtube', label: 'YOUTUBE', sub: 'Watch Online', icon: 'youtube.png' },
+            { id: 'youtube', label: 'YOUTUBE', sub: 'Online', icon: 'youtube.png' },
             { id: 'music', label: 'MUSIC', sub: 'Local Playlist', icon: 'music.png' },
             { id: 'audiobook', label: 'BOOK', sub: 'Audiobook', icon: 'book.png' },
             { id: 'photos', label: 'PHOTOS', sub: 'Family Album', icon: 'photos.png' },
