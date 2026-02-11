@@ -23,8 +23,8 @@ export function renderKeyboardMatrix(kbManager, gridUI) {
 
     kbGrid.innerHTML = '';
 
-    if (predictionBar && kbManager.currentPredictions?.length) {
-        updatePredictions(kbManager.currentPredictions);
+    if (predictionBar) {
+        updatePredictions(kbManager.currentPredictions || []);
     }
 
     FREQUENCY_GROUPS.forEach((group) => {
@@ -59,10 +59,10 @@ export function renderKeyboardMatrix(kbManager, gridUI) {
     setTimeout(() => {
         gridUI.refreshCards(KB_SCAN_SELECTOR);
 
-        if (textLength === 0) {
-            gridUI.currentIndex = 2;
+        if (!kbManager.currentPredictions || kbManager.currentPredictions.length === 0) {
+            gridUI.currentIndex = 2; 
         } else {
-            gridUI.currentIndex = -1;
+            gridUI.currentIndex = -1; 
         }
     }, 10);
 
@@ -261,6 +261,7 @@ export async function handleKeyboardAction(
         kbManager.currentText =
             kbManager.currentText.substring(0, lastIndex + 1) + word + ' ';
 
+        kbManager.currentPredictions = [];    
         updateDisplay(kbManager);
         renderKeyboardMatrix(kbManager, gridUI);
         setScanTarget(KB_SCAN_SELECTOR);
