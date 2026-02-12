@@ -13,6 +13,15 @@ export class KeyboardManager {
         this.currentText = '';
         this.currentPredictions = [];
         this.state = 'GROUP';
+        
+        // ✨ 新增：默认模式是 'speak' (说话)
+        // 可选值: 'speak' | 'search'
+        this.mode = 'speak'; 
+    }
+
+    // ✨ 新增：切换模式的方法
+    setMode(mode) {
+        this.mode = mode;
     }
 
     addChar(char) {

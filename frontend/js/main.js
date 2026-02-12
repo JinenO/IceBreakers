@@ -287,6 +287,9 @@ function triggerSelection() {
 
     if (viewManager.currentView === 'main') {
         if (selectedId === 'c-kb') {
+            // ✨ 设置为说话模式
+            kbManager.setMode('speak'); 
+            
             kbScanTarget = viewManager.goKeyboard('speak');
 
             sleepManager.resetTimer();
@@ -319,6 +322,10 @@ function triggerSelection() {
         // 🔴 2. 核心拦截：如果是 YouTube，直接去键盘部门
         if (selectedId === 'cmd-youtube') {
             console.log("🎬 YouTube Triggered: Switching to Keyboard Search Mode");
+            
+            // ✨ 设置为搜索模式
+            kbManager.setMode('search');
+
             kbScanTarget = viewManager.goKeyboard('youtube-search');
 
             // 重新启动键盘扫描
@@ -353,6 +360,9 @@ function triggerSelection() {
         return;
     } else if (viewManager.currentView === 'media-library') {
         if (selectedId === 'yt-back') {
+            // ✨ 保持搜索模式
+            kbManager.setMode('search');
+            
             kbScanTarget = viewManager.goKeyboard('youtube-search');
 
             setTimeout(() => { resetTriggerState(); startScanning(); }, 500);

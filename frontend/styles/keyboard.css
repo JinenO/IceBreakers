@@ -1,4 +1,4 @@
-/* styles/keyboard.css */
+/* frontend/styles/keyboard.css */
 
 /* =========================================
    1. Overall Container
@@ -79,82 +79,6 @@
     box-sizing: border-box;
 }
 
-#kb-grid .kb-card {
-    min-height: 80px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    border-radius: 12px;
-    position: relative;
-    background: #2a2a35;
-    transition: all 0.3s ease;
-    overflow: hidden;
-}
-
-#kb-grid .kb-card.tool,
-#kb-grid .kb-card.delete,
-#kb-grid .kb-card.send {
-    background: #333344;
-}
-
-#kb-grid .kb-card .kb-label {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 4px;
-}
-
-#kb-grid .kb-card .kb-sub {
-    font-size: 0.85rem;
-    opacity: 0.7;
-}
-
-#kb-grid .kb-card.group .kb-text .kb-label,
-#kb-grid .kb-card.group .kb-label {
-    font-size: 1.8rem;
-    font-weight: bold;
-    letter-spacing: 4px;
-    margin: 0;
-}
-
-#kb-grid .kb-card .kb-icon img {
-    width: 48px;
-    height: 48px;
-    object-fit: contain;
-    margin-bottom: 8px;
-    transition: all 0.3s ease;
-}
-
-@media screen and (max-height: 800px), screen and (max-width: 1024px) {
-    #kb-grid .kb-card {
-        flex-direction: row;
-        justify-content: center;
-        text-align: left;
-    }
-
-    #kb-grid .kb-card .kb-icon img {
-        width: 36px;
-        height: 36px;
-        margin-bottom: 0;
-        margin-right: 12px;
-    }
-
-    #kb-grid .kb-card .kb-text .kb-label {
-        font-size: 1.1rem;
-    }
-
-    #kb-grid .kb-card .kb-text .kb-sub {
-        font-size: 0.8rem;
-    }
-
-    #kb-grid .kb-card.group .kb-text .kb-label,
-    #kb-grid .kb-card.group .kb-label {
-        font-size: 1.5rem;
-        letter-spacing: 2px;
-    }
-}
-
 /* =========================================
    2. Card Styles (Minimal)
    ========================================= */
@@ -169,8 +93,10 @@
     position: relative;
     overflow: hidden;
     transition: all 0.2s ease;
+    min-height: 80px;
 }
 
+/* Text Styles */
 .kb-label {
     font-size: clamp(24px, 4vh, 36px);
     font-weight: 600;
@@ -187,46 +113,75 @@
     letter-spacing: 1px;
 }
 
+/* Specific Card Types */
+.kb-card.tool,
+.kb-card.delete,
+.kb-card.send {
+    background: #333344;
+}
+
+.kb-card.group .kb-label {
+    font-size: 1.8rem;
+    font-weight: bold;
+    letter-spacing: 4px;
+}
+
+/* Icons */
+.kb-card .kb-icon img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    margin-bottom: 8px;
+    z-index: 2;
+    opacity: 0.8;
+}
+
 /* =========================================
    3. Active State
    ========================================= */
 .kb-card.active {
-    background: rgba(79, 209, 197, 0.15);
+    background: #2d3142; /* Main 风格背景 */
     border-color: #4fd1c5;
-    box-shadow: 0 0 20px rgba(79, 209, 197, 0.3);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 15px rgba(79, 209, 197, 0.2);
     transform: scale(1.02);
 }
 
 .kb-card.active .kb-label {
-    color: #fff;
+    color: #4fd1c5;
 }
 
 .kb-card.delete.active {
     border-color: #ff1744;
-    background: rgba(45, 20, 20, 1);
+    box-shadow: 0 0 15px rgba(255, 23, 68, 0.3);
+}
+.kb-card.delete.active .kb-label {
+    color: #ff1744;
 }
 
-.predict-btn.active {
-    border-color: #ffd700;
-    color: #ffd700;
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-    background: rgba(255, 215, 0, 0.1);
+.kb-card.send.active {
+    border-color: #3d5afe;
+    box-shadow: 0 0 20px rgba(61, 90, 254, 0.4);
+}
+.kb-card.send.active .kb-label {
+    color: #3d5afe;
 }
 
 /* =========================================
-   4. Bars (Hidden by default)
+   4. Bars (Scan Bar 
    ========================================= */
+
 .kb-card .scan-bar, 
 .predict-btn .scan-bar {
     position: absolute;
     top: 0;
     left: 0;
-    height: 3px;
+    height: 100%;        
     width: 0%;
-    background: #4fd1c5;
-    z-index: 10;
-        opacity: 0; 
+    background: rgba(79, 209, 197, 0.15); 
+    z-index: 1;         
+    opacity: 0; 
     transition: opacity 0.2s;
+    pointer-events: none;
 }
 
 .kb-card.active .scan-bar,
@@ -238,24 +193,11 @@
 
 .kb-card .confirm-bar,
 .predict-btn .confirm-bar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 5px;
-    width: 0%;
-    background: #00e676;
-    z-index: 11;
-    opacity: 0; 
-}
-
-.kb-card.active .confirm-bar,
-.predict-btn.active .confirm-bar {
-    opacity: 1;
-    transition: width 0.1s linear;
+    display: none !important; 
 }
 
 /* =========================================
-   5. Special Buttons
+   5. Special Buttons (Prediction)
    ========================================= */
 .predict-btn {
     flex: 1;
@@ -280,28 +222,37 @@
     pointer-events: auto;
 }
 
-.kb-card.send {
-    border-left: 4px solid #3d5afe;
-    background: rgba(61, 90, 254, 0.05);
+.predict-btn.active {
+    border-color: #ffd700;
+    color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    background: rgba(255, 215, 0, 0.1);
+    transform: scale(1.02);
 }
 
-.kb-card.send.active {
-    border-color: #3d5afe;
-    background: rgba(61, 90, 254, 0.2);
-    box-shadow: 0 0 20px rgba(61, 90, 254, 0.4);
-}
-
-.kb-card.send .kb-label {
-    color: #3d5afe;
-}
-
+/* =========================================
+   6. Animation & Responsive
+   ========================================= */
 @keyframes blink {
-    0%,
-    100% {
-        opacity: 1;
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+@media screen and (max-height: 800px), screen and (max-width: 1024px) {
+    #kb-grid .kb-card {
+        flex-direction: row;
+        justify-content: center;
+        text-align: left;
     }
-    50% {
-        opacity: 0;
+
+    #kb-grid .kb-card .kb-icon img {
+        width: 36px;
+        height: 36px;
+        margin-bottom: 0;
+        margin-right: 12px;
+    }
+
+    #kb-grid .kb-card .kb-label {
+        font-size: 1.5rem;
     }
 }
-      
