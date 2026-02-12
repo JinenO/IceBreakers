@@ -4,13 +4,22 @@
    1. Overall Container
    ========================================= */
 #keyboard-view {
-    display: flex;
-    flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
+    background-color: #1a202c;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
     padding: 15px 20px 20px 20px;
     box-sizing: border-box;
     gap: 15px;
+}
+
+#keyboard-view.hidden {
+    display: none !important;
 }
 
 /* --- Top display area --- */
