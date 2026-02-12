@@ -54,7 +54,10 @@
 }
 
 .hidden {
-  display: none !important;
+  display: none !important;     /* 🔴 强制隐藏，谁也拦不住！ */
+  opacity: 0 !important;         /* 双重保险 */
+  visibility: hidden !important; /* 三重保险 */
+  pointer-events: none !important; /* 禁用交互 */
 }
 
 .sub-header {

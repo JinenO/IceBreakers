@@ -36,14 +36,22 @@ export function renderKeyboardMatrix(kbManager, gridUI) {
         kbGrid.appendChild(card);
     });
 
-    const tools = [
-       { id: 'kb-delete', label: 'DEL', sub: 'Backspace', type: 'delete', icon: 'delete.png' },
-        { id: 'kb-tools', label: 'TOOLS', sub: 'More', type: 'tool', icon: 'tools.png' },
+    const sendCard = createKbCard(
+        'kb-card send',
+        'kb-send',
+        'SEND',
+        'To Caregiver',
+        'send.png'
+    );
+    kbGrid.appendChild(sendCard);
+
+    const bottomTools = [
+        { id: 'kb-delete', label: 'DEL', sub: 'Backspace', type: 'delete', icon: 'delete.png' },
         { id: 'kb-space', label: 'SPACE', sub: 'Add Space', type: 'tool', icon: 'space.png' },
-        { id: 'kb-send', label: 'SEND', sub: 'To Caregiver', type: 'send', icon: 'send.png' }
+        { id: 'kb-tools', label: 'TOOLS', sub: 'More', type: 'tool', icon: 'tools.png' }
     ];
 
-    tools.forEach((tool) => {
+    bottomTools.forEach((tool) => {
         const card = createKbCard(
             `kb-card ${tool.type}`,
             tool.id,

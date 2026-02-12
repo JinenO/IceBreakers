@@ -383,7 +383,49 @@ function triggerSelection() {
         return;
     } else if (viewManager.currentView === 'video-panel') {
         const actionResult = mediaManager.videoPlayer.handleCommand(selectedId, gridUI, () => {
-            viewManager.currentView = 'media-library';
+            console.log("🔙 Exiting Video... Force Hiding Everything!");
+
+            // 1. 切换逻辑状态
+            viewManager.currentView = 'media-library'; 
+            
+            // 2. 获取所有"嫌疑人"元素
+            const playerContainer = document.getElementById('video-player-container');
+            const iframeEl = document.getElementById('youtube-iframe');
+            const controlOverlay = document.getElementById('video-control-overlay');
+            const mediaView = document.getElementById('media-view');
+            const libraryGrid = document.getElementById('video-library-grid');
+
+            // 3. ☢️ 核武器攻击：直接修改 style.display，无视 CSS Class
+            // 强制隐藏播放器
+            if (playerContainer) {
+                playerContainer.style.display = 'none'; // 强制消失
+                playerContainer.classList.add('hidden'); // 双重保险
+            }
+            if (iframeEl) {
+                iframeEl.style.display = 'none'; // 强制消失
+                iframeEl.src = ''; // 停止加载
+            }
+            if (controlOverlay) {
+                controlOverlay.style.display = 'none'; 
+                controlOverlay.classList.add('hidden');
+            }
+
+            // 4. 强制显示选片列表
+            if (mediaView) {
+                mediaView.style.display = 'block'; // 确保父容器显示
+                mediaView.classList.remove('hidden');
+            }
+            
+            // 5. 确保 Grid 也是显示的 (有些布局可能会把它隐藏)
+            if (libraryGrid) {
+                libraryGrid.style.display = 'grid'; // 确保网格布局恢复
+                libraryGrid.classList.remove('hidden');
+            }
+
+            // 6. 重新让扫描器工作
+            console.log("🔄 Refreshing cards for Media Library...");
+            gridUI.refreshCards('#video-library-grid .card');
+
             setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
         });
 

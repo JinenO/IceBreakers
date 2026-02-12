@@ -83,8 +83,12 @@ export class VideoPlayer {
     const iframeEl = document.getElementById("youtube-iframe");
     const container = document.getElementById("video-player-container");
 
+    if (container) {
+      container.style.display = 'block'; 
+      container.classList.remove("hidden");
+    }
+
     document.getElementById("video-library-grid").classList.add("hidden");
-    container.classList.remove("hidden");
     document.getElementById("video-control-overlay").classList.add("hidden");
 
     if (videoId.startsWith("yt-")) {
@@ -92,11 +96,13 @@ export class VideoPlayer {
 
       if (videoEl) {
         videoEl.classList.add("hidden");
+        videoEl.style.display = 'none';
         videoEl.pause();
         videoEl.src = "";
       }
 
       if (iframeEl) {
+        iframeEl.style.display = 'block';
         iframeEl.classList.remove("hidden");
         iframeEl.src = `https://www.youtube.com/embed/${realId}?autoplay=1&controls=0&rel=0&enablejsapi=1`;
       }
@@ -107,6 +113,7 @@ export class VideoPlayer {
 
     if (iframeEl) {
       iframeEl.classList.add("hidden");
+      iframeEl.style.display = 'none';
       iframeEl.src = "";
     }
 
@@ -115,6 +122,7 @@ export class VideoPlayer {
     const videoData = LOCAL_VIDEOS.find((v) => v.id === videoId);
     if (!videoData) return;
 
+    videoEl.style.display = 'block';
     videoEl.classList.remove("hidden");
     videoEl.src = videoData.src;
     videoEl.play();
