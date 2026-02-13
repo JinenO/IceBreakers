@@ -42,6 +42,7 @@ let isScanning = false;
 let eyesClosedStartTime = 0;
 let isEyesClosed = false;
 let isProcessingAction = false;
+let wasSOSActive = false;
 const KB_SCAN_SELECTOR = '#kb-prediction-bar .predict-btn, #kb-grid .kb-card';
 const MAIN_SCAN_SELECTOR = '#main-grid .card';
 const SUB_SCAN_SELECTOR = '#sub-grid .card';
@@ -257,8 +258,19 @@ function handleEyeFrame(data) {
 
     sosSystem.update(isNowClosed);
 
-    if (sosSystem.state === 'ARMING') {
+    if (sosSystem.state !== 'IDLE') {
+        wasSOSActive = true;
+        if (isScanning) {
+            stopScanning();
+        }
         return;
+    }
+
+    if (wasSOSActive) {
+        console.log('SOS Ended/Cancelled. Resuming System...');
+        wasSOSActive = false;
+        resetTriggerState();
+        startScanning();
     }
 
     if (sleepManager.isSleeping) {
