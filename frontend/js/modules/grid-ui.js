@@ -72,6 +72,28 @@ export class GridUI {
         }
     }
 
+    // 添加这个辅助方法，给 Developer Mode 用
+    highlightCard(index) {
+        // 移除旧的高亮
+        if (this.cards[this.currentIndex]) {
+            this.cards[this.currentIndex].classList.remove('active');
+            const oldBar = this.cards[this.currentIndex].querySelector('.scan-bar');
+            if (oldBar) oldBar.style.width = '0%';
+        }
+
+        // 更新索引
+        this.currentIndex = index;
+
+        // 添加新的高亮
+        const newCard = this.cards[this.currentIndex];
+        if (newCard) {
+            newCard.classList.add('active');
+            // 如果你想在点击时也看到进度条瞬间满，可以加这个：
+            // const newBar = newCard.querySelector('.scan-bar');
+            // if (newBar) newBar.style.width = '100%';
+        }
+    }
+
     getCurrentId() {
         return this.cards[this.currentIndex]?.id || null;
     }

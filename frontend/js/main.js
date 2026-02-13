@@ -6,74 +6,14 @@ import { SOSSystem } from './modules/sos.js';
 import { SleepManager } from './modules/sleep-manager.js';
 import { KeyboardManager } from './modules/keyboard-logic.js';
 import { renderKeyboardMatrix, handleKeyboardAction } from './modules/keyboard-ui.js';
-import { SUB_MENU_DATA, MAIN_MENU_DATA } from './data.js';
+import { SUB_MENU_DATA } from './data.js';
 import { MediaManager } from './modules/media/media-manager.js';
-
-function showFeedback(message, type = 'success') {
-    const overlay = document.getElementById('feedback-overlay');
-    const text = document.getElementById('fb-text');
-
-    if (!overlay || !text) return;
-
-    text.innerText = message;
-
-    overlay.className = 'feedback-overlay';
-    overlay.classList.add(type);
-    overlay.classList.remove('hidden');
-
-    setTimeout(() => {
-        overlay.classList.add('hidden');
-    }, 3000);
-}
-
-function createCard(id, label, sub, icon) {
-    const card = document.createElement('article');
-    card.className = 'card';
-    card.id = id;
-    card.innerHTML = `
-        <div class="scan-bar"></div>
-        <div class="icon"><img src="assets/icons/${icon}" alt=""></div>
-        <div class="label">${label}</div>
-        <div class="sub-label">${sub}</div>
-        <div class="confirm-bar"></div>
-    `;
-    return card;
-}
+import { ViewManager } from './modules/view-manager.js';
+import { renderMainGrid, showFeedback } from './modules/ui-utils.js';
 
 // ==========================================
 // 0. Render main menu
 // ==========================================
-function renderMainGrid() {
-    const mainGrid = document.getElementById('main-grid');
-    mainGrid.innerHTML = '';
-
-    MAIN_MENU_DATA.forEach((item) => {
-        const card = document.createElement('article');
-        card.className = 'card';
-        card.id = item.id;
-        card.innerHTML = `
-            <div class="scan-bar"></div>
-            <div class="icon"><img src="assets/icons/${item.icon}" alt=""></div>
-            <div class="label">${item.label}</div>
-            <div class="sub-label">${item.sub}</div>
-            <div class="confirm-bar"></div>
-        `;
-        mainGrid.appendChild(card);
-    });
-
-    const cameraPanel = document.createElement('div');
-    cameraPanel.className = 'monitor-panel';
-    cameraPanel.id = 'camera-monitor';
-    cameraPanel.innerHTML = `
-        <div class="monitor-screen">
-            <div class="face-mesh-overlay"></div>
-            <div class="monitor-text">SYSTEM ONLINE</div>
-        </div>
-        <div class="monitor-label">EYE TRACKER</div>
-    `;
-    mainGrid.appendChild(cameraPanel);
-}
-
 renderMainGrid();
 
 // Module instances
@@ -82,7 +22,7 @@ const eyeEngine = new EyeEngine();
 const sosSystem = new SOSSystem();
 const kbManager = new KeyboardManager();
 const mediaManager = new MediaManager();
-const statusText = document.getElementById('status-text');
+const viewManager = new ViewManager(gridUI, kbManager, renderKeyboardMatrix);
 
 const sleepManager = new SleepManager(
     () => stopScanning(),
@@ -99,8 +39,6 @@ let scanTimer = null;
 let isScanning = false;
 let eyesClosedStartTime = 0;
 let isEyesClosed = false;
-let currentView = 'main';
-let keyboardMode = 'speak';
 let isProcessingAction = false;
 const KB_SCAN_SELECTOR = '#kb-prediction-bar .predict-btn, #kb-grid .kb-card';
 const MAIN_SCAN_SELECTOR = '#main-grid .card';
@@ -124,21 +62,21 @@ function runScanStep() {
     }
 
     let selector;
-    if (currentView === 'keyboard') {
+    if (viewManager.currentView === 'keyboard') {
         selector = kbScanTarget;
-    } else if (currentView === 'main') {
+    } else if (viewManager.currentView === 'main') {
         selector = MAIN_SCAN_SELECTOR;
-    } else if (currentView === 'sub') {
+    } else if (viewManager.currentView === 'sub') {
         selector = SUB_SCAN_SELECTOR;
-    } else if (currentView === 'media-library') {
+    } else if (viewManager.currentView === 'media-library') {
         selector = '#video-library-grid .card'; 
-    } else if (currentView === 'video-panel') {
+    } else if (viewManager.currentView === 'video-panel') {
         selector = '#video-control-grid .card'; 
-    } else if (currentView === 'audio-playing') {
+    } else if (viewManager.currentView === 'audio-playing') {
         selector = '#audio-control-grid .card'; 
     }
 
-    if (currentView === 'video-playing') return; 
+    if (viewManager.currentView === 'video-playing') return; 
 
     gridUI.refreshCards(selector, true);
 
@@ -163,15 +101,8 @@ function openSubMenu(menuId) {
         return;
     }
 
-    document.getElementById('keyboard-view').classList.add('hidden');
-
     const subGrid = document.getElementById('sub-grid');
     subGrid.innerHTML = '';
-
-    if (statusText) {
-        statusText.innerText = menuData.title;
-        statusText.style.color = '#4fd1c5';
-    }
 
     menuData.items.forEach((item) => {
         const card = document.createElement('article');
@@ -188,10 +119,7 @@ function openSubMenu(menuId) {
         subGrid.appendChild(card);
     });
 
-    document.getElementById('main-grid').classList.add('hidden');
-    document.getElementById('view-container').classList.remove('hidden');
-
-    currentView = 'sub';
+    viewManager.goSubMenu(menuData.title);
     gridUI.refreshCards(SUB_SCAN_SELECTOR);
 
     stopScanning();
@@ -199,15 +127,7 @@ function openSubMenu(menuId) {
 }
 
 function openKeyboard() {
-    currentView = 'keyboard';
-    kbManager.state = 'GROUP';
-    kbScanTarget = KB_SCAN_SELECTOR;
-
-    renderKeyboardMatrix(kbManager, gridUI);
-
-    document.getElementById('main-grid').classList.add('hidden');
-    document.getElementById('view-container').classList.add('hidden');
-    document.getElementById('keyboard-view').classList.remove('hidden');
+    kbScanTarget = viewManager.goKeyboard('speak');
 
     stopScanning();
     setTimeout(() => {
@@ -219,16 +139,7 @@ function openKeyboard() {
 }
 
 function backToMain() {
-    document.getElementById('view-container').classList.add('hidden');
-    document.getElementById('main-grid').classList.remove('hidden');
-    document.getElementById('keyboard-view').classList.add('hidden');
-
-    if (statusText) {
-        statusText.innerText = 'SYSTEM READY';
-        statusText.style.color = '';
-    }
-
-    currentView = 'main';
+    viewManager.goMain();
     gridUI.refreshCards(MAIN_SCAN_SELECTOR);
 
     stopScanning();
@@ -292,7 +203,7 @@ function handleEyeFrame(data) {
 }
 
 // ==========================================
-// 3. Trigger selection
+// 3. Trigger selection (Fixed for Video Mode)
 // ==========================================
 let isTriggering = false;
 
@@ -301,24 +212,48 @@ function triggerSelection() {
 
     isProcessingAction = true;
     isTriggering = true;
-    stopScanning();
+    stopScanning(); // Ensure scanning stops while processing
 
+    // 🚨 FIX: 特权通道
+    // 如果正在全屏播放视频，不需要检查 selectedId，直接唤出控制面板
+    if (viewManager.currentView === 'video-playing') {
+        console.log("📺 Video Playing Mode: Waking up controls...");
+        mediaManager.videoPlayer.showControlPanel(gridUI);
+        viewManager.currentView = 'video-panel';
+        
+        // 唤出面板后，重新开始扫描面板上的按钮
+        setTimeout(() => { 
+            resetTriggerState(); 
+            startScanning(); 
+        }, 500);
+        return;
+    }
+
+    // --- 普通模式检查 ---
     const selectedId = gridUI.getCurrentId();
 
+    // 如果不是看视频模式，且没有选中任何东西，则视为无效触发
     if (!selectedId) {
         resetTriggerState();
-        startScanning();
+        startScanning(); // Resume scanning
         return;
     }
 
     SoundUtils.playBeep(880, 'sine', 0.1);
 
-    if (currentView === 'keyboard') {
+    // --- Keyboard View ---
+    if (viewManager.currentView === 'keyboard') {
         const callbacks = {
             onExit: () => {
-                keyboardMode = 'speak';
-                const sendLabel = document.querySelector('#kb-send .kb-label');
-                if (sendLabel) sendLabel.innerText = 'SEND';
+                // 如果是从 YouTube 搜索进来的，退出时应该回到 YouTube 搜索模式
+                if (viewManager.keyboardMode === 'youtube-search') {
+                     // 保持搜索模式
+                } else {
+                     viewManager.keyboardMode = 'speak';
+                     const sendLabel = document.querySelector('#kb-send .kb-label');
+                     if (sendLabel) sendLabel.innerText = 'SEND';
+                }
+                
                 backToMain();
                 sleepManager.resetTimer();
             }
@@ -327,13 +262,17 @@ function triggerSelection() {
         if (selectedId === 'kb-send') {
             const text = kbManager.currentText;
             if (text.trim().length > 0) {
-                if (keyboardMode === 'youtube-search') {
+                if (viewManager.keyboardMode === 'youtube-search') {
+                    console.log('🔍 Searching YouTube for:', text);
                     mediaManager.youtubePlayer.searchAndRender(text, gridUI);
 
-                    currentView = 'media-library';
+                    viewManager.currentView = 'media-library';
                     setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
                 } else {
+                    console.log('🗣 Speaking:', text);
                     sosSystem.speak(text);
+                    kbManager.clear();
+                    renderKeyboardMatrix(kbManager, gridUI);
 
                     sleepManager.resetTimer();
                     setTimeout(() => {
@@ -358,25 +297,28 @@ function triggerSelection() {
             sleepManager.resetTimer();
             isEyesClosed = false;
             eyesClosedStartTime = 0;
-            gridUI.updateConfirmBar(0);
+            gridUI.updateConfirmBar(0); // Clear progress
 
             setTimeout(() => {
                 resetTriggerState();
                 if (!sleepManager.isSleeping) {
                     startScanning();
                 }
-            }, 800);
+            }, 800); // Wait a bit before next scan
         });
         return;
     }
 
-    if (currentView === 'main') {
+    // --- Main Menu ---
+    if (viewManager.currentView === 'main') {
         if (selectedId === 'c-kb') {
-            openKeyboard();
+            // 设置为说话模式
+            kbManager.setMode('speak');
+            kbScanTarget = viewManager.goKeyboard('speak');
+
             sleepManager.resetTimer();
             setTimeout(() => {
-                isProcessingAction = false;
-                isTriggering = false;
+                resetTriggerState();
                 startScanning();
             }, 500);
             return;
@@ -386,13 +328,15 @@ function triggerSelection() {
             openSubMenu(selectedId);
             sleepManager.resetTimer();
             setTimeout(() => {
-                isProcessingAction = false;
-                isTriggering = false;
+                resetTriggerState();
                 startScanning();
             }, 500);
             return;
         }
-    } else if (currentView === 'sub') {
+    } 
+    
+    // --- Sub Menu ---
+    else if (viewManager.currentView === 'sub') {
         if (selectedId === 'btn-back') {
             backToMain();
             sleepManager.resetTimer();
@@ -401,15 +345,10 @@ function triggerSelection() {
         }
 
         if (selectedId === 'cmd-youtube') {
-            console.log('YouTube Triggered: Switching to Keyboard Search Mode');
-            keyboardMode = 'youtube-search';
-            currentView = 'keyboard';
-
-            document.getElementById('view-container').classList.add('hidden');
-            document.getElementById('keyboard-view').classList.remove('hidden');
-
-            const sendLabel = document.querySelector('#kb-send .kb-label');
-            if (sendLabel) sendLabel.innerText = 'SEARCH';
+            console.log("🎬 YouTube Triggered: Switching to Keyboard Search Mode");
+            // 设置为搜索模式
+            kbManager.setMode('search');
+            kbScanTarget = viewManager.goKeyboard('youtube-search');
 
             setTimeout(() => {
                 resetTriggerState();
@@ -422,71 +361,99 @@ function triggerSelection() {
         if (mediaCommands.includes(selectedId)) {
             const appType = selectedId.replace('cmd-', '');
             mediaManager.open(appType, gridUI, sleepManager);
-            currentView = 'media-library';
+            viewManager.currentView = 'media-library';
 
             setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
             return;
         }
         
+        // Placeholder for other commands
         console.log(`🚀 COMMAND SENT: ${selectedId}`);
         const msg = `${selectedId.toUpperCase()} SENT ✅`;
         showFeedback(msg, 'success');
 
         setTimeout(() => {
             sleepManager.resetTimer();
-            isProcessingAction = false;
-            isTriggering = false;
-            isEyesClosed = false;
+            resetTriggerState();
             if (!sleepManager.isSleeping) startScanning();
         }, 3000);
         return;
-    } else if (currentView === 'media-library') {
-        if (selectedId === 'media-lib-back') {
+    } 
+    
+    // --- Media Library ---
+    else if (viewManager.currentView === 'media-library') {
+        if (selectedId === 'yt-back') {
+            kbManager.setMode('search');
+            kbScanTarget = viewManager.goKeyboard('youtube-search');
+
+            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
+            return;
+        } else if (selectedId === 'media-lib-back') {
             mediaManager.exit();
-            currentView = 'sub';
+            viewManager.currentView = 'sub';
             gridUI.refreshCards('#sub-grid .card');
             setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
             return;
-        } else if (selectedId === 'yt-back-to-search') {
-            keyboardMode = 'youtube-search';
-            currentView = 'keyboard';
-
-            document.getElementById('media-view').classList.add('hidden');
-            document.getElementById('keyboard-view').classList.remove('hidden');
-
-            renderKeyboardMatrix(kbManager, gridUI);
-            kbScanTarget = KB_SCAN_SELECTOR;
-
-            const sendLabel = document.querySelector('#kb-send .kb-label');
-            if (sendLabel) sendLabel.innerText = 'SEARCH';
-
-            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
-            return;
-        } else if (selectedId.startsWith('vid-')) {
+        } else if (selectedId.startsWith('vid-') || selectedId.startsWith('yt-')) {
+            console.log('🎥 Video Selected:', selectedId);
             mediaManager.videoPlayer.playVideo(selectedId);
-            currentView = 'video-playing';
-            stopScanning();
+            viewManager.currentView = 'video-playing';
+            stopScanning(); // 停止扫描，让用户看视频
             setTimeout(() => { resetTriggerState(); }, 500);
             return;
         } else if (selectedId.startsWith('aud-')) {
             mediaManager.audioPlayer.openPlayer(selectedId, gridUI);
-            currentView = 'audio-playing';
+            viewManager.currentView = 'audio-playing';
             setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
             return;
         }
-    } else if (currentView === 'video-playing') {
-        mediaManager.videoPlayer.showControlPanel(gridUI);
-        currentView = 'video-panel';
-        setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
-        return;
-    } else if (currentView === 'video-panel') {
+    } 
+    
+    // --- Video Control Panel ---
+    else if (viewManager.currentView === 'video-panel') {
         const actionResult = mediaManager.videoPlayer.handleCommand(selectedId, gridUI, () => {
-            currentView = 'media-library';
+            console.log("🔙 Exiting Video... Force Hiding Everything!");
+
+            // Exit logic
+            viewManager.currentView = 'media-library'; 
+            
+            const playerContainer = document.getElementById('video-player-container');
+            const iframeEl = document.getElementById('youtube-iframe');
+            const controlOverlay = document.getElementById('video-control-overlay');
+            const mediaView = document.getElementById('media-view');
+            const libraryGrid = document.getElementById('video-library-grid');
+
+            if (playerContainer) {
+                playerContainer.style.display = 'none'; 
+                playerContainer.classList.add('hidden'); 
+            }
+            if (iframeEl) {
+                iframeEl.style.display = 'none'; 
+                iframeEl.src = ''; 
+            }
+            if (controlOverlay) {
+                controlOverlay.style.display = 'none'; 
+                controlOverlay.classList.add('hidden');
+            }
+
+            if (mediaView) {
+                mediaView.style.display = 'block'; 
+                mediaView.classList.remove('hidden');
+            }
+            
+            if (libraryGrid) {
+                libraryGrid.style.display = 'grid'; 
+                libraryGrid.classList.remove('hidden');
+            }
+
+            console.log("🔄 Refreshing cards for Media Library...");
+            gridUI.refreshCards('#video-library-grid .card');
+
             setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
         });
 
         if (actionResult === 'RESUMED') {
-            currentView = 'video-playing';
+            viewManager.currentView = 'video-playing';
             stopScanning();
             setTimeout(() => { resetTriggerState(); }, 500);
             return;
@@ -494,9 +461,12 @@ function triggerSelection() {
             setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
             return;
         }
-    } else if (currentView === 'audio-playing') {
+    } 
+    
+    // --- Audio Player ---
+    else if (viewManager.currentView === 'audio-playing') {
         const actionResult = mediaManager.audioPlayer.handleCommand(selectedId, gridUI, () => {
-            currentView = 'media-library';
+            viewManager.currentView = 'media-library';
             setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
         });
 
@@ -506,6 +476,7 @@ function triggerSelection() {
         return;
     }
 
+    // Default fallback
     setTimeout(() => {
         resetTriggerState();
         if (!document.hidden && !sleepManager.isSleeping) startScanning();
@@ -518,23 +489,78 @@ function resetTriggerState() {
 }
 
 // ==========================================
-// 4. Entry point
+// 4. Entry point (Modified for ALS Context)
 // ==========================================
-document.addEventListener('DOMContentLoaded', async () => {
-    document.body.addEventListener(
-        'click',
-        () => {
-            SoundUtils.unlock();
-            SoundUtils.playBeep(600, 'sine', 0.05);
-        },
-        { once: true }
-    );
+document.addEventListener('DOMContentLoaded', () => {
+    const startOverlay = document.getElementById('start-overlay');
 
-    try {
-        await eyeEngine.init(handleEyeFrame);
-        startScanning();
-    } catch (err) {
-        console.error('Init failed:', err);
-        alert(`Camera Error: ${err.message}`);
-    }
+    const initSystem = async () => {
+        // 1. 播放一个极短的静音，骗过浏览器，解锁 AudioContext
+        SoundUtils.unlock();
+        SoundUtils.playBeep(440, 'sine', 0.1);
+
+        // 2. 隐藏启动屏
+        startOverlay.style.opacity = '0';
+        startOverlay.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => {
+            startOverlay.classList.add('hidden');
+        }, 500);
+
+        // 3. 只有点击后，才启动摄像头和眼动追踪
+        try {
+            console.log('🚀 System Initialized by User Interaction');
+            await eyeEngine.init(handleEyeFrame);
+            startScanning();
+        } catch (err) {
+            console.error('Init failed:', err);
+            alert(`Camera Error: ${err.message}`);
+        }
+    };
+
+    // 监听点击
+    startOverlay.addEventListener('click', initSystem, { once: true });
+});
+
+// ==========================================
+// 5. Developer Mode (Mouse Click Support)
+// ==========================================
+
+function initDevMode() {
+    // 只有在网址里有 ?dev=1 时才开启，比如: http://localhost:3000/?dev=1
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has('dev')) return;
+
+    console.warn("🛠️ DEVELOPER MODE ACTIVE: Mouse Click Trigger Enabled");
+    
+    document.body.style.cursor = "auto";
+    document.addEventListener('click', (e) => {
+        const target = e.target.closest('.card, .kb-card, .predict-btn');
+        if (!target) return;
+
+        console.log(`🖱️ Dev Clicked: ${target.id}`);
+
+        const index = gridUI.cards.findIndex(card => card.id === target.id);
+
+        if (index !== -1) {
+            stopScanning();
+
+            gridUI.currentIndex = index;
+            
+            gridUI.highlightCard(index);
+
+            setTimeout(() => {
+                triggerSelection();
+            }, 10);
+        } else {
+            console.warn("⚠️ Clicked element is not in the current scanning list.");
+        }
+    }, true); 
+}
+
+// 别忘了在启动时调用它！
+document.addEventListener('DOMContentLoaded', () => {
+    // ... (你原本的 initSystem 逻辑) ...
+    
+    // ✨ 在最后加上这句
+    initDevMode();
 });

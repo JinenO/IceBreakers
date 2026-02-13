@@ -8,20 +8,23 @@ export class YoutubePlayer {
     async searchAndRender(query, gridUI) {
         const libraryGrid = document.getElementById('video-library-grid');
 
+        if (!libraryGrid) return;
+
         document.getElementById('keyboard-view').classList.add('hidden');
         document.getElementById('media-view').classList.remove('hidden');
         document.getElementById('audio-player-container').classList.add('hidden');
         document.getElementById('video-player-container').classList.add('hidden');
 
         libraryGrid.classList.remove('hidden');
-        libraryGrid.innerHTML = `<h3 style="color: #4fd1c5; grid-column: 1 / -1; text-align: center;">Searching YouTube for "${query}"...</h3>`;
+        libraryGrid.innerHTML = `<h3 style="color: #4fd1c5; grid-column: 1 / -1; text-align: center;">🔍 Searching for "${query}"...</h3>`;
 
-        this.currentResults = await searchYouTube(query);
+        const results = await searchYouTube(query);
+        this.currentResults = results.slice(0, 5);
 
         libraryGrid.innerHTML = '';
 
         if (this.currentResults.length === 0) {
-            libraryGrid.innerHTML = '<h3 style="color: #f56565; grid-column: 1 / -1; text-align: center;">No results found or API error.</h3>';
+            libraryGrid.innerHTML = '<h3 style="color: #f56565; grid-column: 1 / -1; text-align: center;">No results found.</h3>';
         } else {
             this.currentResults.forEach((video) => {
                 const card = document.createElement('article');
@@ -42,7 +45,7 @@ export class YoutubePlayer {
 
         const backCard = document.createElement('article');
         backCard.className = 'card delete';
-        backCard.id = 'yt-back-to-search';
+        backCard.id = 'yt-back';
         backCard.innerHTML = `
             <div class="scan-bar"></div>
             <div class="icon"><img src="assets/icons/exit.png" style="width: 50px; height: 50px; object-fit: contain;"></div>

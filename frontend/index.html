@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="IRIS FLOW - Eye-tracking communication system for ALS patients" />
     <meta name="theme-color" content="#1a1d2e" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.googleapis.com https://*.gstatic.com https://*.youtube.com https://*.ytimg.com https://cdn.jsdelivr.net https://storage.googleapis.com;">
     <title>IRIS FLOW - Eye Command System</title>
     <link rel="stylesheet" href="styles/main.css" />
     <link rel="stylesheet" href="styles/grid.css" />
@@ -16,6 +17,15 @@
   </head>
 
   <body>
+    <div id="start-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; cursor: pointer;">
+      <h1 style="font-size: 3rem; color: #4fd1c5; margin-bottom: 20px;">EYE TRACKER SYSTEM</h1>
+      <div style="border: 2px solid #4fd1c5; padding: 20px 60px; border-radius: 50px; font-size: 1.5rem; background: rgba(79, 209, 197, 0.2);">
+        CLICK TO INITIALIZE
+        <br>
+        <span style="font-size: 0.8rem; color: #aaa;">(Caregiver: Please click once to unlock audio)</span>
+      </div>
+    </div>
+
     <header id="status-bar" role="banner" aria-label="System Status">
       <div class="status-left">
         <div class="blink-indicator" id="eye-icon" role="status" aria-live="polite" aria-label="Eye tracking active"></div>
@@ -41,31 +51,33 @@
             
         <div id="video-library-grid" class="hidden"></div>
             
-        <div id="video-player-container" class="hidden">
-          <video id="main-video" style="width: 100%; height: 100%; object-fit: contain;" src="" loop></video>
-
-          <div id="video-toast" class="hidden" style="position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: #4fd1c5; padding: 15px 25px; border-radius: 8px; font-size: 1.8rem; z-index: 70; transition: opacity 0.3s ease;"></div>
-
-          <div id="video-control-overlay" class="hidden">
-            <div id="video-control-grid"></div>
-          </div>
-        </div>
-
-        <div id="audio-player-container" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1a202c; border-radius: 12px; z-index: 40; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-            
-            <div style="text-align: center; margin-bottom: 40px;">
-                <img id="audio-cover" src="" alt="Cover" style="width: 220px; height: 220px; border-radius: 20px; object-fit: cover; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
-                <h2 id="audio-title" style="color: #4fd1c5; font-size: 2.5rem; margin: 20px 0 10px 0; letter-spacing: 2px;">Song/Book Title</h2>
-                <p id="audio-sub" style="color: #a0aec0; font-size: 1.5rem; margin: 0;">Artist or Chapter</p>
-            </div>
-
-            <div id="audio-control-grid" style="display: flex; gap: 20px; justify-content: center; width: 90%; max-width: 900px; height: 160px;">
-                </div>
-
-            <audio id="main-audio" src=""></audio>
-        </div>
-            
       </div>
+      </div>
+
+      <div id="video-player-container" class="hidden">
+        <video id="main-video" style="width: 100%; height: 100%; object-fit: contain;" src="" loop></video>
+
+        <iframe id="youtube-iframe" class="hidden" style="width: 100%; height: 100%; border: none;" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+        <div id="video-toast" class="hidden" style="position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: #4fd1c5; padding: 15px 25px; border-radius: 8px; font-size: 1.8rem; z-index: 70; transition: opacity 0.3s ease;"></div>
+
+        <div id="video-control-overlay" class="hidden">
+          <div id="video-control-grid"></div>
+        </div>
+      </div>
+
+      <div id="audio-player-container" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1a202c; border-radius: 12px; z-index: 40; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+          
+          <div style="text-align: center; margin-bottom: 40px;">
+              <img id="audio-cover" src="" alt="Cover" style="width: 220px; height: 220px; border-radius: 20px; object-fit: cover; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+              <h2 id="audio-title" style="color: #4fd1c5; font-size: 2.5rem; margin: 20px 0 10px 0; letter-spacing: 2px;">Song/Book Title</h2>
+              <p id="audio-sub" style="color: #a0aec0; font-size: 1.5rem; margin: 0;">Artist or Chapter</p>
+          </div>
+
+          <div id="audio-control-grid" style="display: flex; gap: 20px; justify-content: center; width: 90%; max-width: 900px; height: 160px;">
+              </div>
+
+          <audio id="main-audio" src=""></audio>
       </div>
 
       <section id="keyboard-view" class="hidden">
