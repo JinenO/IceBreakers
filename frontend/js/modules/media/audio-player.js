@@ -1,20 +1,27 @@
 /* frontend/js/modules/media/audio-player.js */
 
-// 🎵 音乐数据 (为了测试，先用在线的，之后你可以换成本地文件)
+// 🎵 音乐数据 (本地音乐)
 const MUSIC_LIST = [
-    { 
-        id: 'aud-m1', 
-        title: 'Relaxing Vibes', 
-        sub: 'Chill Lo-Fi', 
-        cover: 'music.png', 
-        src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' 
+    {
+        id: 'aud-m1',
+        title: 'Ahead of Us',
+        sub: '',
+        cover: 'assets/icons/music.png',
+        src: 'assets/music/Ahead of Us.mp3'
     },
-    { 
-        id: 'aud-m2', 
-        title: 'Upbeat Pop', 
-        sub: 'Happy Mood', 
-        cover: 'music.png', 
-        src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3' 
+    {
+        id: 'aud-m2',
+        title: 'Yan',
+        sub: '',
+        cover: 'assets/icons/music.png',
+        src: 'assets/music/Yan.mp3'
+    },
+    {
+        id: 'aud-m3',
+        title: 'Merry Christmas Mr. Lawrence',
+        sub: '',
+        cover: 'assets/icons/music.png',
+        src: 'assets/music/Merry Christmas Mr. Lawrance.mp3'
     }
 ];
 
@@ -23,21 +30,21 @@ const BOOK_LIST = [
         id: 'aud-b1', 
         title: 'The Little Prince', 
         sub: 'My Love is a Flower', 
-        cover: 'book.png', 
+        cover: 'assets/audio/littleprince.jpg', 
         src: 'assets/audio/little_prince.mp3'
     },
     { 
         id: 'aud-b2', 
         title: 'Atomic Habits', 
         sub: 'Atomic Habits', 
-        cover: 'book.png', 
+        cover: 'assets/audio/atomichabits.png', 
         src: 'assets/audio/atomic-habits.mp3' 
     },
     { 
         id: 'aud-b3', 
         title: 'Aesop Fables', 
         sub: 'the-fox-and-the-grapes', 
-        cover: 'book.png', 
+        cover: 'assets/audio/aesopfables.jpg', 
         src: 'assets/audio/aesop-fables.mp3' 
     }
 ];
@@ -75,7 +82,9 @@ export class AudioPlayer {
             card.id = item.id;
             card.innerHTML = `
                 <div class="scan-bar"></div>
-                <div class="icon"><img src="assets/icons/${item.cover}" onerror="this.src='assets/icons/${defaultIcon}'"></div>
+                <div class="icon">
+                    <img src="${item.cover}" alt="" onerror="this.src='assets/icons/${defaultIcon}'">
+                </div>
                 <div class="label">${item.title}</div>
                 <div class="sub-label">${item.sub}</div>
                 <div class="confirm-bar"></div>
@@ -116,7 +125,7 @@ export class AudioPlayer {
 
         // 填充内容
         const coverImg = document.getElementById('audio-cover');
-        coverImg.src = `assets/icons/${audioData.cover}`;
+        coverImg.src = audioData.cover;
         coverImg.onerror = () => { coverImg.src = 'assets/icons/book.png'; }; 
 
         document.getElementById('audio-title').innerText = audioData.title;
@@ -149,53 +158,79 @@ export class AudioPlayer {
     // --- 3. 渲染控制按钮 ---
     renderControls(gridUI) {
         const controlGrid = document.getElementById('audio-control-grid');
+        const overlay = document.getElementById('audio-control-overlay');
         controlGrid.innerHTML = '';
 
         let controls = [];
 
         if (this.currentAppType === 'music') {
             controls = [
-                { id: 'ac-prev', label: 'PREV', sub: 'Last Song', icon: 'rewind.png' },
-                { id: 'ac-pause', label: 'PAUSE', sub: 'Stop', icon: 'pause.png' },
-                { id: 'ac-next', label: 'NEXT', sub: 'Next Song', icon: 'forward.png' },
-                { id: 'ac-exit', label: 'EXIT', sub: 'To Library', icon: 'exit.png' }
+                { id: 'ac-resume', label: 'RESUME', sub: 'Play Music', icon: 'play.png', type: 'send' },
+                { id: 'ac-exit', label: 'EXIT', sub: 'To Library', icon: 'log-out.png', type: 'delete' },
+                { id: 'ac-volup', label: 'VOL +', sub: 'Louder', icon: 'vol-up.png', type: 'group' },
+                { id: 'ac-prev', label: 'PREV', sub: 'Last Song', icon: 'rewind.png', type: 'tool' },
+                { id: 'ac-next', label: 'NEXT', sub: 'Next Song', icon: 'forward.png', type: 'tool' },
+                { id: 'ac-voldown', label: 'VOL -', sub: 'Softer', icon: 'vol-down.png', type: 'group' }
             ];
         } else {
-            // Audiobook
             controls = [
-                { id: 'ac-rewind', label: '-15s', sub: 'Rewind', icon: 'rewind.png' },
-                { id: 'ac-pause', label: 'PAUSE', sub: 'Stop', icon: 'pause.png' },
-                { id: 'ac-forward', label: '+15s', sub: 'Skip', icon: 'forward.png' },
-                { id: 'ac-exit', label: 'EXIT', sub: 'To Library', icon: 'exit.png' }
+                { id: 'ac-resume', label: 'RESUME', sub: 'Play Book', icon: 'play.png', type: 'send' },
+                { id: 'ac-exit', label: 'EXIT', sub: 'To Library', icon: 'log-out.png', type: 'delete' },
+                { id: 'ac-volup', label: 'VOL +', sub: 'Louder', icon: 'vol-up.png', type: 'group' },
+                { id: 'ac-rewind', label: '-15s', sub: 'Rewind', icon: 'rewind.png', type: 'tool' },
+                { id: 'ac-forward', label: '+15s', sub: 'Skip', icon: 'forward.png', type: 'tool' },
+                { id: 'ac-voldown', label: 'VOL -', sub: 'Softer', icon: 'vol-down.png', type: 'group' }
             ];
         }
 
-        controls.forEach(ctrl => {
+        controls.forEach(item => {
             const card = document.createElement('article');
-            card.className = 'card';
-            card.id = ctrl.id;
-            card.style.flex = "1"; 
+            card.className = `card ${item.type}`;
+            card.id = item.id;
             card.innerHTML = `
                 <div class="scan-bar"></div>
-                <div class="icon"><img src="assets/icons/${ctrl.icon}" onerror="this.style.display='none'"></div>
-                <div class="label">${ctrl.label}</div>
-                <div class="sub-label">${ctrl.sub}</div>
+                <div class="icon"><img src="assets/icons/${item.icon}"></div>
+                <div class="label">${item.label}</div>
+                <div class="sub-label">${item.sub}</div>
                 <div class="confirm-bar"></div>
             `;
             controlGrid.appendChild(card);
         });
 
-        // 刷新 GridUI 扫描目标
         gridUI.refreshCards('#audio-control-grid .card');
     }
 
     // --- 4. 处理命令 ---
     handleCommand(cmdId, gridUI, onExitCallback) {
         const audioEl = document.getElementById('main-audio');
+        const overlay = document.getElementById('audio-control-overlay');
+
+        if (cmdId === 'ac-resume') {
+            audioEl.play();
+            if (overlay) {
+                overlay.classList.remove('visible');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+            return 'RESUMED';
+        }
+
+        if (cmdId === 'ac-volup') {
+            audioEl.volume = Math.min(1, audioEl.volume + 0.2);
+            return 'STAY';
+        }
+
+        if (cmdId === 'ac-voldown') {
+            audioEl.volume = Math.max(0, audioEl.volume - 0.2);
+            return 'STAY';
+        }
 
         if (cmdId === 'ac-exit') {
             audioEl.pause();
             audioEl.src = ''; 
+            if (overlay) {
+                overlay.classList.remove('visible');
+                overlay.classList.add('hidden');
+            }
             this.renderLibrary(this.currentAppType, gridUI);
             if(onExitCallback) onExitCallback(); 
             return 'EXITED';
@@ -203,17 +238,17 @@ export class AudioPlayer {
 
         if (cmdId === 'ac-pause') {
             const pauseCard = document.getElementById('ac-pause');
-            const labelDiv = pauseCard.querySelector('.label');
-            const iconImg = pauseCard.querySelector('.icon img');
+            const labelDiv = pauseCard ? pauseCard.querySelector('.label') : null;
+            const iconImg = pauseCard ? pauseCard.querySelector('.icon img') : null;
 
             if (audioEl.paused) {
                 audioEl.play();
-                labelDiv.innerText = 'PAUSE';
-                if(iconImg) iconImg.src = 'assets/icons/pause.png';
+                if (labelDiv) labelDiv.innerText = 'PAUSE';
+                if (iconImg) iconImg.src = 'assets/icons/pause.png';
             } else {
                 audioEl.pause();
-                labelDiv.innerText = 'PLAY';
-                if(iconImg) iconImg.src = 'assets/icons/play.png';
+                if (labelDiv) labelDiv.innerText = 'PLAY';
+                if (iconImg) iconImg.src = 'assets/icons/play.png';
             }
         } 
         

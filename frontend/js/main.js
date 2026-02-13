@@ -99,13 +99,13 @@ function runScanStep() {
         selector = '#sub-grid .card';
     } else if (viewManager.currentView === 'media-library') {
         selector = '#video-library-grid .card'; 
+    } else if (viewManager.currentView === 'audio-panel') {
+        selector = '#audio-control-grid .card';
     } else if (viewManager.currentView === 'video-panel') {
         selector = '#video-control-grid .card'; 
-    } else if (viewManager.currentView === 'audio-playing') {
-        selector = '#audio-control-grid .card'; 
     }
 
-    if (viewManager.currentView === 'video-playing') return; 
+    if (viewManager.currentView === 'video-playing' || viewManager.currentView === 'audio-playing') return; 
 
     gridUI.refreshCards(selector, true);
 
