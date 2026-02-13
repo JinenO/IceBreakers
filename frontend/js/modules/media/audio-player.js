@@ -1,54 +1,81 @@
 /* frontend/js/modules/media/audio-player.js */
 
-// 🎵 在线音乐数据 (直接读取网络 MP3)
+// 🎵 音乐数据 (为了测试，先用在线的，之后你可以换成本地文件)
 const MUSIC_LIST = [
     { 
         id: 'aud-m1', 
-        title: 'Online Song 1', 
-        sub: '8:00', 
-        cover: 'music-cover1.png', 
+        title: 'Relaxing Vibes', 
+        sub: 'Chill Lo-Fi', 
+        cover: 'music.png', 
         src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' 
     },
     { 
         id: 'aud-m2', 
-        title: 'Online Song 2', 
-        sub: '7:05', 
-        cover: 'music-cover2.png', 
-        src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' 
+        title: 'Upbeat Pop', 
+        sub: 'Happy Mood', 
+        cover: 'music.png', 
+        src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3' 
     }
 ];
 
-// 📚 模拟有声书数据
 const BOOK_LIST = [
-    { id: 'aud-b1', title: 'Harry Potter', sub: 'Chapter 1', cover: 'book-cover1.png', src: 'assets/audio/hp1.mp3' },
-    { id: 'aud-b2', title: 'Sherlock Holmes', sub: 'Part 1', cover: 'book-cover2.png', src: 'assets/audio/sherlock.mp3' }
+    { 
+        id: 'aud-b1', 
+        title: 'The Little Prince', 
+        sub: 'My Love is a Flower', 
+        cover: 'book.png', 
+        src: 'assets/audio/little_prince.mp3'
+    },
+    { 
+        id: 'aud-b2', 
+        title: 'Atomic Habits', 
+        sub: 'Atomic Habits', 
+        cover: 'book.png', 
+        src: 'assets/audio/atomic-habits.mp3' 
+    },
+    { 
+        id: 'aud-b3', 
+        title: 'Aesop Fables', 
+        sub: 'the-fox-and-the-grapes', 
+        cover: 'book.png', 
+        src: 'assets/audio/aesop-fables.mp3' 
+    }
 ];
 
 export class AudioPlayer {
     constructor() {
-        this.currentAppType = null; // 记住当前是 'music' 还是 'audiobook'
+        this.currentAppType = null; // 'music' 或 'audiobook'
         this.currentAudioId = null;
     }
 
-    // --- 1. 渲染音频选片库 ---
+    // --- 1. 渲染列表 (在 Media Library 视图) ---
     renderLibrary(appType, gridUI) {
         this.currentAppType = appType;
-        const libraryGrid = document.getElementById('video-library-grid'); // 我们共用视频库的网格容器！
+        const libraryGrid = document.getElementById('video-library-grid'); // 复用视频的网格
+        
+        // UI 切换
         libraryGrid.classList.remove('hidden');
-        document.getElementById('audio-player-container').classList.add('hidden');
+        
+        // 确保其他播放器都关掉
+        const audioContainer = document.getElementById('audio-player-container');
+        if(audioContainer) audioContainer.classList.add('hidden');
+        
+        const videoContainer = document.getElementById('video-player-container');
+        if(videoContainer) videoContainer.classList.add('hidden');
+
         libraryGrid.innerHTML = '';
 
-        // 根据点进来的是音乐还是书，加载不同的数据
         const dataList = appType === 'music' ? MUSIC_LIST : BOOK_LIST;
-        const iconSymbol = appType === 'music' ? '🎵' : '📚'; // 这里你以后也可以换成你自己的 .png
+        const defaultIcon = appType === 'music' ? 'music.png' : 'book.png'; 
 
+        // 生成卡片
         dataList.forEach(item => {
             const card = document.createElement('article');
-            card.className = 'card'; 
+            card.className = 'card';
             card.id = item.id;
             card.innerHTML = `
                 <div class="scan-bar"></div>
-                <div class="icon" style="font-size: 2.5rem; margin-bottom: 10px;">${iconSymbol}</div>
+                <div class="icon"><img src="assets/icons/${item.cover}" onerror="this.src='assets/icons/${defaultIcon}'"></div>
                 <div class="label">${item.title}</div>
                 <div class="sub-label">${item.sub}</div>
                 <div class="confirm-bar"></div>
@@ -58,13 +85,13 @@ export class AudioPlayer {
 
         // 生成返回按钮
         const backCard = document.createElement('article');
-        backCard.className = 'card'; 
+        backCard.className = 'card';
         backCard.id = 'media-lib-back';
         backCard.innerHTML = `
             <div class="scan-bar"></div>
-            <div class="icon"><img src="assets/icons/exit.png" style="width: 50px; height: 50px; object-fit: contain;"></div>
+            <div class="icon"><img src="assets/icons/back.png" onerror="this.style.display='none'">BACK</div>
             <div class="label">BACK</div>
-            <div class="sub-label">Media Menu</div>
+            <div class="sub-label">To Menu</div>
             <div class="confirm-bar"></div>
         `;
         libraryGrid.appendChild(backCard);
@@ -72,67 +99,85 @@ export class AudioPlayer {
         gridUI.refreshCards('#video-library-grid .card');
     }
 
-    // --- 2. 打开播放器界面 ---
+    // --- 2. 打开播放器 (进入 Audio Playing 视图) ---
     openPlayer(audioId, gridUI) {
         this.currentAudioId = audioId;
         const dataList = this.currentAppType === 'music' ? MUSIC_LIST : BOOK_LIST;
         const audioData = dataList.find(a => a.id === audioId);
-        
+
         if (!audioData) return;
 
-        // 切换界面
-        document.getElementById('video-library-grid').classList.add('hidden');
-        document.getElementById('audio-player-container').classList.remove('hidden');
+        console.log("💿 Loading Audio:", audioData.title, audioData.src);
 
-        // 更新封面和文字
-        document.getElementById('audio-cover').src = `assets/icons/${audioData.cover}`; // 记得放两张封面图
+        // UI 切换
+        document.getElementById('video-library-grid').classList.add('hidden');
+        const playerContainer = document.getElementById('audio-player-container');
+        playerContainer.classList.remove('hidden');
+
+        // 填充内容
+        const coverImg = document.getElementById('audio-cover');
+        coverImg.src = `assets/icons/${audioData.cover}`;
+        coverImg.onerror = () => { coverImg.src = 'assets/icons/book.png'; }; 
+
         document.getElementById('audio-title').innerText = audioData.title;
         document.getElementById('audio-sub').innerText = audioData.sub;
 
-        // 加载音乐并播放
+        // 播放音频
         const audioEl = document.getElementById('main-audio');
         audioEl.src = audioData.src;
-        audioEl.play();
+        
+        // ⚠️ 错误处理
+        audioEl.onerror = () => {
+            console.error("Audio Load Error. Check network or file path.");
+            alert("Error: Cannot play audio. Check console.");
+        };
 
+        // 尝试自动播放
+        const playPromise = audioEl.play();
+        if (playPromise !== undefined) {
+            playPromise.then(_ => {
+                console.log("Audio playing started.");
+            }).catch(error => {
+                console.warn("Autoplay blocked by browser:", error);
+            });
+        }
+
+        // 渲染底部控制按钮
         this.renderControls(gridUI);
-        console.log(`🎵 Audio playing: ${audioData.title}`);
     }
 
-    // --- 3. 渲染底部的 4 个控制按钮 ---
+    // --- 3. 渲染控制按钮 ---
     renderControls(gridUI) {
         const controlGrid = document.getElementById('audio-control-grid');
         controlGrid.innerHTML = '';
 
         let controls = [];
 
-        // 🌟 智能分流：音乐和书的控制按钮不同！
         if (this.currentAppType === 'music') {
             controls = [
-                { id: 'ac-prev', label: 'PREV', sub: 'Last Song', icon: 'rewind.png', type: 'tool' }, // 你可以用之前快退的图标代替
-                { id: 'ac-pause', label: 'PAUSE', sub: 'Stop', icon: 'pause.png', type: 'send' }, // 记得加一张 pause.png
-                { id: 'ac-next', label: 'NEXT', sub: 'Next Song', icon: 'forward.png', type: 'tool' },
-                { id: 'ac-exit', label: 'EXIT', sub: 'To Library', icon: 'exit.png', type: 'delete' }
+                { id: 'ac-prev', label: 'PREV', sub: 'Last Song', icon: 'rewind.png' },
+                { id: 'ac-pause', label: 'PAUSE', sub: 'Stop', icon: 'pause.png' },
+                { id: 'ac-next', label: 'NEXT', sub: 'Next Song', icon: 'forward.png' },
+                { id: 'ac-exit', label: 'EXIT', sub: 'To Library', icon: 'exit.png' }
             ];
         } else {
-            // 有声书不需要上一首下一首，需要快进快退
+            // Audiobook
             controls = [
-                { id: 'ac-rewind', label: '-15 SEC', sub: 'Rewind', icon: 'rewind.png', type: 'tool' },
-                { id: 'ac-pause', label: 'PAUSE', sub: 'Stop', icon: 'pause.png', type: 'send' },
-                { id: 'ac-forward', label: '+15 SEC', sub: 'Skip', icon: 'forward.png', type: 'tool' },
-                { id: 'ac-exit', label: 'EXIT', sub: 'To Library', icon: 'exit.png', type: 'delete' }
+                { id: 'ac-rewind', label: '-15s', sub: 'Rewind', icon: 'rewind.png' },
+                { id: 'ac-pause', label: 'PAUSE', sub: 'Stop', icon: 'pause.png' },
+                { id: 'ac-forward', label: '+15s', sub: 'Skip', icon: 'forward.png' },
+                { id: 'ac-exit', label: 'EXIT', sub: 'To Library', icon: 'exit.png' }
             ];
         }
 
         controls.forEach(ctrl => {
             const card = document.createElement('article');
-            // 为了让横向排列的按钮铺满，我们在 CSS 里用 flex: 1
-            card.className = `card ${ctrl.type || ''}`; 
+            card.className = 'card';
             card.id = ctrl.id;
-            card.style.flex = "1"; // 让 4 个按钮平分宽度
-            
+            card.style.flex = "1"; 
             card.innerHTML = `
                 <div class="scan-bar"></div>
-                <div class="icon"><img src="assets/icons/${ctrl.icon}" style="width: 50px; height: 50px; object-fit: contain;"></div>
+                <div class="icon"><img src="assets/icons/${ctrl.icon}" onerror="this.style.display='none'"></div>
                 <div class="label">${ctrl.label}</div>
                 <div class="sub-label">${ctrl.sub}</div>
                 <div class="confirm-bar"></div>
@@ -140,69 +185,56 @@ export class AudioPlayer {
             controlGrid.appendChild(card);
         });
 
-        // 告诉扫描器：现在开始扫这 4 个横向按钮！
+        // 刷新 GridUI 扫描目标
         gridUI.refreshCards('#audio-control-grid .card');
     }
 
-    // --- 4. 处理音频播放器上的控制按钮 ---
+    // --- 4. 处理命令 ---
     handleCommand(cmdId, gridUI, onExitCallback) {
         const audioEl = document.getElementById('main-audio');
 
-        // 1. 退出播放器，回到选片库
         if (cmdId === 'ac-exit') {
             audioEl.pause();
-            audioEl.src = '';
-            this.renderLibrary(this.currentAppType, gridUI); // 重新渲染库
-            if(onExitCallback) onExitCallback();
+            audioEl.src = ''; 
+            this.renderLibrary(this.currentAppType, gridUI);
+            if(onExitCallback) onExitCallback(); 
             return 'EXITED';
         }
 
-        // 2. 播放 / 暂停 的切换
         if (cmdId === 'ac-pause') {
             const pauseCard = document.getElementById('ac-pause');
-            
+            const labelDiv = pauseCard.querySelector('.label');
+            const iconImg = pauseCard.querySelector('.icon img');
+
             if (audioEl.paused) {
                 audioEl.play();
-                // 变成暂停图标
-                pauseCard.innerHTML = pauseCard.innerHTML.replace('play.png', 'pause.png').replace('PLAY', 'PAUSE');
+                labelDiv.innerText = 'PAUSE';
+                if(iconImg) iconImg.src = 'assets/icons/pause.png';
             } else {
                 audioEl.pause();
-                // 变成播放图标
-                pauseCard.innerHTML = pauseCard.innerHTML.replace('pause.png', 'play.png').replace('PAUSE', 'PLAY');
+                labelDiv.innerText = 'PLAY';
+                if(iconImg) iconImg.src = 'assets/icons/play.png';
             }
         } 
         
-        // 3. 有声书专用：快退 / 快进 15 秒
         else if (cmdId === 'ac-rewind') {
             audioEl.currentTime = Math.max(0, audioEl.currentTime - 15);
         } else if (cmdId === 'ac-forward') {
             audioEl.currentTime += 15;
-        } 
-        
-        // 4. 音乐专用：上一首 (PREV) / 下一首 (NEXT) 切换逻辑
-        else if (cmdId === 'ac-prev' || cmdId === 'ac-next') {
-            // 1. 拿到当前的播放列表 (MUSIC_LIST)
-            const dataList = this.currentAppType === 'music' ? MUSIC_LIST : BOOK_LIST;
-            
-            // 2. 找出当前正在播放的歌，在列表里排第几个 (Index)
-            let currentIndex = dataList.findIndex(item => item.id === this.currentAudioId);
-            
-            // 3. 计算下一首/上一首的位置
-            if (cmdId === 'ac-next') {
-                // 如果当前是最后一首，+1 就会回到第一首 (循环播放)
-                currentIndex = (currentIndex + 1) % dataList.length;
-            } else if (cmdId === 'ac-prev') {
-                // 如果当前是第一首，-1 就会跳到最后一首
-                currentIndex = (currentIndex - 1 + dataList.length) % dataList.length;
-            }
-            
-            // 4. 拿到新歌的 ID
-            const nextAudioId = dataList[currentIndex].id;
-            
-            // 5. 让播放器重新打开这首新歌！(它会自动换封面、换标题、重新播放)
-            this.openPlayer(nextAudioId, gridUI);
         }
 
-        return 'STAY'; // 告诉 main.js，执行完命令后不要退出界面
+        else if (cmdId === 'ac-prev' || cmdId === 'ac-next') {
+            const dataList = this.currentAppType === 'music' ? MUSIC_LIST : BOOK_LIST;
+            let idx = dataList.findIndex(item => item.id === this.currentAudioId);
+            
+            if (cmdId === 'ac-next') {
+                idx = (idx + 1) % dataList.length;
+            } else {
+                idx = (idx - 1 + dataList.length) % dataList.length;
+            }
+            this.openPlayer(dataList[idx].id, gridUI);
+        }
+
+        return 'STAY';
     }
 }
