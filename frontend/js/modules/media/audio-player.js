@@ -21,7 +21,7 @@ const MUSIC_LIST = [
         title: 'Merry Christmas Mr. Lawrence',
         sub: '',
         cover: 'assets/icons/music.png',
-        src: 'assets/music/Merry Christmas Mr. Lawrance.mp3'
+        src: 'assets/music/Merry Christmas.mp3'
     }
 ];
 
@@ -98,7 +98,7 @@ export class AudioPlayer {
         backCard.id = 'media-lib-back';
         backCard.innerHTML = `
             <div class="scan-bar"></div>
-            <div class="icon"><img src="assets/icons/back.png" onerror="this.style.display='none'">BACK</div>
+            <div class="icon"><img src="assets/icons/back.png" onerror="this.style.display='none'"></div>
             <div class="label">BACK</div>
             <div class="sub-label">To Menu</div>
             <div class="confirm-bar"></div>
@@ -137,8 +137,10 @@ export class AudioPlayer {
         
         // ⚠️ 错误处理
         audioEl.onerror = () => {
+            if (!audioEl.src || audioEl.src === window.location.href || audioEl.src.endsWith('null') || audioEl.src === '') {
+                return;
+            }
             console.error("Audio Load Error. Check network or file path.");
-            alert("Error: Cannot play audio. Check console.");
         };
 
         // 尝试自动播放
@@ -226,6 +228,7 @@ export class AudioPlayer {
 
         if (cmdId === 'ac-exit') {
             audioEl.pause();
+            audioEl.onerror = null;
             audioEl.src = ''; 
             if (overlay) {
                 overlay.classList.remove('visible');

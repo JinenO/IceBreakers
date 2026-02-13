@@ -491,6 +491,11 @@ export class ActionController {
             return;
         }
 
+        if (actionResult === 'EXITED') {
+            console.log("Audio Player: Exited gracefully.");
+            return;
+        }
+
         // ✨ Default: Unknown audio player action
         console.warn('Audio Player: Unknown action result', actionResult);
         this.resetTriggerState();

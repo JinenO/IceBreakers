@@ -247,3 +247,40 @@
         font-size: 0.8rem !important;
     }
 }
+
+/* =========================================
+   💻 LAPTOP / SMALL SCREEN OPTIMIZATION
+   (Add this to the very bottom of the file)
+   ========================================= */
+
+@media screen and (max-height: 850px) {
+    .overlay-title {
+        font-size: 1.8rem !important;
+        margin-bottom: 15px !important;
+    }
+
+    #audio-control-grid {
+        gap: 15px !important;
+        width: 85% !important;
+        height: auto !important;
+    }
+
+    #audio-control-grid .card {
+        height: 140px !important;
+        border-radius: 12px !important;
+    }
+
+    #audio-control-grid .card .icon img {
+        width: 40px !important;
+        height: 40px !important;
+        margin-bottom: 8px !important;
+    }
+
+    #audio-control-grid .card .label {
+        font-size: 1.1rem !important;
+    }
+
+    #audio-control-grid .card .sub-label {
+        font-size: 0.8rem !important;
+    }
+}
