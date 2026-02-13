@@ -6,10 +6,12 @@ import { SOSSystem } from './modules/sos.js';
 import { SleepManager } from './modules/sleep-manager.js';
 import { KeyboardManager } from './modules/keyboard-logic.js';
 import { renderKeyboardMatrix, handleKeyboardAction } from './modules/keyboard-ui.js';
-import { SUB_MENU_DATA } from './data.js';
+import { SUB_MENU_DATA, BODY_DETAILS_DATA } from './data.js';
+import { AlertService } from './api/alert-service.js';
 import { MediaManager } from './modules/media/media-manager.js';
 import { ViewManager } from './modules/view-manager.js';
 import { renderMainGrid, showFeedback } from './modules/ui-utils.js';
+import { ActionController } from './core/action-controller.js';
 
 // ==========================================
 // 0. Render main menu
@@ -45,6 +47,31 @@ const MAIN_SCAN_SELECTOR = '#main-grid .card';
 const SUB_SCAN_SELECTOR = '#sub-grid .card';
 let kbScanTarget = KB_SCAN_SELECTOR;
 
+// Initialize ActionController
+const actionController = new ActionController({
+    gridUI,
+    viewManager,
+    sleepManager,
+    kbManager,
+    mediaManager,
+    sosSystem,
+    onStopScanning: () => stopScanning(),
+    onStartScanning: () => startScanning(),
+    onResetTriggerState: () => resetTriggerState(),
+    helpers: {
+        backToMain,
+        openSubMenu,
+        handleSyncRequest,
+        renderKeyboardMatrix,
+        handleKeyboardAction,
+        setKbScanTarget: (target) => { kbScanTarget = target; },
+        setEyeState: (closed, time) => { 
+            isEyesClosed = closed; 
+            eyesClosedStartTime = time; 
+        }
+    }
+});
+
 // ==========================================
 // 1. Scanning control
 // ==========================================
@@ -68,6 +95,8 @@ function runScanStep() {
         selector = MAIN_SCAN_SELECTOR;
     } else if (viewManager.currentView === 'sub') {
         selector = SUB_SCAN_SELECTOR;
+    } else if (viewManager.currentView === 'body-details') {
+        selector = '#sub-grid .card';
     } else if (viewManager.currentView === 'media-library') {
         selector = '#video-library-grid .card'; 
     } else if (viewManager.currentView === 'video-panel') {
@@ -101,6 +130,9 @@ function openSubMenu(menuId) {
         return;
     }
 
+    // Clear old highlights before rendering new view
+    gridUI.clearHighlights();
+
     const subGrid = document.getElementById('sub-grid');
     subGrid.innerHTML = '';
 
@@ -126,7 +158,74 @@ function openSubMenu(menuId) {
     setTimeout(startScanning, 500);
 }
 
+// ✨ Added: handle synchronous requests (Temp / Itch)
+async function handleSyncRequest(commandId) {
+    // 1. Pause scanning
+    stopScanning();
+
+    // 2. Show waiting overlay
+    const waitOverlay = document.getElementById('caregiver-wait-overlay');
+    if (waitOverlay) {
+        waitOverlay.classList.remove('hidden');
+    }
+
+    // 3. Call API (simulated app request)
+    try {
+        await AlertService.requestCaregiverAssist(commandId);
+
+        // 4. Hide waiting overlay
+        if (waitOverlay) {
+            waitOverlay.classList.add('hidden');
+        }
+
+        // 5. Open the corresponding detail menu (Too Hot / Body Parts)
+        openBodyDetailMenu(commandId);
+    } catch (err) {
+        console.error('Sync failed:', err);
+        if (waitOverlay) {
+            waitOverlay.classList.add('hidden');
+        }
+        startScanning();
+    } finally {
+        resetTriggerState();
+    }
+}
+
+// ✨ Added: open detail menu (render Hot/Cold or Body Parts)
+function openBodyDetailMenu(type) {
+    const detailData = BODY_DETAILS_DATA[type];
+    if (!detailData) return;
+
+    // Clear old highlights before rendering detail menu
+    gridUI.clearHighlights();
+
+    const subGrid = document.getElementById('sub-grid');
+    subGrid.innerHTML = '';
+
+    detailData.items.forEach((item) => {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.id = item.id === 'back' ? 'body-back' : `detail-${item.id}`;
+
+        card.innerHTML = `
+            <div class="scan-bar"></div>
+            <div class="icon"><img src="assets/icons/${item.icon}" alt=""></div>
+            <div class="label">${item.label}</div>
+            <div class="sub-label">${item.sub}</div>
+            <div class="confirm-bar"></div>
+        `;
+        subGrid.appendChild(card);
+    });
+
+    viewManager.currentView = 'body-details';
+    gridUI.refreshCards('#sub-grid .card');
+    startScanning();
+}
+
 function openKeyboard() {
+    // Clear old highlights before entering keyboard
+    gridUI.clearHighlights();
+
     kbScanTarget = viewManager.goKeyboard('speak');
 
     stopScanning();
@@ -139,6 +238,9 @@ function openKeyboard() {
 }
 
 function backToMain() {
+    // Clear old highlights before returning to main
+    gridUI.clearHighlights();
+
     viewManager.goMain();
     gridUI.refreshCards(MAIN_SCAN_SELECTOR);
 
@@ -208,284 +310,14 @@ function handleEyeFrame(data) {
 let isTriggering = false;
 
 function triggerSelection() {
-    if (isProcessingAction || isTriggering) return;
-
-    isProcessingAction = true;
-    isTriggering = true;
-    stopScanning(); // Ensure scanning stops while processing
-
-    // 🚨 FIX: 特权通道
-    // 如果正在全屏播放视频，不需要检查 selectedId，直接唤出控制面板
-    if (viewManager.currentView === 'video-playing') {
-        console.log("📺 Video Playing Mode: Waking up controls...");
-        mediaManager.videoPlayer.showControlPanel(gridUI);
-        viewManager.currentView = 'video-panel';
-        
-        // 唤出面板后，重新开始扫描面板上的按钮
-        setTimeout(() => { 
-            resetTriggerState(); 
-            startScanning(); 
-        }, 500);
-        return;
-    }
-
-    // --- 普通模式检查 ---
-    const selectedId = gridUI.getCurrentId();
-
-    // 如果不是看视频模式，且没有选中任何东西，则视为无效触发
-    if (!selectedId) {
-        resetTriggerState();
-        startScanning(); // Resume scanning
-        return;
-    }
-
-    SoundUtils.playBeep(880, 'sine', 0.1);
-
-    // --- Keyboard View ---
-    if (viewManager.currentView === 'keyboard') {
-        const callbacks = {
-            onExit: () => {
-                // 如果是从 YouTube 搜索进来的，退出时应该回到 YouTube 搜索模式
-                if (viewManager.keyboardMode === 'youtube-search') {
-                     // 保持搜索模式
-                } else {
-                     viewManager.keyboardMode = 'speak';
-                     const sendLabel = document.querySelector('#kb-send .kb-label');
-                     if (sendLabel) sendLabel.innerText = 'SEND';
-                }
-                
-                backToMain();
-                sleepManager.resetTimer();
-            }
-        };
-
-        if (selectedId === 'kb-send') {
-            const text = kbManager.currentText;
-            if (text.trim().length > 0) {
-                if (viewManager.keyboardMode === 'youtube-search') {
-                    console.log('🔍 Searching YouTube for:', text);
-                    mediaManager.youtubePlayer.searchAndRender(text, gridUI);
-
-                    viewManager.currentView = 'media-library';
-                    setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
-                } else {
-                    console.log('🗣 Speaking:', text);
-                    sosSystem.speak(text);
-                    kbManager.clear();
-                    renderKeyboardMatrix(kbManager, gridUI);
-
-                    sleepManager.resetTimer();
-                    setTimeout(() => {
-                        resetTriggerState();
-                        if (!sleepManager.isSleeping) {
-                            startScanning();
-                        }
-                    }, 500);
-                }
-            } else {
-                resetTriggerState();
-                if (!sleepManager.isSleeping) {
-                    startScanning();
-                }
-            }
-            return;
-        }
-
-        handleKeyboardAction(selectedId, kbManager, gridUI, (newTarget) => {
-            kbScanTarget = newTarget;
-        }, callbacks).then(() => {
-            sleepManager.resetTimer();
-            isEyesClosed = false;
-            eyesClosedStartTime = 0;
-            gridUI.updateConfirmBar(0); // Clear progress
-
-            setTimeout(() => {
-                resetTriggerState();
-                if (!sleepManager.isSleeping) {
-                    startScanning();
-                }
-            }, 800); // Wait a bit before next scan
-        });
-        return;
-    }
-
-    // --- Main Menu ---
-    if (viewManager.currentView === 'main') {
-        if (selectedId === 'c-kb') {
-            // 设置为说话模式
-            kbManager.setMode('speak');
-            kbScanTarget = viewManager.goKeyboard('speak');
-
-            sleepManager.resetTimer();
-            setTimeout(() => {
-                resetTriggerState();
-                startScanning();
-            }, 500);
-            return;
-        }
-
-        if (SUB_MENU_DATA[selectedId]) {
-            openSubMenu(selectedId);
-            sleepManager.resetTimer();
-            setTimeout(() => {
-                resetTriggerState();
-                startScanning();
-            }, 500);
-            return;
-        }
-    } 
-    
-    // --- Sub Menu ---
-    else if (viewManager.currentView === 'sub') {
-        if (selectedId === 'btn-back') {
-            backToMain();
-            sleepManager.resetTimer();
-            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
-            return;
-        }
-
-        if (selectedId === 'cmd-youtube') {
-            console.log("🎬 YouTube Triggered: Switching to Keyboard Search Mode");
-            // 设置为搜索模式
-            kbManager.setMode('search');
-            kbScanTarget = viewManager.goKeyboard('youtube-search');
-
-            setTimeout(() => {
-                resetTriggerState();
-                startScanning();
-            }, 500);
-            return;
-        }
-
-        const mediaCommands = ['cmd-local', 'cmd-music', 'cmd-audiobook', 'cmd-photos'];
-        if (mediaCommands.includes(selectedId)) {
-            const appType = selectedId.replace('cmd-', '');
-            mediaManager.open(appType, gridUI, sleepManager);
-            viewManager.currentView = 'media-library';
-
-            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
-            return;
-        }
-        
-        // Placeholder for other commands
-        console.log(`🚀 COMMAND SENT: ${selectedId}`);
-        const msg = `${selectedId.toUpperCase()} SENT ✅`;
-        showFeedback(msg, 'success');
-
-        setTimeout(() => {
-            sleepManager.resetTimer();
-            resetTriggerState();
-            if (!sleepManager.isSleeping) startScanning();
-        }, 3000);
-        return;
-    } 
-    
-    // --- Media Library ---
-    else if (viewManager.currentView === 'media-library') {
-        if (selectedId === 'yt-back') {
-            kbManager.setMode('search');
-            kbScanTarget = viewManager.goKeyboard('youtube-search');
-
-            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
-            return;
-        } else if (selectedId === 'media-lib-back') {
-            mediaManager.exit();
-            viewManager.currentView = 'sub';
-            gridUI.refreshCards('#sub-grid .card');
-            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
-            return;
-        } else if (selectedId.startsWith('vid-') || selectedId.startsWith('yt-')) {
-            console.log('🎥 Video Selected:', selectedId);
-            mediaManager.videoPlayer.playVideo(selectedId);
-            viewManager.currentView = 'video-playing';
-            stopScanning(); // 停止扫描，让用户看视频
-            setTimeout(() => { resetTriggerState(); }, 500);
-            return;
-        } else if (selectedId.startsWith('aud-')) {
-            mediaManager.audioPlayer.openPlayer(selectedId, gridUI);
-            viewManager.currentView = 'audio-playing';
-            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
-            return;
-        }
-    } 
-    
-    // --- Video Control Panel ---
-    else if (viewManager.currentView === 'video-panel') {
-        const actionResult = mediaManager.videoPlayer.handleCommand(selectedId, gridUI, () => {
-            console.log("🔙 Exiting Video... Force Hiding Everything!");
-
-            // Exit logic
-            viewManager.currentView = 'media-library'; 
-            
-            const playerContainer = document.getElementById('video-player-container');
-            const iframeEl = document.getElementById('youtube-iframe');
-            const controlOverlay = document.getElementById('video-control-overlay');
-            const mediaView = document.getElementById('media-view');
-            const libraryGrid = document.getElementById('video-library-grid');
-
-            if (playerContainer) {
-                playerContainer.style.display = 'none'; 
-                playerContainer.classList.add('hidden'); 
-            }
-            if (iframeEl) {
-                iframeEl.style.display = 'none'; 
-                iframeEl.src = ''; 
-            }
-            if (controlOverlay) {
-                controlOverlay.style.display = 'none'; 
-                controlOverlay.classList.add('hidden');
-            }
-
-            if (mediaView) {
-                mediaView.style.display = 'block'; 
-                mediaView.classList.remove('hidden');
-            }
-            
-            if (libraryGrid) {
-                libraryGrid.style.display = 'grid'; 
-                libraryGrid.classList.remove('hidden');
-            }
-
-            console.log("🔄 Refreshing cards for Media Library...");
-            gridUI.refreshCards('#video-library-grid .card');
-
-            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
-        });
-
-        if (actionResult === 'RESUMED') {
-            viewManager.currentView = 'video-playing';
-            stopScanning();
-            setTimeout(() => { resetTriggerState(); }, 500);
-            return;
-        } else if (actionResult === 'STAY_IN_PANEL') {
-            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
-            return;
-        }
-    } 
-    
-    // --- Audio Player ---
-    else if (viewManager.currentView === 'audio-playing') {
-        const actionResult = mediaManager.audioPlayer.handleCommand(selectedId, gridUI, () => {
-            viewManager.currentView = 'media-library';
-            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
-        });
-
-        if (actionResult === 'STAY') {
-            setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
-        }
-        return;
-    }
-
-    // Default fallback
-    setTimeout(() => {
-        resetTriggerState();
-        if (!document.hidden && !sleepManager.isSleeping) startScanning();
-    }, 3000);
+    actionController.triggerSelection();
 }
 
 function resetTriggerState() {
     isProcessingAction = false;
     isTriggering = false;
+    actionController.isProcessingAction = false;
+    actionController.isTriggering = false;
 }
 
 // ==========================================
@@ -495,18 +327,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const startOverlay = document.getElementById('start-overlay');
 
     const initSystem = async () => {
-        // 1. 播放一个极短的静音，骗过浏览器，解锁 AudioContext
+        // 1. Play a very short silent sound to unlock AudioContext
         SoundUtils.unlock();
         SoundUtils.playBeep(440, 'sine', 0.1);
 
-        // 2. 隐藏启动屏
+        // 2. Hide the start overlay
         startOverlay.style.opacity = '0';
         startOverlay.style.transition = 'opacity 0.5s ease';
         setTimeout(() => {
             startOverlay.classList.add('hidden');
         }, 500);
 
-        // 3. 只有点击后，才启动摄像头和眼动追踪
+        // 3. Start camera and eye tracking only after user interaction
         try {
             console.log('🚀 System Initialized by User Interaction');
             await eyeEngine.init(handleEyeFrame);
@@ -517,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 监听点击
+    // Listen for click
     startOverlay.addEventListener('click', initSystem, { once: true });
 });
 
@@ -526,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 
 function initDevMode() {
-    // 只有在网址里有 ?dev=1 时才开启，比如: http://localhost:3000/?dev=1
+    // Enable only when URL has ?dev=1, e.g., http://localhost:3000/?dev=1
     const urlParams = new URLSearchParams(window.location.search);
     if (!urlParams.has('dev')) return;
 
@@ -557,10 +389,10 @@ function initDevMode() {
     }, true); 
 }
 
-// 别忘了在启动时调用它！
+// Do not forget to call this on startup!
 document.addEventListener('DOMContentLoaded', () => {
-    // ... (你原本的 initSystem 逻辑) ...
+    // ... (your existing initSystem logic) ...
     
-    // ✨ 在最后加上这句
+    // ✨ Add this at the end
     initDevMode();
 });

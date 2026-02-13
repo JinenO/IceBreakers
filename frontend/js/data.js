@@ -73,3 +73,26 @@ export const KEYBOARD_DATA = {
         { id: 'group-5', label: 'U - Z', letters: ['U', 'V', 'W', 'X', 'Y', 'Z'] }
     ]
 };
+
+// Secondary submenu (hidden by default, activated by backend signal)
+export const BODY_DETAILS_DATA = {
+    'temp': {
+        title: 'TEMPERATURE',
+        items: [
+            { id: 'too-hot', label: 'TOO HOT', sub: 'Cool down', icon: 'hot.png' },
+            { id: 'too-cold', label: 'TOO COLD', sub: 'Warm up', icon: 'cold.png' },
+            { id: 'just-right', label: 'BETTER', sub: 'Thank you', icon: 'yes.png' },
+            { id: 'back', label: 'BACK', sub: 'Body Menu', icon: 'back.png' }
+        ]
+    },
+    'itch': {
+        title: 'WHERE ITCHES?',
+        items: [
+            { id: 'head', label: 'HEAD', sub: 'Face / Scalp', icon: 'headbody.png' },
+            { id: 'back', label: 'BACK', sub: 'Upper / Lower', icon: 'backbody.png' },
+            { id: 'arm', label: 'ARM', sub: 'L / R Arm', icon: 'arm.png' },
+            { id: 'leg', label: 'LEG', sub: 'L / R Leg', icon: 'leg.png' },
+            { id: 'back', label: 'BACK', sub: 'Body Menu', icon: 'back.png' }
+        ]
+    }
+};

@@ -97,4 +97,18 @@ export class GridUI {
     getCurrentId() {
         return this.cards[this.currentIndex]?.id || null;
     }
+
+    clearHighlights() {
+        if (this.cards) {
+            this.cards.forEach(card => {
+                card.classList.remove('active');
+                const scanBar = card.querySelector('.scan-bar');
+                if (scanBar) scanBar.style.width = '0%';
+            });
+        }
+        // Double insurance: clear any remaining active elements
+        document.querySelectorAll('.active').forEach(el => el.classList.remove('active'));
+        
+        this.currentIndex = -1;
+    }
 }
