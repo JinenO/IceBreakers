@@ -73,3 +73,26 @@ export const KEYBOARD_DATA = {
         { id: 'group-5', label: 'U - Z', letters: ['U', 'V', 'W', 'X', 'Y', 'Z'] }
     ]
 };
+
+// ✨ 新增：二级详细菜单 (默认不显示，等 Backend 信号才显示)
+export const BODY_DETAILS_DATA = {
+    'temp': {
+        title: 'TEMPERATURE',
+        items: [
+            { id: 'too-hot', label: 'TOO HOT', sub: 'Cool down', icon: 'temp.png' },
+            { id: 'too-cold', label: 'TOO COLD', sub: 'Warm up', icon: 'temp.png' },
+            { id: 'just-right', label: 'BETTER', sub: 'Thank you', icon: 'yes.png' },
+            { id: 'back', label: 'BACK', sub: 'Body Menu', icon: 'back.png' }
+        ]
+    },
+    'itch': {
+        title: 'WHERE ITCHES?',
+        items: [
+            { id: 'head', label: 'HEAD', sub: 'Face / Scalp', icon: 'head.png' },
+            { id: 'back', label: 'BACK', sub: 'Upper / Lower', icon: 'body.png' },
+            { id: 'arm', label: 'ARM', sub: 'L / R Arm', icon: 'body.png' },
+            { id: 'leg', label: 'LEG', sub: 'L / R Leg', icon: 'leg.png' },
+            { id: 'back', label: 'BACK', sub: 'Body Menu', icon: 'back.png' }
+        ]
+    }
+};

@@ -6,7 +6,8 @@ import { SOSSystem } from './modules/sos.js';
 import { SleepManager } from './modules/sleep-manager.js';
 import { KeyboardManager } from './modules/keyboard-logic.js';
 import { renderKeyboardMatrix, handleKeyboardAction } from './modules/keyboard-ui.js';
-import { SUB_MENU_DATA } from './data.js';
+import { SUB_MENU_DATA, BODY_DETAILS_DATA } from './data.js';
+import { AlertService } from './api/alert-service.js';
 import { MediaManager } from './modules/media/media-manager.js';
 import { ViewManager } from './modules/view-manager.js';
 import { renderMainGrid, showFeedback } from './modules/ui-utils.js';
@@ -68,6 +69,8 @@ function runScanStep() {
         selector = MAIN_SCAN_SELECTOR;
     } else if (viewManager.currentView === 'sub') {
         selector = SUB_SCAN_SELECTOR;
+    } else if (viewManager.currentView === 'body-details') {
+        selector = '#sub-grid .card';
     } else if (viewManager.currentView === 'media-library') {
         selector = '#video-library-grid .card'; 
     } else if (viewManager.currentView === 'video-panel') {
@@ -124,6 +127,67 @@ function openSubMenu(menuId) {
 
     stopScanning();
     setTimeout(startScanning, 500);
+}
+
+// ✨ Added: handle synchronous requests (Temp / Itch)
+async function handleSyncRequest(commandId) {
+    // 1. Pause scanning
+    stopScanning();
+
+    // 2. Show waiting overlay
+    const waitOverlay = document.getElementById('caregiver-wait-overlay');
+    if (waitOverlay) {
+        waitOverlay.classList.remove('hidden');
+    }
+
+    // 3. Call API (simulated app request)
+    try {
+        await AlertService.requestCaregiverAssist(commandId);
+
+        // 4. Hide waiting overlay
+        if (waitOverlay) {
+            waitOverlay.classList.add('hidden');
+        }
+
+        // 5. Open the corresponding detail menu (Too Hot / Body Parts)
+        openBodyDetailMenu(commandId);
+    } catch (err) {
+        console.error('Sync failed:', err);
+        if (waitOverlay) {
+            waitOverlay.classList.add('hidden');
+        }
+        startScanning();
+    } finally {
+        resetTriggerState();
+    }
+}
+
+// ✨ Added: open detail menu (render Hot/Cold or Body Parts)
+function openBodyDetailMenu(type) {
+    const detailData = BODY_DETAILS_DATA[type];
+    if (!detailData) return;
+
+    const subGrid = document.getElementById('sub-grid');
+    subGrid.innerHTML = '';
+
+    detailData.items.forEach((item) => {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.id = item.id === 'back' ? 'body-back' : `detail-${item.id}`;
+
+        card.innerHTML = `
+            <div class="scan-bar"></div>
+            <div class="icon"><img src="assets/icons/${item.icon}" alt=""></div>
+            <div class="label">${item.label}</div>
+            <div class="sub-label">${item.sub}</div>
+            <div class="confirm-bar"></div>
+        `;
+        subGrid.appendChild(card);
+    });
+
+    viewManager.currentView = 'body-details';
+    gridUI.refreshCards('#sub-grid .card');
+    startScanning();
 }
 
 function openKeyboard() {
@@ -214,14 +278,14 @@ function triggerSelection() {
     isTriggering = true;
     stopScanning(); // Ensure scanning stops while processing
 
-    // 🚨 FIX: 特权通道
-    // 如果正在全屏播放视频，不需要检查 selectedId，直接唤出控制面板
+    // 🚨 FIX: privileged path
+    // If a full-screen video is playing, skip selectedId checks and show the control panel directly
     if (viewManager.currentView === 'video-playing') {
         console.log("📺 Video Playing Mode: Waking up controls...");
         mediaManager.videoPlayer.showControlPanel(gridUI);
         viewManager.currentView = 'video-panel';
         
-        // 唤出面板后，重新开始扫描面板上的按钮
+        // After showing the panel, restart scanning for panel buttons
         setTimeout(() => { 
             resetTriggerState(); 
             startScanning(); 
@@ -229,10 +293,10 @@ function triggerSelection() {
         return;
     }
 
-    // --- 普通模式检查 ---
+    // --- Standard mode checks ---
     const selectedId = gridUI.getCurrentId();
 
-    // 如果不是看视频模式，且没有选中任何东西，则视为无效触发
+    // If not in video mode and nothing is selected, treat as an invalid trigger
     if (!selectedId) {
         resetTriggerState();
         startScanning(); // Resume scanning
@@ -245,9 +309,9 @@ function triggerSelection() {
     if (viewManager.currentView === 'keyboard') {
         const callbacks = {
             onExit: () => {
-                // 如果是从 YouTube 搜索进来的，退出时应该回到 YouTube 搜索模式
+                 // If entered via YouTube search, exit back to YouTube search mode
                 if (viewManager.keyboardMode === 'youtube-search') {
-                     // 保持搜索模式
+                     // Keep search mode
                 } else {
                      viewManager.keyboardMode = 'speak';
                      const sendLabel = document.querySelector('#kb-send .kb-label');
@@ -312,7 +376,7 @@ function triggerSelection() {
     // --- Main Menu ---
     if (viewManager.currentView === 'main') {
         if (selectedId === 'c-kb') {
-            // 设置为说话模式
+            // Set to speak mode
             kbManager.setMode('speak');
             kbScanTarget = viewManager.goKeyboard('speak');
 
@@ -346,7 +410,7 @@ function triggerSelection() {
 
         if (selectedId === 'cmd-youtube') {
             console.log("🎬 YouTube Triggered: Switching to Keyboard Search Mode");
-            // 设置为搜索模式
+            // Set to search mode
             kbManager.setMode('search');
             kbScanTarget = viewManager.goKeyboard('youtube-search');
 
@@ -366,6 +430,28 @@ function triggerSelection() {
             setTimeout(() => { resetTriggerState(); startScanning(); }, 500);
             return;
         }
+
+        const simpleBodyCmds = ['cmd-roll', 'cmd-head', 'cmd-legs'];
+        if (simpleBodyCmds.includes(selectedId)) {
+            const action = selectedId.replace('cmd-', '');
+
+            SoundUtils.playBeep(880, 'sine', 0.1);
+            AlertService.sendSimpleAlert(action);
+            showFeedback(`${action.toUpperCase()} SENT ✅`, 'success');
+
+            setTimeout(() => {
+                resetTriggerState();
+                startScanning();
+            }, 2000);
+            return;
+        }
+
+        const syncBodyCmds = ['cmd-temp', 'cmd-itch'];
+        if (syncBodyCmds.includes(selectedId)) {
+            const action = selectedId.replace('cmd-', '');
+            handleSyncRequest(action);
+            return;
+        }
         
         // Placeholder for other commands
         console.log(`🚀 COMMAND SENT: ${selectedId}`);
@@ -379,6 +465,24 @@ function triggerSelection() {
         }, 3000);
         return;
     } 
+
+    // --- Body Details ---
+    else if (viewManager.currentView === 'body-details') {
+        if (selectedId === 'body-back') {
+            openSubMenu('c-body');
+            return;
+        }
+
+        const detail = selectedId.replace('detail-', '');
+        console.log(`📡 Sending Body Detail: ${detail}`);
+        AlertService.sendSimpleAlert('body-update', detail);
+        showFeedback(`UPDATED: ${detail.toUpperCase()} ✅`, 'success');
+
+        setTimeout(() => {
+            openSubMenu('c-body');
+        }, 2000);
+        return;
+    }
     
     // --- Media Library ---
     else if (viewManager.currentView === 'media-library') {
@@ -398,7 +502,7 @@ function triggerSelection() {
             console.log('🎥 Video Selected:', selectedId);
             mediaManager.videoPlayer.playVideo(selectedId);
             viewManager.currentView = 'video-playing';
-            stopScanning(); // 停止扫描，让用户看视频
+            stopScanning(); // Stop scanning to allow video playback
             setTimeout(() => { resetTriggerState(); }, 500);
             return;
         } else if (selectedId.startsWith('aud-')) {
@@ -495,18 +599,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const startOverlay = document.getElementById('start-overlay');
 
     const initSystem = async () => {
-        // 1. 播放一个极短的静音，骗过浏览器，解锁 AudioContext
+        // 1. Play a very short silent sound to unlock AudioContext
         SoundUtils.unlock();
         SoundUtils.playBeep(440, 'sine', 0.1);
 
-        // 2. 隐藏启动屏
+        // 2. Hide the start overlay
         startOverlay.style.opacity = '0';
         startOverlay.style.transition = 'opacity 0.5s ease';
         setTimeout(() => {
             startOverlay.classList.add('hidden');
         }, 500);
 
-        // 3. 只有点击后，才启动摄像头和眼动追踪
+        // 3. Start camera and eye tracking only after user interaction
         try {
             console.log('🚀 System Initialized by User Interaction');
             await eyeEngine.init(handleEyeFrame);
@@ -517,7 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 监听点击
+    // Listen for click
     startOverlay.addEventListener('click', initSystem, { once: true });
 });
 
@@ -526,7 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 
 function initDevMode() {
-    // 只有在网址里有 ?dev=1 时才开启，比如: http://localhost:3000/?dev=1
+    // Enable only when URL has ?dev=1, e.g., http://localhost:3000/?dev=1
     const urlParams = new URLSearchParams(window.location.search);
     if (!urlParams.has('dev')) return;
 
@@ -557,10 +661,10 @@ function initDevMode() {
     }, true); 
 }
 
-// 别忘了在启动时调用它！
+// Do not forget to call this on startup!
 document.addEventListener('DOMContentLoaded', () => {
-    // ... (你原本的 initSystem 逻辑) ...
+    // ... (your existing initSystem logic) ...
     
-    // ✨ 在最后加上这句
+    // ✨ Add this at the end
     initDevMode();
 });
