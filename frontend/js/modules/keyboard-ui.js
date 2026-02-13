@@ -36,15 +36,14 @@ export function renderKeyboardMatrix(kbManager, gridUI) {
         kbGrid.appendChild(card);
     });
 
-    // ✨ 修改：根据 kbManager.mode 决定按钮显示什么
     const isSearch = kbManager.mode === 'search';
     
     const sendCard = createKbCard(
         'kb-card send',
         'kb-send',
-        isSearch ? 'SEARCH' : 'SEND',           // 文字变化
-        isSearch ? 'YouTube' : 'To Caregiver',  // 副标题变化
-        isSearch ? 'youtube.png' : 'send.png'   // 图标变化
+        isSearch ? 'SEARCH' : 'SEND',           
+        isSearch ? 'YouTube' : 'To Caregiver',  
+        isSearch ? 'youtube.png' : 'send.png'   
     );
     kbGrid.appendChild(sendCard);
 
@@ -145,7 +144,7 @@ export function renderTools(kbManager, gridUI) {
     kbGrid.innerHTML = '';
 
     const tools = [
-        { id: 'tool-speak', label: 'SPEAK', sub: 'Read Aloud', type: 'group', icon: 'speak.png' },
+        { id: 'tool-speak', label: 'SPEAK', sub: 'Read Aloud', type: 'tool', icon: 'speak.png' },
         { id: 'tool-clear', label: 'CLEAR', sub: 'Delete All', type: 'delete', icon: 'clear.png' },
         { id: 'tool-yes', label: 'YES', sub: 'Quick Reply', type: 'tool', icon: 'yes.png' },
         { id: 'tool-no', label: 'NO', sub: 'Quick Reply', type: 'tool', icon: 'no.png' },
