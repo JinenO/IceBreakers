@@ -304,12 +304,13 @@ export class ActionController {
     }
 
     _handleBodyDetails(selectedId) {
+        // 1. 处理返回按钮
         if (selectedId === 'body-back') {
             this.helpers.openSubMenu('c-body');
             return;
         }
 
-        // ✨ Validate that it's a detail-* ID
+        // 2. 验证 ID 格式
         if (!selectedId.startsWith('detail-')) {
             console.warn('Body Details: Invalid selection', selectedId);
             this.resetTriggerState();
@@ -319,6 +320,7 @@ export class ActionController {
 
         const detailId = selectedId.replace('detail-', '');
 
+        // 3. 准备语音内容
         const speechMap = {
             'too-hot': 'I am too hot. Please help me cool down.',
             'too-cold': 'I am too cold. Please help me warm up.',
@@ -330,12 +332,11 @@ export class ActionController {
         };
 
         const textToSpeak = speechMap[detailId] || detailId;
-
         console.log(`🗣 Speaking Body Detail: ${textToSpeak}`);
 
+        // 4. 执行语音 (TTS)
         try {
             const utterance = new SpeechSynthesisUtterance(textToSpeak);
-
             utterance.rate = 0.9;
             utterance.pitch = 1.0;
             utterance.volume = 1.0;
@@ -350,12 +351,17 @@ export class ActionController {
             console.error('TTS Error:', e);
         }
 
+        // 5. 发送警报 (API)
         AlertService.sendSimpleAlert('body-update', detailId);
         showFeedback(`SENT: ${detailId.toUpperCase()} ✅`, 'success');
 
+        // 6. 停留模式：短暂反馈后恢复扫描
         setTimeout(() => {
-            this.helpers.openSubMenu('c-body');
-        }, 2500);
+            this.resetTriggerState();
+            if (!this.sleepManager.isSleeping) {
+                this.startScanning();
+            }
+        }, 1000);
     }
 
     _handleMediaLibrary(selectedId) {
