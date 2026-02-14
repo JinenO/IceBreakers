@@ -140,3 +140,161 @@ The system prevents accidental activation using:
 - Prevents double-triggering or rapid unintended clicks.
 
 ---
+
+# Core Operating Flow
+
+## 1. System Activation
+
+### Caregiver Initialization
+
+The system starts with a “Click to Initialize” overlay.
+
+This ensures:
+
+- Browser AudioContext is unlocked  
+- Camera access is confirmed  
+- Audio alerts (beeps / alarms) are functional  
+
+Only after initialization does patient control begin.
+
+---
+
+## 2. Auto-Scanning Loop
+
+Once active, the interface continuously cycles through:
+
+- Needs  
+- Keyboard  
+- Body  
+- Media  
+- Chat AI  
+
+### Visual Feedback
+
+A progress bar animates over the highlighted card.
+
+### Audio Feedback
+
+Optional soft beep at each scan step.
+
+### Default Configuration
+
+- Scan speed: 2500ms per item (configurable)
+
+---
+
+## 3. Selection Logic
+
+To select the highlighted item:
+
+1. User closes eyes  
+2. Hold for ≥ 1200ms  
+3. User reopens eyes  
+4. Action is executed  
+
+The system continuously monitors eye state transitions to ensure intentional input.
+
+---
+
+# Safety & SOS Mechanisms
+
+Implemented using strict state-machine logic.
+
+## SOS Trigger Flow
+
+### Charging Phase (0s – 3s)
+
+- User closes eyes  
+- Progressive audio feedback warns of impending alarm  
+
+### Arming Phase (≥ 3s)
+
+If eyes remain closed for 3 seconds:
+
+- Pre-Alarm activates  
+- Screen displays: “OPEN EYES NOW”  
+- High-priority warning tone plays  
+
+### Confirmation Phase
+
+To confirm emergency:
+
+1. User must reopen eyes  
+2. System enters READY state  
+3. If eyes remain open for 2 seconds → SOS is sent  
+
+This ensures active confirmation rather than passive eye closure.
+
+---
+
+## Sleep Cancellation Logic
+
+If eyes remain continuously closed for more than 8 seconds:
+
+- System assumes sleep or fatigue  
+- SOS is cancelled  
+- System enters Sleep Mode  
+
+This prevents false alarms during unintended long closure.
+
+---
+
+# Auto Sleep Mode
+
+If no interaction occurs for an extended period:
+
+- Scanning pauses  
+- UI highlight stops  
+- CPU load is reduced  
+
+Reactivation requires a deliberate long blink.
+
+---
+
+# Camera Module
+
+The camera module continuously monitors the patient’s eye state.
+
+### Implemented:
+
+- Real-time eye state detection (Open / Closed)  
+- Blink duration tracking  
+- Threshold-based filtering  
+- Continuous state monitoring for:
+  - Selection confirmation  
+  - SOS detection  
+  - Sleep mode activation  
+
+The camera is positioned to face the patient’s eyes and does not require precise gaze direction tracking.
+
+Only sustained eye closure duration is analyzed.
+
+---
+
+# Why Not Traditional Eye Tracking?
+
+| Traditional Eye Tracking | IRIS FLOW |
+|--------------------------|-----------|
+| Requires calibration | No calibration required |
+| Sensitive to drift | Robust to head movement |
+| Suffers from Midas Touch problem | Duration-based intent validation |
+| Expensive dedicated hardware | Works with standard webcam |
+| Precision-dependent gaze pointing | Binary-state input model |
+
+Traditional systems depend on accurate gaze coordinates.  
+IRIS FLOW prioritizes robustness and safety over precision and speed.
+
+---
+
+# Configuration
+
+Key parameters are configurable in `config.js`:
+
+```javascript
+export const AppConfig = {
+    SCAN_SPEED: 2500,        // Time per item (ms)
+    BLINK_THRESHOLD: 0.012,  // Sensitivity of eye closure
+    REQUIRED_BLINK_TIME: 1200 // Duration to trigger selection (ms)
+}; 
+
+
