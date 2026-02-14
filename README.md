@@ -85,8 +85,10 @@ This structured reporting provides caregivers with actionable and specific infor
 
 ### Hands-Free Media Control
 
-- Integrated YouTube search  
-- Local audio playback  
+* **Integrated YouTube Search:**
+    * Users can switch the predictive keyboard to **"Search Mode"**, allowing them to find and play generic YouTube content directly from the typing interface.
+* **Curated Local Library:**
+    * Includes built-in Audiobooks (e.g., *The Little Prince*) and Music for offline or quick access, ensuring entertainment is available even without complex searching.
 
 ### Eye-Controlled Playback
 
@@ -128,11 +130,11 @@ The system prevents accidental activation using:
 
 ### Signal Debouncing
 
-- Blinks shorter than 300ms are filtered as noise.
+- Natural blinks (typically <300ms) are inherently ignored as they do not meet the 1000ms activation threshold.
 
 ### Deliberate Activation Threshold
 
-- Selection triggers only if Eye Closure Duration ≥ 1200ms.
+- Selection triggers only if Eye Closure Duration ≥ 1000ms.
 
 ### State Locking
 
@@ -188,7 +190,7 @@ Optional soft beep at each scan step.
 To select the highlighted item:
 
 1. User closes eyes  
-2. Hold for ≥ 1200ms  
+2. Hold for ≥ 1000ms  
 3. User reopens eyes  
 4. Action is executed  
 
@@ -204,14 +206,15 @@ Implemented using strict state-machine logic.
 
 ### Charging Phase (0s – 3s)
 
-- User closes eyes  
-- Progressive audio feedback warns of impending alarm  
+* User closes eyes.
+* **Auditory cues escalate in pitch (200Hz → 400Hz → 600Hz)** as the SOS timer charges.
+* This provides intuitive, non-visual feedback, letting the user know exactly how close they are to triggering the alarm without looking at the screen.
 
 ### Arming Phase (≥ 3s)
 
 If eyes remain closed for 3 seconds:
 
-- Pre-Alarm activates  
+- Pre-Alarm activates 
 - Screen displays: “OPEN EYES NOW”  
 - High-priority warning tone plays  
 
@@ -305,7 +308,7 @@ export const AppConfig = {
 - Append `?dev=1` to the application URL
 - Example:
 
-    http://localhost:5500/?dev=1
+    http://127.0.0.1:5500/IceBreakers/frontend/index.html?dev=1
 
 - Features
     - Mouse click simulates eye-triggered selection  
