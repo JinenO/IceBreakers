@@ -140,7 +140,7 @@
    3. Active State
    ========================================= */
 .kb-card.active {
-    background: #2d3142; /* Main 风格背景 */
+    background: #2d3142; /* Main-style background */
     border-color: #4fd1c5;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 15px rgba(79, 209, 197, 0.2);
     transform: scale(1.02);
