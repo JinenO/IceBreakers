@@ -300,16 +300,16 @@ export const AppConfig = {
 
 # Developer Mode
 
--For testing without a camera:
--Append ?dev=1 to the application URL.
--Example:
+- For testing without a camera:
+- Append ?dev=1 to the application URL.
+- Example:
 
 http://localhost:5500/?dev=1
 
--Features
- -Mouse click simulates eye-triggered selection
- -Enables rapid UI debugging
- -Camera input is not required
+- Features
+ - Mouse click simulates eye-triggered selection
+ - Enables rapid UI debugging
+ - Camera input is not required
 
 Developer Mode allows safe testing of the navigation engine and state logic without relying on real-time vision input.
 
