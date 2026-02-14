@@ -24,7 +24,7 @@ export class MediaManager {
         switch (appType) {
             case 'youtube':
             case 'local':
-                console.log('🎬 路由：准备渲染视频库');
+                console.log('🎬 Routing: preparing to render video library');
                 if (statusText) statusText.innerText = 'LOCAL MOVIES';
                 this.videoPlayer.renderLibrary(gridUI);
                 break;
@@ -37,17 +37,17 @@ export class MediaManager {
                 break;
 
             case 'photos':
-                console.log('🖼️ 路由：准备渲染相册');
+                console.log('🖼️ Routing: preparing to render album');
                 if (statusText) statusText.innerText = 'FAMILY ALBUM';
                 break;
 
             default:
-                console.warn('未知的媒体类型:', appType);
+                console.warn('Unknown media type:', appType);
         }
     }
 
     closeAll() {
-        console.log('🛑 Media Manager: 执行清场...');
+        console.log('🛑 Media Manager: performing cleanup...');
 
         const libraryGrid = document.getElementById('video-library-grid');
         const playerContainer = document.getElementById('video-player-container');

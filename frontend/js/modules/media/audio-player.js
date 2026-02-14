@@ -1,38 +1,38 @@
 /* frontend/js/modules/media/audio-player.js */
 
-// ✨ 引入刚才的数据文件
+// ✨ Import the data file
 import { MUSIC_LIST, BOOK_LIST } from './audio-data.js';
 
 export class AudioPlayer {
     constructor() {
-        this.currentAppType = null; // 'music' 或 'audiobook'
+        this.currentAppType = null; // 'music' or 'audiobook'
         this.currentAudioId = null;
     }
 
-    // ✨ 辅助函数：控制背景(封面/标题)的显示与隐藏
-    // isVisible = true: 显示封面 (听歌模式)
-    // isVisible = false: 隐藏封面 (菜单模式)
+    // ✨ Helper: control background (cover/title) visibility
+    // isVisible = true: show cover (listening mode)
+    // isVisible = false: hide cover (menu mode)
     toggleBackgroundInfo(isVisible) {
         const container = document.getElementById('now-playing-container');
         if (container) {
             container.style.opacity = isVisible ? '1' : '0';
             container.style.transition = 'opacity 0.3s ease';
-            // 隐藏时禁止点击，防止误触
+            // Disable clicks when hidden to prevent mis-taps
             container.style.pointerEvents = isVisible ? 'auto' : 'none';
         }
     }
 
-    // --- 1. 渲染列表 (Media Library 视图) ---
+    // --- 1. Render list (Media Library view) ---
     renderLibrary(appType, gridUI) {
         this.currentAppType = appType;
         const libraryGrid = document.getElementById('video-library-grid'); 
         
-        // 确保容器状态正确
+        // Ensure container state is correct
         libraryGrid.classList.remove('hidden');
         document.getElementById('audio-player-container').classList.add('hidden');
         document.getElementById('video-player-container').classList.add('hidden');
         
-        // 确保控制层隐藏
+        // Ensure control overlay is hidden
         const overlay = document.getElementById('audio-control-overlay');
         if (overlay) overlay.classList.add('hidden');
 
@@ -41,7 +41,7 @@ export class AudioPlayer {
         const dataList = appType === 'music' ? MUSIC_LIST : BOOK_LIST;
         const defaultIcon = appType === 'music' ? 'music.png' : 'book.png'; 
 
-        // 生成卡片
+        // Generate cards
         dataList.forEach(item => {
             const card = document.createElement('article');
             card.className = 'card';
@@ -58,7 +58,7 @@ export class AudioPlayer {
             libraryGrid.appendChild(card);
         });
 
-        // 返回按钮
+        // Back button
         const backCard = document.createElement('article');
         backCard.className = 'card';
         backCard.id = 'media-lib-back';
@@ -74,11 +74,11 @@ export class AudioPlayer {
         gridUI.refreshCards('#video-library-grid .card');
     }
 
-    // --- 2. 打开播放器 (Audio Playing 视图) ---
+    // --- 2. Open player (Audio Playing view) ---
     openPlayer(audioId, gridUI) {
         this.currentAudioId = audioId;
         
-        // 合并查找，不管是歌还是书
+        // Search across both songs and books
         const allItems = [...MUSIC_LIST, ...BOOK_LIST];
         const item = allItems.find(a => a.id === audioId);
 
@@ -86,44 +86,44 @@ export class AudioPlayer {
 
         console.log("💿 Playing:", item.title);
 
-        // 1. 准备界面：隐藏列表
+        // 1. Prepare UI: hide list
         const libraryGrid = document.getElementById('video-library-grid');
         libraryGrid.classList.add('hidden');
 
-        // 2. 显示 Audio 容器 (负责声音)
+        // 2. Show audio container (handles sound)
         document.getElementById('audio-player-container').classList.remove('hidden');
 
-        // 3. ✨ 核心：强制隐藏控制按钮 (确保一开始没有按钮)
+        // 3. ✨ Core: force-hide controls (ensure no buttons at start)
         const overlay = document.getElementById('audio-control-overlay');
         if (overlay) {
             overlay.classList.add('hidden');
             overlay.classList.remove('visible');
         }
 
-        // 4. 播放音频
+        // 4. Play audio
         const audioEl = document.getElementById('main-audio');
         if (audioEl) {
             audioEl.src = item.src;
             audioEl.play().catch(e => console.warn("Play error:", e));
         }
 
-        // 5. ✨ 渲染“正在播放”界面 (封面+歌名)
-        // 无论歌还是书，都执行这一步，保证界面一模一样
+        // 5. ✨ Render now-playing UI (cover + title)
+        // Always do this for both songs and books to keep UI identical
         this.renderNowPlayingScreen(item);
     }
 
-    // ✨ 统一的封面渲染函数
+    // ✨ Unified cover rendering function
     renderNowPlayingScreen(item) {
         const libraryGrid = document.getElementById('video-library-grid');
-        libraryGrid.classList.remove('hidden'); // 复用这个区域显示大图
+        libraryGrid.classList.remove('hidden'); // Reuse this area for the large display
         
-        // 自动判断默认图标：音乐用音符，书用书本
+        // Auto-pick default icon: music uses note, book uses book
         const defaultIcon = item.type === 'music' ? 'assets/icons/music.png' : 'assets/icons/book.png';
-        // 如果数据里没写type，就通过当前App类型判断
+        // If data has no type, fall back to current app type
         const finalIcon = item.type ? defaultIcon : (this.currentAppType === 'music' ? 'assets/icons/music.png' : 'assets/icons/book.png');
 
-        // 生成大图界面
-        // 我们创建了一个 id="now-playing-container" 的div，方便后面 toggleBackgroundInfo 控制它
+        // Build the large display
+        // We create a div with id="now-playing-container" so toggleBackgroundInfo can control it
         libraryGrid.innerHTML = `
             <div id="now-playing-container" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; animation: fadeIn 0.5s;">
                 
@@ -142,23 +142,23 @@ export class AudioPlayer {
         `;
     }
 
-    // --- 3. 渲染控制按钮 (ActionController 闭眼触发时调用) ---
+    // --- 3. Render control buttons (triggered by ActionController on eye close) ---
     renderControls(gridUI) {
         const controlGrid = document.getElementById('audio-control-grid');
         const overlay = document.getElementById('audio-control-overlay');
         controlGrid.innerHTML = '';
 
-        // ✨ 1. 隐藏背景 (封面和歌名消失)
+        // ✨ 1. Hide background (cover and title disappear)
         this.toggleBackgroundInfo(false);
 
-        // ✨ 2. 显示按钮层
+        // ✨ 2. Show control overlay
         if (overlay) {
             overlay.classList.remove('hidden');
-            void overlay.offsetWidth; // 触发重绘
+            void overlay.offsetWidth; // Trigger reflow
             overlay.classList.add('visible');
         }
 
-        // ✨ 3. 根据类型决定按钮功能
+        // ✨ 3. Choose controls based on type
         let controls = [];
         if (this.currentAppType === 'music') {
             controls = [
@@ -171,7 +171,7 @@ export class AudioPlayer {
                 { id: 'ac-voldown', label: 'VOL -', sub: 'Softer', icon: 'vol-down.png', type: 'tool' }
             ];
         } else {
-            // Audiobook 控制 (快退/快进)
+            // Audiobook controls (rewind/forward)
             controls = [
                 { id: 'ac-resume', label: 'RESUME', sub: 'Back', icon: 'play.png', type: 'send' },
                 { id: 'ac-exit', label: 'EXIT', sub: 'Library', icon: 'log-out.png', type: 'delete' },
@@ -200,7 +200,7 @@ export class AudioPlayer {
         gridUI.refreshCards('#audio-control-grid .card');
     }
 
-    // --- 4. 处理命令 ---
+    // --- 4. Handle commands ---
     handleCommand(cmdId, gridUI, onExitCallback) {
         const audioEl = document.getElementById('main-audio');
         const overlay = document.getElementById('audio-control-overlay');
@@ -215,7 +215,7 @@ export class AudioPlayer {
         if (cmdId === 'ac-resume') {
             audioEl.play();
             hideOverlay();
-            // ✨ 恢复播放时，封面和歌名显示回来
+            // ✨ When resuming, show cover and title again
             this.toggleBackgroundInfo(true);
             return 'RESUMED';
         }
@@ -234,7 +234,7 @@ export class AudioPlayer {
             audioEl.src = ''; 
             hideOverlay();
             
-            // 退出时恢复背景显示
+            // Restore background visibility on exit
             this.toggleBackgroundInfo(true);
             
             this.renderLibrary(this.currentAppType, gridUI);
@@ -242,7 +242,7 @@ export class AudioPlayer {
             return 'EXITED';
         }
         
-        // 播放控制逻辑
+        // Playback control logic
         if (cmdId === 'ac-rewind') audioEl.currentTime = Math.max(0, audioEl.currentTime - 15);
         else if (cmdId === 'ac-forward') audioEl.currentTime += 15;
         else if (cmdId === 'ac-prev' || cmdId === 'ac-next') {

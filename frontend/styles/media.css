@@ -146,7 +146,7 @@
    AUDIO PLAYER STYLES (Fixed Layout)
    ========================================= */
 
-/* 1. 播放器主容器 (黑色背景) */
+/* 1. Player main container (black background) */
 #audio-player-container {
     position: absolute;
     top: 0;
@@ -162,7 +162,7 @@
     overflow: hidden;
 }
 
-/* 2. 封面和信息区域 (默认显示的内容) */
+/* 2. Cover and info area (default visible content) */
 .audio-info-area {
     display: flex;
     flex-direction: column;
@@ -196,7 +196,7 @@
     font-weight: 300;
 }
 
-/* 3. 控制面板遮罩层 (默认隐藏) */
+/* 3. Control panel overlay (hidden by default) */
 #audio-control-overlay {
     position: absolute;
     top: 0;
@@ -214,13 +214,13 @@
     transition: opacity 0.3s ease;
 }
 
-/* 显示状态 (JS 切换此类名) */
+/* Visible state (JS toggles this class) */
 #audio-control-overlay.visible {
     opacity: 1;
     pointer-events: auto;
 }
 
-/* 内容区域 */
+/* Content area */
 .overlay-content {
     width: 90%;
     max-width: 1100px;
@@ -238,7 +238,7 @@
     text-shadow: 0 0 10px rgba(79, 209, 197, 0.5);
 }
 
-/* 4. 按钮网格布局 (跟视频播放器对齐) */
+/* 4. Button grid layout (aligned with video player) */
 #audio-control-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -246,7 +246,7 @@
     width: 100%;
 }
 
-/* 卡片样式微调 */
+/* Card style tweaks */
 #audio-control-grid .card {
     height: 220px;
     background: rgba(255, 255, 255, 0.08);
