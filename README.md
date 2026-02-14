@@ -294,7 +294,25 @@ Key parameters are configurable in `config.js`:
 export const AppConfig = {
     SCAN_SPEED: 2500,        // Time per item (ms)
     BLINK_THRESHOLD: 0.012,  // Sensitivity of eye closure
-    REQUIRED_BLINK_TIME: 1200 // Duration to trigger selection (ms)
-}; 
+    REQUIRED_BLINK_TIME: 1000 // Duration to trigger selection (ms)
+};
+```
+
+# Developer Mode
+
+-For testing without a camera:
+-Append ?dev=1 to the application URL.
+-Example:
+
+http://localhost:5500/?dev=1
+
+-Features
+ -Mouse click simulates eye-triggered selection
+ -Enables rapid UI debugging
+ -Camera input is not required
+
+Developer Mode allows safe testing of the navigation engine and state logic without relying on real-time vision input.
+
+
 
 
