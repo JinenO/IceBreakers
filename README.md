@@ -51,3 +51,92 @@ Single-blink access to essential care requests:
 Designed for rapid caregiver notification with minimal navigation depth.
 
 ---
+
+## Efficient Communication
+
+### Frequency-Optimized Keyboard
+
+Instead of a traditional QWERTY layout, the keyboard is arranged by letter frequency (E, A, I, O, T prioritized).
+
+This reduces average scanning steps per character and improves typing efficiency under single-switch constraints.
+
+### Smart Prediction
+
+Dynamic word completion suggestions reduce required input cycles.
+
+### Text-to-Speech (TTS)
+
+Typed messages are instantly vocalized, enabling direct auditory communication with caregivers.
+
+---
+
+## Body & Pain Mapping
+
+Patients can report localized discomfort by selecting:
+
+- Body part (Head, Arm, Leg, etc.)
+- Sensation (Pain, Itch, Hot, Cold, Pressure)
+
+This structured reporting provides caregivers with actionable and specific information rather than vague alerts.
+
+---
+
+## Accessible Media
+
+### Hands-Free Media Control
+
+- Integrated YouTube search  
+- Local audio playback  
+
+### Eye-Controlled Playback
+
+- Play  
+- Pause  
+- Volume adjustment  
+
+All actions are performed using sustained eye closure through the scanning engine.
+
+---
+
+# System Architecture
+
+## Vision-Based Single-Switch Engine
+
+IRIS FLOW does not rely on gaze-point precision.
+
+Instead, it implements a binary-state interaction model:
+
+- Input: Eye Open / Eye Closed  
+- Control: Duration-based validation  
+- Output: Deterministic action trigger  
+
+### Technology Stack
+
+- MediaPipe FaceLandmarker  
+- 478 facial landmarks  
+- Real-time EAR (Eye Aspect Ratio) calculation  
+
+EAR is continuously monitored to determine eye closure duration.
+
+---
+
+## Anti-Midas Touch Algorithm
+
+Natural blinking must not trigger actions.
+
+The system prevents accidental activation using:
+
+### Signal Debouncing
+
+- Blinks shorter than 300ms are filtered as noise.
+
+### Deliberate Activation Threshold
+
+- Selection triggers only if Eye Closure Duration ≥ 1200ms.
+
+### State Locking
+
+- After activation, input is locked until full eye reopening.
+- Prevents double-triggering or rapid unintended clicks.
+
+---
