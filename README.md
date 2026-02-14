@@ -297,22 +297,23 @@ export const AppConfig = {
     REQUIRED_BLINK_TIME: 1000 // Duration to trigger selection (ms)
 };
 ```
+---
 
 # Developer Mode
 
-- For testing without a camera:
-- Append ?dev=1 to the application URL.
+- For testing without a camera
+- Append `?dev=1` to the application URL
 - Example:
 
-http://localhost:5500/?dev=1
+    http://localhost:5500/?dev=1
 
 - Features
- - Mouse click simulates eye-triggered selection
- - Enables rapid UI debugging
- - Camera input is not required
+    - Mouse click simulates eye-triggered selection  
+    - Enables rapid UI debugging  
+    - Camera input is not required
 
 Developer Mode allows safe testing of the navigation engine and state logic without relying on real-time vision input.
 
-
+---
 
 
