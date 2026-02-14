@@ -9,6 +9,63 @@
     flex-direction: column;
 }
 
+/* 1. Centered control overlay with deeper background */
+#audio-control-overlay {
+    background-color: rgba(13, 17, 23, 0.95) !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#audio-control-overlay.hidden {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* 2. Force grid layout (3 columns x 2 rows) */
+#audio-control-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 40px !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 20px;
+}
+
+/* 3. Bigger, square cards */
+#audio-control-grid .card {
+    width: 220px !important;
+    height: 220px !important;
+    border-radius: 20px !important;
+    background: linear-gradient(145deg, #1f2329, #16191d) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+/* 4. Larger icons */
+#audio-control-grid .card .icon img {
+    width: 80px !important;
+    height: 80px !important;
+    margin-bottom: 20px !important;
+}
+
+/* 5. Text tweaks */
+#audio-control-grid .card .label {
+    font-size: 1.8rem !important;
+    font-weight: bold;
+    color: #fff;
+    margin-top: 5px;
+}
+
+#audio-control-grid .card .sub-label {
+    font-size: 1rem !important;
+    color: #888;
+}
+
 #media-status-text {
     color: #4fd1c5;
     text-align: center;

@@ -254,64 +254,30 @@ function backToMain() {
 // ==========================================
 function handleEyeFrame(data) {
     const isNowClosed = data.eyeOpenness < AppConfig.BLINK_THRESHOLD;
-    const eyeIcon = document.getElementById('eye-icon');
+    const now = Date.now();
 
+    // 1. Always update SOS logic in the background
     sosSystem.update(isNowClosed);
 
-    if (sosSystem.state !== 'IDLE') {
-        wasSOSActive = true;
-        if (isScanning) {
-            stopScanning();
-        }
-        return;
-    }
-
-    if (wasSOSActive) {
-        console.log('SOS Ended/Cancelled. Resuming System...');
-        wasSOSActive = false;
-        resetTriggerState();
-        startScanning();
-    }
-
-    if (sleepManager.isSleeping) {
-        if (isNowClosed) {
-            if (!isEyesClosed) {
-                isEyesClosed = true;
-                eyesClosedStartTime = Date.now();
-            } else if (Date.now() - eyesClosedStartTime >= 1000) {
-                sleepManager.wakeUp();
-            }
-        } else {
-            isEyesClosed = false;
-        }
-        return;
-    }
-
     if (isNowClosed) {
-        if (eyeIcon) eyeIcon.classList.add('active');
-
         if (!isEyesClosed) {
             isEyesClosed = true;
-            eyesClosedStartTime = Date.now();
+            eyesClosedStartTime = now;
         } else {
-            const elapsed = Date.now() - eyesClosedStartTime;
-            const progress = Math.min(
-                (elapsed / AppConfig.REQUIRED_BLINK_TIME) * 100,
-                100
-            );
+            const elapsed = now - eyesClosedStartTime;
 
-            gridUI.updateConfirmBar(progress);
-
-            if (elapsed >= AppConfig.REQUIRED_BLINK_TIME) {
-                if (!isProcessingAction) {
-                    eyesClosedStartTime = Date.now() + 5000;
+            // A. Short blink UI trigger
+            if (elapsed >= AppConfig.REQUIRED_BLINK_TIME && !isProcessingAction) {
+                if (sosSystem.state === 'CHARGING' || sosSystem.state === 'IDLE') {
+                    console.log('UI Trigger reached 1.0s');
                     triggerSelection();
+                    isProcessingAction = true;
                 }
             }
         }
     } else {
-        if (eyeIcon) eyeIcon.classList.remove('active');
         isEyesClosed = false;
+        isProcessingAction = false;
         gridUI.updateConfirmBar(0);
     }
 }
