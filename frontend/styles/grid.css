@@ -1,0 +1,549 @@
+/* ============================================
+   Card Grid for Eye-Tracking Navigation
+   ============================================ */
+
+/* =========================================
+   1. UNIFIED GRID CONTAINER (MAIN & SUB)
+   ========================================= */
+.grid-container {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 20px;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* =========================================
+   2. LAPTOP MODE (max-height: 800px)
+   ========================================= */
+@media screen and (max-height: 800px) {
+  .grid-container {
+    gap: 1.5vh;
+    padding: 1.5vh 20px;
+    padding-bottom: 2vh;
+  }
+
+  .card {
+    padding: 5px;
+  }
+
+  .card .label {
+    font-size: 1rem;
+  }
+}
+
+#main-grid {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  z-index: 10;
+}
+
+/* ============================================
+   SUB-VIEW STYLING
+   ============================================ */
+#view-container {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background-color: var(--bg-color);
+}
+
+.hidden {
+  display: none !important;     /* 🔴 强制隐藏，谁也拦不住！ */
+  opacity: 0 !important;         /* 双重保险 */
+  visibility: hidden !important; /* 三重保险 */
+  pointer-events: none !important; /* 禁用交互 */
+}
+
+.sub-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 2px solid #333;
+}
+
+#view-title {
+  color: var(--accent-primary);
+  font-size: 32px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.view-status {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+
+/* Sub-grid uses .grid-container for layout */
+
+/* Back button styling */
+.back-card {
+  border-color: var(--text-muted) !important;
+  opacity: 0.8;
+}
+
+.back-card .label {
+  color: var(--text-secondary);
+}
+
+/* Simple enter animation */
+#view-container:not(.hidden) {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   CARD SIZING - Optimized for Eye-Tracking
+   ============================================ */
+
+/* Each card has minimum height for easy targeting */
+.card {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+}
+
+.card .icon {
+  height: 40%;
+  max-height: 80px;
+  min-height: 40px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.card .icon img {
+  height: 100%;
+  width: auto;
+  object-fit: contain;
+}
+
+.card .label {
+  font-size: clamp(14px, 3vh, 28px);
+  font-weight: 700;
+  text-align: center;
+}
+
+.card .sub-label {
+  font-size: clamp(10px, 1.5vh, 16px);
+  color: var(--text-dim, var(--text-secondary));
+  margin-top: 2px;
+}
+
+/* ============================================
+   SYSTEM MONITOR PANEL - Non-interactive Card
+   ============================================ */
+.monitor-panel {
+  background: #000;
+  border: 1px solid #333;
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  position: relative;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+.monitor-screen {
+  flex: 1;
+  background: #000;
+  border: 1px solid #222;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  transform: rotateY(180deg);
+}
+
+.face-mesh-overlay {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0.6;
+}
+
+.monitor-text {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  color: var(--neon-blue, var(--accent-primary));
+  font-size: 10px;
+  font-family: monospace;
+  transform: rotateY(180deg);
+}
+
+.monitor-label {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #444;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
+/* ============================================
+   GRID POSITIONING - Strategic Card Placement
+   ============================================ */
+
+/* Top row - Primary cards */
+#c-needs {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+#c-chat {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+#c-body {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+/* Bottom row - Secondary cards */
+#c-media {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+#c-kb {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+#camera-monitor {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+
+/* Large screens - optimal 3-column layout */
+@media (min-width: 1400px) {
+  #main-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .card {
+    min-height: 240px;
+  }
+}
+
+/* Medium screens - maintain 3 columns but adjust sizing */
+@media (max-width: 1200px) {
+  #main-grid {
+    gap: 18px;
+    padding: 18px 24px;
+  }
+
+  .card {
+    min-height: 200px;
+  }
+}
+
+/* Tablets - 2-column layout for better targeting */
+@media (max-width: 900px) {
+  #main-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 16px 20px;
+  }
+
+  /* Reposition cards for 2-column layout */
+  #c-needs {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  #c-chat {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  #c-body {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  #c-media {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  #c-kb {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  #camera-monitor {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+  .card {
+    min-height: 180px;
+  }
+}
+
+/* Mobile/Small tablets - Single column for maximum card size */
+@media (max-width: 600px) {
+  #main-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px 16px;
+    /* Allow scrolling on mobile if needed */
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+  }
+
+  /* All cards in single column */
+  #c-needs,
+  #c-chat,
+  #c-body,
+  #c-media,
+  #c-kb,
+  #camera-monitor {
+    grid-column: 1;
+  }
+
+  #c-needs {
+    grid-row: 1;
+  }
+  #c-chat {
+    grid-row: 2;
+  }
+  #c-body {
+    grid-row: 3;
+  }
+  #c-media {
+    grid-row: 4;
+  }
+  #c-kb {
+    grid-row: 5;
+  }
+  #camera-monitor {
+    grid-row: 6;
+  }
+
+  .card {
+    min-height: 160px;
+  }
+}
+
+/* ============================================
+   GRID SPACING ADJUSTMENTS
+   ============================================ */
+
+/* Extra spacing between rows for eye-tracking accuracy */
+.card {
+  margin: 4px;
+}
+
+/* Larger touch/eye targets on active cards */
+.card.active {
+  margin: 0;
+  /* Expand slightly for easier targeting */
+  transform: scale(1.02);
+}
+
+/* ============================================
+   GRID ANIMATION - Smooth Layout Transitions
+   ============================================ */
+
+/* Smooth transitions when grid layout changes */
+#main-grid {
+  transition: all var(--transition-normal);
+}
+
+.card {
+  transition:
+    all var(--transition-normal),
+    transform var(--transition-fast);
+}
+
+/* ============================================
+   ACCESSIBILITY - High Contrast Mode
+   ============================================ */
+
+/* Increase spacing in high contrast mode for better visibility */
+@media (prefers-contrast: high) {
+  #main-grid {
+    gap: var(--space-xl);
+  }
+
+  .card {
+    border-width: 3px;
+    min-height: 240px;
+  }
+}
+
+/* ============================================
+   LANDSCAPE ORIENTATION OPTIMIZATIONS
+   ============================================ */
+
+/* Optimize layout for landscape tablets/devices */
+@media (max-width: 1024px) and (orientation: landscape) {
+  #main-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-sm);
+    top: 60px;
+  }
+
+  .card {
+    min-height: 160px;
+    padding: var(--space-md);
+  }
+
+  .card .icon {
+    font-size: 48px;
+  }
+}
+
+/* ============================================
+   SCROLLBAR STYLING (for mobile overflow)
+   ============================================ */
+
+/* Custom scrollbar for better aesthetics */
+#main-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+#main-grid::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+#main-grid::-webkit-scrollbar-thumb {
+  background: var(--accent-primary);
+  border-radius: var(--radius-sm);
+}
+
+#main-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-active);
+}
+
+/* ============================================
+   GRID ZONES - Eye-Tracking Calibration Areas
+   ============================================ */
+
+/* Optional: Add visual zones for eye-tracking calibration */
+.card::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 80%;
+  border-radius: var(--radius-md);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+/* Show calibration zone when card is active */
+.card.active::before {
+  opacity: 0.05;
+  background: var(--accent-primary);
+}
+
+/* ============================================
+   PRINT STYLES (if needed for documentation)
+   ============================================ */
+@media print {
+  #main-grid {
+    position: static;
+    transform: none;
+    grid-template-columns: repeat(2, 1fr);
+    page-break-inside: avoid;
+  }
+
+  .card {
+    page-break-inside: avoid;
+    border: 2px solid #000;
+  }
+}
+
+/* ============================================
+   SUB-MENU FLEX LAYOUT FIXES
+   ============================================ */
+#view-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sub-header {
+  flex: 0 0 auto;
+  padding: 10px 0;
+  background: var(--bg-color);
+  z-index: 10;
+}
+
+#sub-grid {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  row-gap: 1.5vh;
+  column-gap: 20px;
+  padding: 1vh 20px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+
+@media screen and (max-height: 800px) {
+
+    /* 1. 标题栏：极致压缩，只留文字高度 */
+    .sub-header {
+        flex: 0 0 35px; /* 强制高度只有 35px */
+        padding: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #sub-grid {
+        padding: 5px 20px; 
+        row-gap: 10px; 
+        column-gap: 20px;
+        flex: 1;
+        min-height: 0; 
+        height: 100%;
+        overflow: hidden; 
+    }
+  }

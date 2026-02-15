@@ -1,0 +1,30 @@
+{
+    "project_info": {
+        "project_number": "308646169856",
+        "firebase_url": "https://irisflow-c7dba-default-rtdb.asia-southeast1.firebasedatabase.app",
+        "project_id": "irisflow-c7dba",
+        "storage_bucket": "irisflow-c7dba.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:308646169856:android:d96d90435aa747fafdf7e5",
+                "android_client_info": {
+                    "package_name": "com.android.irisflow"
+                }
+            },
+            "oauth_client": [],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyBXatKneNVVuzSAdc3SBiq_KZUCvT3JjzU"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": []
+                }
+            }
+        }
+    ],
+    "configuration_version": "1"
+}

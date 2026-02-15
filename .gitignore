@@ -1,0 +1,23 @@
+# --- 1. Global / OS Junk (大家都需要的) ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# --- 2. Frontend (Web) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/*.log
+frontend/js/config.js
+frontend/js/api/firebase-config.js
+
+# --- 3. Dependencies ---
+node_modules/
+mobile/build/
+mobile/.dart_tool/
+mobile/.packages
+mobile/.pub/
+mobile/pubspec.lock

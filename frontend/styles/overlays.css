@@ -1,0 +1,664 @@
+/* ============================================
+   IRIS FLOW - Overlay Styles
+   Feedback, Alerts, and System State Overlays
+   ============================================ */
+
+/* ============================================
+   BASE OVERLAY STRUCTURE
+   ============================================ */
+.overlay {
+    /* Full-screen overlay positioning */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+    /* Center content */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    
+    /* Semi-transparent backdrop */
+    background: rgba(26, 29, 46, 0.95);
+    backdrop-filter: blur(12px);
+    
+    /* Start hidden */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    
+    /* Smooth fade in/out transitions */
+    transition: opacity var(--transition-slow),
+                visibility var(--transition-slow);
+    
+    /* Layer above all other content */
+    z-index: 1000;
+    
+    /* Padding for mobile safety */
+    padding: var(--space-lg);
+}
+
+/* Active overlay state - visible and interactive */
+.overlay.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+/* ============================================
+   FEEDBACK OVERLAY - Action Confirmation
+   ============================================ */
+#overlay-feedback {
+    background: rgba(26, 29, 46, 0.98);
+}
+
+/* Success icon styling */
+.feedback-icon {
+    font-size: 120px;
+    margin-bottom: var(--space-lg);
+    animation: feedback-pop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    filter: drop-shadow(0 8px 24px rgba(82, 199, 136, 0.4));
+}
+
+/* Pop animation for feedback icon */
+@keyframes feedback-pop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Feedback text styling */
+.feedback-text {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--color-success);
+    text-align: center;
+    text-shadow: 0 4px 12px rgba(82, 199, 136, 0.3);
+    animation: feedback-text-slide 0.8s ease-out;
+}
+
+/* Slide up animation for feedback text */
+@keyframes feedback-text-slide {
+    0% {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ============================================
+   PRE-SOS OVERLAY - Warning State
+   ============================================ */
+#overlay-pre-sos {
+    background: rgba(230, 57, 70, 0.15);
+    backdrop-filter: blur(8px);
+}
+
+/* Warning title with pulsing animation */
+.pre-sos-title {
+    font-size: 48px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: var(--color-sos);
+    text-align: center;
+    margin-bottom: var(--space-md);
+    text-shadow: 0 0 20px rgba(230, 57, 70, 0.6);
+    animation: warning-pulse 1s infinite;
+}
+
+/* Pulsing animation for warning - attention-grabbing but not overwhelming */
+@keyframes warning-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.85;
+    }
+}
+
+/* Instruction text styling */
+.overlay-sub {
+    font-size: 24px;
+    color: var(--text-primary);
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 2px;
+    animation: fade-in-up 0.8s ease-out;
+}
+
+/* Fade in up animation for subtitle */
+@keyframes fade-in-up {
+    0% {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ============================================
+   SOS OVERLAY - Emergency Alert
+   ============================================ */
+#overlay-sos {
+    background: rgba(230, 57, 70, 0.25);
+    backdrop-filter: blur(16px);
+}
+
+/* SOS alert box container */
+.sos-alert-box {
+    background: var(--bg-card);
+    border: 4px solid var(--color-sos);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    box-shadow: 0 0 60px rgba(230, 57, 70, 0.6),
+                0 16px 48px rgba(0, 0, 0, 0.5);
+    animation: sos-alert-shake 0.5s ease-out,
+               sos-alert-glow 2s infinite;
+    max-width: 600px;
+    text-align: center;
+}
+
+/* Shake animation for SOS alert - immediate attention */
+@keyframes sos-alert-shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+    20%, 40%, 60%, 80% { transform: translateX(8px); }
+}
+
+/* Continuous glow animation for SOS */
+@keyframes sos-alert-glow {
+    0%, 100% {
+        box-shadow: 0 0 40px rgba(230, 57, 70, 0.4),
+                    0 16px 48px rgba(0, 0, 0, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 80px rgba(230, 57, 70, 0.8),
+                    0 16px 48px rgba(0, 0, 0, 0.5);
+    }
+}
+
+/* SOS heading */
+.sos-alert-box h1 {
+    font-size: 56px;
+    margin-bottom: var(--space-md);
+    color: var(--color-sos);
+    text-shadow: 0 0 24px rgba(230, 57, 70, 0.5);
+    letter-spacing: 4px;
+}
+
+/* SOS message text */
+.sos-alert-box p {
+    font-size: 24px;
+    color: var(--text-primary);
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin: 0;
+}
+
+/* ============================================
+   SLEEP OVERLAY - Standby Mode
+   ============================================ */
+#overlay-sleep {
+    background: rgba(26, 29, 46, 0.98);
+}
+
+/* Sleep mode text styling */
+.sleep-text {
+    font-size: 28px;
+    color: var(--text-secondary);
+    text-align: center;
+    font-weight: 500;
+    letter-spacing: 2px;
+    animation: sleep-fade 3s infinite;
+}
+
+/* Gentle fade animation for sleep mode */
+@keyframes sleep-fade {
+    0%, 100% {
+        opacity: 0.4;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* ============================================
+   OVERLAY TRANSITIONS - Smooth Entry/Exit
+   ============================================ */
+
+/* Fade in animation for overlays */
+.overlay.fade-in {
+    animation: overlay-fade-in 0.5s ease-out forwards;
+}
+
+@keyframes overlay-fade-in {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ============================================
+   CAREGIVER WAIT OVERLAY
+   ============================================ */
+#caregiver-wait-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    color: #fff;
+    transition: opacity 0.3s ease;
+}
+
+#caregiver-wait-overlay.hidden {
+    display: none !important;
+}
+
+.wait-content {
+    text-align: center;
+    position: relative;
+}
+
+.wait-icon {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 20px;
+    animation: pulse 2s infinite;
+}
+
+.pulse-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px;
+    height: 120px;
+    border: 4px solid #4fd1c5;
+    border-radius: 50%;
+    animation: ripple 2s infinite;
+}
+
+@keyframes ripple {
+    0% { width: 0; height: 0; opacity: 1; }
+    100% { width: 200px; height: 200px; opacity: 0; }
+}
+
+#cancel-wait-btn {
+    margin-top: 30px;
+    padding: 10px 30px;
+    background: #e53e3e;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* ============================================
+   SLEEP OVERLAY - Fullscreen Standby
+   ============================================ */
+.sleep-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.5s ease;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.sleep-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.sleep-hint {
+    color: #4fd1c5;
+    font-size: 32px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(79, 209, 197, 0.5);
+    animation: breathing 3s infinite;
+}
+
+@keyframes breathing {
+    0% {
+        opacity: 0.3;
+        transform: scale(0.95);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0.3;
+        transform: scale(0.95);
+    }
+}
+
+/* ============================================
+   FEEDBACK OVERLAY 2.0 - Fullscreen Emphasis
+   ============================================ */
+.feedback-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.9);
+    transition: opacity 0.3s;
+}
+
+.feedback-overlay.hidden {
+    display: none;
+    opacity: 0;
+}
+
+.feedback-overlay .feedback-icon {
+    font-size: 100px;
+    margin-bottom: 20px;
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.feedback-overlay .feedback-text {
+    font-size: 40px;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+}
+
+.feedback-overlay.success .feedback-icon,
+.feedback-overlay.success .feedback-text {
+    color: #00e676;
+}
+
+.feedback-overlay.emergency .feedback-icon,
+.feedback-overlay.emergency .feedback-text {
+    color: #ff1744;
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    80% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Fade out animation for overlays */
+.overlay.fade-out {
+    animation: overlay-fade-out 0.4s ease-in forwards;
+}
+
+@keyframes overlay-fade-out {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+/* ============================================
+   LOADING INDICATOR (for system processing)
+   ============================================ */
+
+/* Optional loading spinner for processing states */
+.overlay-loading {
+    width: 60px;
+    height: 60px;
+    border: 4px solid var(--bg-card);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: loading-spin 1s linear infinite;
+    margin-bottom: var(--space-lg);
+}
+
+@keyframes loading-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   OVERLAY CONTENT SPACING
+   ============================================ */
+
+/* Container for overlay content with max width */
+.overlay-content {
+    max-width: 800px;
+    width: 100%;
+    padding: var(--space-lg);
+}
+
+/* Overlay buttons (if needed for future features) */
+.overlay-button {
+    background: var(--accent-primary);
+    color: var(--bg-primary);
+    border: none;
+    padding: var(--space-md) var(--space-xl);
+    border-radius: var(--radius-md);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-top: var(--space-lg);
+}
+
+.overlay-button:hover {
+    background: var(--accent-active);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(78, 205, 196, 0.3);
+}
+
+/* ============================================
+   RESPONSIVE OVERLAY ADJUSTMENTS
+   ============================================ */
+
+/* Tablet adjustments */
+@media (max-width: 1024px) {
+    .feedback-icon {
+        font-size: 100px;
+    }
+    
+    .feedback-text {
+        font-size: 28px;
+    }
+    
+    .pre-sos-title {
+        font-size: 40px;
+    }
+    
+    .overlay-sub {
+        font-size: 20px;
+    }
+    
+    .sos-alert-box h1 {
+        font-size: 48px;
+    }
+    
+    .sos-alert-box p {
+        font-size: 20px;
+    }
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+    .overlay {
+        padding: var(--space-md);
+    }
+    
+    .feedback-icon {
+        font-size: 80px;
+    }
+    
+    .feedback-text {
+        font-size: 24px;
+        letter-spacing: 2px;
+    }
+    
+    .pre-sos-title {
+        font-size: 32px;
+        letter-spacing: 2px;
+    }
+    
+    .overlay-sub {
+        font-size: 18px;
+    }
+    
+    .sos-alert-box {
+        padding: var(--space-lg);
+    }
+    
+    .sos-alert-box h1 {
+        font-size: 36px;
+        letter-spacing: 2px;
+    }
+    
+    .sos-alert-box p {
+        font-size: 18px;
+    }
+    
+    .sleep-text {
+        font-size: 22px;
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY - Reduced Motion Support
+   ============================================ */
+
+/* Disable complex animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .feedback-icon,
+    .feedback-text,
+    .pre-sos-title,
+    .overlay-sub,
+    .sos-alert-box,
+    .sleep-text {
+        animation: none;
+    }
+    
+    .overlay {
+        transition: opacity 0.1s;
+    }
+}
+
+/* ============================================
+   HIGH CONTRAST MODE
+   ============================================ */
+
+/* Enhanced visibility in high contrast mode */
+@media (prefers-contrast: high) {
+    .overlay {
+        background: rgba(0, 0, 0, 0.98);
+        backdrop-filter: none;
+    }
+    
+    .sos-alert-box {
+        border-width: 6px;
+    }
+    
+    .feedback-text,
+    .pre-sos-title,
+    .sos-alert-box h1 {
+        text-shadow: none;
+        font-weight: 900;
+    }
+}
+
+/* ============================================
+   OVERLAY STACKING - Multiple Overlays
+   ============================================ */
+
+/* If multiple overlays need to stack, use higher z-index */
+#overlay-sos {
+    z-index: 1100;
+}
+
+#overlay-pre-sos {
+    z-index: 1050;
+}
+
+#overlay-feedback {
+    z-index: 1010;
+}
+
+#overlay-sleep {
+    z-index: 1005;
+}
+
+/* ============================================
+   AUTO-DISMISS TIMER INDICATOR
+   ============================================ */
+
+/* Optional: Visual timer for auto-dismiss overlays */
+.overlay-timer {
+    position: absolute;
+    bottom: var(--space-lg);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 4px;
+    background: var(--bg-card);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.overlay-timer-bar {
+    height: 100%;
+    background: var(--accent-primary);
+    animation: timer-countdown 3s linear;
+}
+
+@keyframes timer-countdown {
+    from { width: 100%; }
+    to { width: 0%; }
+}
