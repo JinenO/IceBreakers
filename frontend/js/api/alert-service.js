@@ -1,35 +1,48 @@
 /* frontend/js/api/alert-service.js */
+import { db } from './firebase-config.js';
+import { ref, push, set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 export const AlertService = {
     // 1. Send simple commands (Roll, Head, Legs)
     // Returns a Promise to simulate a network request
     async sendSimpleAlert(commandId, details = '') {
+        const alertsRef = ref(db, 'alerts');
+        const newAlertRef = push(alertsRef);
+
         console.log(`📡 [API] Sending Alert: ${commandId} (${details})`);
 
-        // Simulate network delay of 0.5 seconds
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log('✅ [API] Alert Sent Successfully!');
-                resolve({ status: 'success' });
-            }, 500);
+        return set(newAlertRef, {
+            command: commandId,
+            details: details,
+            status: 'pending',
+            timestamp: serverTimestamp()
         });
     },
 
     // 2. Send synchronous requests (Temp, Itchy)
     // This requires entering "waiting mode"
     async requestCaregiverAssist(commandId) {
+        const alertsRef = ref(db, 'alerts');
+        const newAlertRef = push(alertsRef);
+
         console.log(`📡 [API] Requesting Assistance for: ${commandId}`);
         console.log('⏳ [API] Waiting for Caregiver App response...');
 
-        // Here we use a "simulator":
-        // In a real project, this would listen to WebSocket
-        // In dev mode, we set a 3-second auto reply, or you can trigger it manually
-        return new Promise((resolve) => {
-            // Simulation: after 3 seconds, the caregiver clicks "Handle Request" on the phone
-            setTimeout(() => {
-                console.log(`📱 [Mock App] Caregiver clicked "Handle ${commandId}"`);
-                resolve({ status: 'ready_to_interact' });
-            }, 3000);
+        // Write the request to Firebase
+        await set(newAlertRef, {
+            command: commandId,
+            status: 'waiting',
+            timestamp: serverTimestamp()
         });
+
+        // Return a promise that resolves when the caregiver app updates the status
+        return new Promise((resolve) => {
+            const statusRef = ref(db, `alerts/${newAlertRef.key}/status`);
+            onValue(statusRef, (snapshot) => {
+                if(snapshot.val() === 'ready_to_interact') {
+                    resolve({ status: 'ready_to_interact' });
+                }
+            });
+        })
     }
 };
