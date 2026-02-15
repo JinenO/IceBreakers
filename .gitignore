@@ -12,6 +12,7 @@ frontend/.env
 frontend/.env.local
 frontend/*.log
 frontend/js/config.js
+frontend/js/api/firebase-config.js
 
 # Firebase Security
 serviceAccountKey.json
