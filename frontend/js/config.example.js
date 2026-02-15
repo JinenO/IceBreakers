@@ -6,8 +6,7 @@ export const AppConfig = {
     SCAN_SPEED: 2500,
     BLINK_THRESHOLD: 0.012,
     REQUIRED_BLINK_TIME: 1000,
-    // Get it from: https://aistudio.google.com/
-    GEMINI_API_KEY: "PASTE_YOUR_GEMINI_KEY_HERE"
+    SOUND_ON: true
 };
 
 // YouTube API Key — Get it from https://console.cloud.google.com

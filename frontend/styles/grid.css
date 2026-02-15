@@ -54,10 +54,10 @@
 }
 
 .hidden {
-  display: none !important;     /* 🔴 强制隐藏，谁也拦不住！ */
-  opacity: 0 !important;         /* 双重保险 */
-  visibility: hidden !important; /* 三重保险 */
-  pointer-events: none !important; /* 禁用交互 */
+  display: none !important;     /* 🔴 Force hide, nothing can override! */
+  opacity: 0 !important;         /* Double protection */
+  visibility: hidden !important; /* Triple protection */
+  pointer-events: none !important; /* Disable interaction */
 }
 
 .sub-header {
@@ -527,9 +527,9 @@
 
 @media screen and (max-height: 800px) {
 
-    /* 1. 标题栏：极致压缩，只留文字高度 */
+  /* 1. Title bar: extreme compression, keep only text height */
     .sub-header {
-        flex: 0 0 35px; /* 强制高度只有 35px */
+    flex: 0 0 35px; /* Force height to 35px */
         padding: 0;
         margin: 0;
         display: flex;

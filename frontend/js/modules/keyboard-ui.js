@@ -144,13 +144,13 @@ export function renderTools(kbManager, gridUI) {
     kbGrid.innerHTML = '';
 
     const tools = [
+        { id: 'tool-exit', label: 'EXIT', sub: 'Main Menu', type: 'delete', icon: 'exit.png' },
         { id: 'tool-speak', label: 'SPEAK', sub: 'Read Aloud', type: 'tool', icon: 'speak.png' },
         { id: 'tool-clear', label: 'CLEAR', sub: 'Delete All', type: 'delete', icon: 'clear.png' },
         { id: 'tool-yes', label: 'YES', sub: 'Quick Reply', type: 'tool', icon: 'yes.png' },
         { id: 'tool-no', label: 'NO', sub: 'Quick Reply', type: 'tool', icon: 'no.png' },
         { id: 'tool-thanks', label: 'THANKS', sub: 'Quick Reply', type: 'tool', icon: 'thank.png' },
         { id: 'tool-stop', label: 'STOP', sub: 'Stop Audio', type: 'tool', icon: 'stop.png' },
-        { id: 'tool-exit', label: 'EXIT', sub: 'Main Menu', type: 'delete', icon: 'exit.png' },
         { id: 'tool-back', label: 'BACK', sub: 'To Keyboard', type: 'group', icon: 'back.png' }
     ];
 

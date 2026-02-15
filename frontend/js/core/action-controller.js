@@ -59,6 +59,28 @@ export class ActionController {
             return;
         }
 
+        if (this.viewManager.currentView === 'audio-playing') {
+            console.log("🎵 Audio Playing: Waking up controls...");
+
+            const audioEl = document.getElementById('main-audio');
+            if (audioEl) audioEl.pause();
+
+            const overlay = document.getElementById('audio-control-overlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.add('visible'), 10);
+            }
+
+            this.mediaManager.audioPlayer.renderControls(this.gridUI);
+            this.viewManager.currentView = 'audio-panel';
+
+            setTimeout(() => { 
+                this.resetTriggerState(); 
+                this.startScanning(); 
+            }, 500);
+            return;
+        }
+
         // --- Standard mode checks ---
         const selectedId = this.gridUI.getCurrentId();
 
@@ -70,6 +92,14 @@ export class ActionController {
         }
 
         SoundUtils.playBeep(880, 'sine', 0.1);
+
+        // --- Audio Control Panel ---
+        if (this.viewManager.currentView === 'audio-panel') {
+            if (selectedId) {
+                this._handleAudioPanel(selectedId);
+            }
+            return;
+        }
 
         // --- Keyboard View ---
         if (this.viewManager.currentView === 'keyboard') {
@@ -107,12 +137,6 @@ export class ActionController {
             return;
         }
         
-        // --- Audio Player ---
-        if (this.viewManager.currentView === 'audio-playing') {
-            this._handleAudioPlayer(selectedId);
-            return;
-        }
-
         // Default fallback
         setTimeout(() => {
             this.resetTriggerState();
@@ -280,12 +304,13 @@ export class ActionController {
     }
 
     _handleBodyDetails(selectedId) {
+        // 1. Handle back button
         if (selectedId === 'body-back') {
             this.helpers.openSubMenu('c-body');
             return;
         }
 
-        // ✨ Validate that it's a detail-* ID
+        // 2. Validate ID format
         if (!selectedId.startsWith('detail-')) {
             console.warn('Body Details: Invalid selection', selectedId);
             this.resetTriggerState();
@@ -295,6 +320,7 @@ export class ActionController {
 
         const detailId = selectedId.replace('detail-', '');
 
+        // 3. Prepare speech content
         const speechMap = {
             'too-hot': 'I am too hot. Please help me cool down.',
             'too-cold': 'I am too cold. Please help me warm up.',
@@ -306,12 +332,11 @@ export class ActionController {
         };
 
         const textToSpeak = speechMap[detailId] || detailId;
-
         console.log(`🗣 Speaking Body Detail: ${textToSpeak}`);
 
+        // 4. Run speech (TTS)
         try {
             const utterance = new SpeechSynthesisUtterance(textToSpeak);
-
             utterance.rate = 0.9;
             utterance.pitch = 1.0;
             utterance.volume = 1.0;
@@ -326,12 +351,17 @@ export class ActionController {
             console.error('TTS Error:', e);
         }
 
+        // 5. Send alert (API)
         AlertService.sendSimpleAlert('body-update', detailId);
         showFeedback(`SENT: ${detailId.toUpperCase()} ✅`, 'success');
 
+        // 6. Stay mode: resume scanning after brief feedback
         setTimeout(() => {
-            this.helpers.openSubMenu('c-body');
-        }, 2500);
+            this.resetTriggerState();
+            if (!this.sleepManager.isSleeping) {
+                this.startScanning();
+            }
+        }, 1000);
     }
 
     _handleMediaLibrary(selectedId) {
@@ -362,9 +392,11 @@ export class ActionController {
         }
         
         if (selectedId.startsWith('aud-')) {
+            console.log("💿 Selected Audio:", selectedId);
             this.mediaManager.audioPlayer.openPlayer(selectedId, this.gridUI);
             this.viewManager.currentView = 'audio-playing';
-            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
+            this.stopScanning();
+            setTimeout(() => { this.resetTriggerState(); }, 500);
             return;
         }
 
@@ -433,14 +465,40 @@ export class ActionController {
         if (!this.sleepManager.isSleeping) this.startScanning();
     }
 
-    _handleAudioPlayer(selectedId) {
+    _handleAudioPanel(selectedId) {
+        console.log("🎛 Audio Control Triggered:", selectedId);
         const actionResult = this.mediaManager.audioPlayer.handleCommand(selectedId, this.gridUI, () => {
             this.viewManager.currentView = 'media-library';
+            const audioContainer = document.getElementById('audio-player-container');
+            const libraryGrid = document.getElementById('video-library-grid');
+            if (audioContainer) audioContainer.classList.add('hidden');
+            if (libraryGrid) libraryGrid.classList.remove('hidden');
+            this.stopScanning();
+            this.gridUI.clearHighlights();
             setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
         });
 
+        if (actionResult === 'RESUMED') {
+            this.viewManager.currentView = 'audio-playing';
+            const overlay = document.getElementById('audio-control-overlay');
+            if (overlay) {
+                overlay.classList.remove('visible');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+            this.stopScanning();
+            this.gridUI.clearHighlights();
+            setTimeout(() => { this.resetTriggerState(); }, 500);
+            return;
+        }
+
         if (actionResult === 'STAY') {
+            this.stopScanning();
             setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
+            return;
+        }
+
+        if (actionResult === 'EXITED') {
+            console.log("Audio Player: Exited gracefully.");
             return;
         }
 

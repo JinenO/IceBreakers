@@ -9,6 +9,63 @@
     flex-direction: column;
 }
 
+/* 1. Centered control overlay with deeper background */
+#audio-control-overlay {
+    background-color: rgba(13, 17, 23, 0.95) !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#audio-control-overlay.hidden {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* 2. Force grid layout (3 columns x 2 rows) */
+#audio-control-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 40px !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 20px;
+}
+
+/* 3. Bigger, square cards */
+#audio-control-grid .card {
+    width: 220px !important;
+    height: 220px !important;
+    border-radius: 20px !important;
+    background: linear-gradient(145deg, #1f2329, #16191d) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+/* 4. Larger icons */
+#audio-control-grid .card .icon img {
+    width: 80px !important;
+    height: 80px !important;
+    margin-bottom: 20px !important;
+}
+
+/* 5. Text tweaks */
+#audio-control-grid .card .label {
+    font-size: 1.8rem !important;
+    font-weight: bold;
+    color: #fff;
+    margin-top: 5px;
+}
+
+#audio-control-grid .card .sub-label {
+    font-size: 1rem !important;
+    color: #888;
+}
+
 #media-status-text {
     color: #4fd1c5;
     text-align: center;
@@ -85,6 +142,137 @@
     display: none;
 }
 
+/* =========================================
+   AUDIO PLAYER STYLES (Fixed Layout)
+   ========================================= */
+
+/* 1. Player main container (black background) */
+#audio-player-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #1a202c;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* 2. Cover and info area (default visible content) */
+.audio-info-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transform: translateY(-20px);
+}
+
+#audio-cover {
+    width: 350px;
+    height: 350px;
+    object-fit: cover;
+    border-radius: 20px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+    margin-bottom: 25px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+}
+
+#audio-title {
+    font-size: 2.5rem;
+    color: white;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#audio-sub {
+    font-size: 1.5rem;
+    color: #4fd1c5;
+    font-weight: 300;
+}
+
+/* 3. Control panel overlay (hidden by default) */
+#audio-control-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+/* Visible state (JS toggles this class) */
+#audio-control-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Content area */
+.overlay-content {
+    width: 90%;
+    max-width: 1100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.overlay-title {
+    color: #fff;
+    font-size: 2.5rem;
+    margin-bottom: 40px;
+    letter-spacing: 4px;
+    font-weight: 300;
+    text-shadow: 0 0 10px rgba(79, 209, 197, 0.5);
+}
+
+/* 4. Button grid layout (aligned with video player) */
+#audio-control-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    width: 100%;
+}
+
+/* Card style tweaks */
+#audio-control-grid .card {
+    height: 220px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+#audio-control-grid .card .icon img {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+}
+
+#audio-control-grid .card.active {
+    background: rgba(79, 209, 197, 0.15);
+    border-color: #4fd1c5;
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(79, 209, 197, 0.4);
+}
+
 @keyframes toastSlideIn {
     from {
         opacity: 0;
@@ -113,6 +301,43 @@
     }
 
     #video-control-grid .card .sub-label {
+        font-size: 0.8rem !important;
+    }
+}
+
+/* =========================================
+   💻 LAPTOP / SMALL SCREEN OPTIMIZATION
+   (Add this to the very bottom of the file)
+   ========================================= */
+
+@media screen and (max-height: 850px) {
+    .overlay-title {
+        font-size: 1.8rem !important;
+        margin-bottom: 15px !important;
+    }
+
+    #audio-control-grid {
+        gap: 15px !important;
+        width: 85% !important;
+        height: auto !important;
+    }
+
+    #audio-control-grid .card {
+        height: 140px !important;
+        border-radius: 12px !important;
+    }
+
+    #audio-control-grid .card .icon img {
+        width: 40px !important;
+        height: 40px !important;
+        margin-bottom: 8px !important;
+    }
+
+    #audio-control-grid .card .label {
+        font-size: 1.1rem !important;
+    }
+
+    #audio-control-grid .card .sub-label {
         font-size: 0.8rem !important;
     }
 }

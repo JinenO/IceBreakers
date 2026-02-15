@@ -1,81 +1,56 @@
 /* frontend/js/modules/media/audio-player.js */
 
-// 🎵 音乐数据 (为了测试，先用在线的，之后你可以换成本地文件)
-const MUSIC_LIST = [
-    { 
-        id: 'aud-m1', 
-        title: 'Relaxing Vibes', 
-        sub: 'Chill Lo-Fi', 
-        cover: 'music.png', 
-        src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' 
-    },
-    { 
-        id: 'aud-m2', 
-        title: 'Upbeat Pop', 
-        sub: 'Happy Mood', 
-        cover: 'music.png', 
-        src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3' 
-    }
-];
-
-const BOOK_LIST = [
-    { 
-        id: 'aud-b1', 
-        title: 'The Little Prince', 
-        sub: 'My Love is a Flower', 
-        cover: 'book.png', 
-        src: 'assets/audio/little_prince.mp3'
-    },
-    { 
-        id: 'aud-b2', 
-        title: 'Atomic Habits', 
-        sub: 'Atomic Habits', 
-        cover: 'book.png', 
-        src: 'assets/audio/atomic-habits.mp3' 
-    },
-    { 
-        id: 'aud-b3', 
-        title: 'Aesop Fables', 
-        sub: 'the-fox-and-the-grapes', 
-        cover: 'book.png', 
-        src: 'assets/audio/aesop-fables.mp3' 
-    }
-];
+// ✨ Import the data file
+import { MUSIC_LIST, BOOK_LIST } from './audio-data.js';
 
 export class AudioPlayer {
     constructor() {
-        this.currentAppType = null; // 'music' 或 'audiobook'
+        this.currentAppType = null; // 'music' or 'audiobook'
         this.currentAudioId = null;
     }
 
-    // --- 1. 渲染列表 (在 Media Library 视图) ---
+    // ✨ Helper: control background (cover/title) visibility
+    // isVisible = true: show cover (listening mode)
+    // isVisible = false: hide cover (menu mode)
+    toggleBackgroundInfo(isVisible) {
+        const container = document.getElementById('now-playing-container');
+        if (container) {
+            container.style.opacity = isVisible ? '1' : '0';
+            container.style.transition = 'opacity 0.3s ease';
+            // Disable clicks when hidden to prevent mis-taps
+            container.style.pointerEvents = isVisible ? 'auto' : 'none';
+        }
+    }
+
+    // --- 1. Render list (Media Library view) ---
     renderLibrary(appType, gridUI) {
         this.currentAppType = appType;
-        const libraryGrid = document.getElementById('video-library-grid'); // 复用视频的网格
+        const libraryGrid = document.getElementById('video-library-grid'); 
         
-        // UI 切换
+        // Ensure container state is correct
         libraryGrid.classList.remove('hidden');
+        document.getElementById('audio-player-container').classList.add('hidden');
+        document.getElementById('video-player-container').classList.add('hidden');
         
-        // 确保其他播放器都关掉
-        const audioContainer = document.getElementById('audio-player-container');
-        if(audioContainer) audioContainer.classList.add('hidden');
-        
-        const videoContainer = document.getElementById('video-player-container');
-        if(videoContainer) videoContainer.classList.add('hidden');
+        // Ensure control overlay is hidden
+        const overlay = document.getElementById('audio-control-overlay');
+        if (overlay) overlay.classList.add('hidden');
 
         libraryGrid.innerHTML = '';
 
         const dataList = appType === 'music' ? MUSIC_LIST : BOOK_LIST;
         const defaultIcon = appType === 'music' ? 'music.png' : 'book.png'; 
 
-        // 生成卡片
+        // Generate cards
         dataList.forEach(item => {
             const card = document.createElement('article');
             card.className = 'card';
             card.id = item.id;
             card.innerHTML = `
                 <div class="scan-bar"></div>
-                <div class="icon"><img src="assets/icons/${item.cover}" onerror="this.src='assets/icons/${defaultIcon}'"></div>
+                <div class="icon">
+                    <img src="${item.cover}" alt="" onerror="this.src='assets/icons/${defaultIcon}'">
+                </div>
                 <div class="label">${item.title}</div>
                 <div class="sub-label">${item.sub}</div>
                 <div class="confirm-bar"></div>
@@ -83,13 +58,13 @@ export class AudioPlayer {
             libraryGrid.appendChild(card);
         });
 
-        // 生成返回按钮
+        // Back button
         const backCard = document.createElement('article');
         backCard.className = 'card';
         backCard.id = 'media-lib-back';
         backCard.innerHTML = `
             <div class="scan-bar"></div>
-            <div class="icon"><img src="assets/icons/back.png" onerror="this.style.display='none'">BACK</div>
+            <div class="icon"><img src="assets/icons/back.png"></div>
             <div class="label">BACK</div>
             <div class="sub-label">To Menu</div>
             <div class="confirm-bar"></div>
@@ -99,139 +74,183 @@ export class AudioPlayer {
         gridUI.refreshCards('#video-library-grid .card');
     }
 
-    // --- 2. 打开播放器 (进入 Audio Playing 视图) ---
+    // --- 2. Open player (Audio Playing view) ---
     openPlayer(audioId, gridUI) {
         this.currentAudioId = audioId;
-        const dataList = this.currentAppType === 'music' ? MUSIC_LIST : BOOK_LIST;
-        const audioData = dataList.find(a => a.id === audioId);
-
-        if (!audioData) return;
-
-        console.log("💿 Loading Audio:", audioData.title, audioData.src);
-
-        // UI 切换
-        document.getElementById('video-library-grid').classList.add('hidden');
-        const playerContainer = document.getElementById('audio-player-container');
-        playerContainer.classList.remove('hidden');
-
-        // 填充内容
-        const coverImg = document.getElementById('audio-cover');
-        coverImg.src = `assets/icons/${audioData.cover}`;
-        coverImg.onerror = () => { coverImg.src = 'assets/icons/book.png'; }; 
-
-        document.getElementById('audio-title').innerText = audioData.title;
-        document.getElementById('audio-sub').innerText = audioData.sub;
-
-        // 播放音频
-        const audioEl = document.getElementById('main-audio');
-        audioEl.src = audioData.src;
         
-        // ⚠️ 错误处理
-        audioEl.onerror = () => {
-            console.error("Audio Load Error. Check network or file path.");
-            alert("Error: Cannot play audio. Check console.");
-        };
+        // Search across both songs and books
+        const allItems = [...MUSIC_LIST, ...BOOK_LIST];
+        const item = allItems.find(a => a.id === audioId);
 
-        // 尝试自动播放
-        const playPromise = audioEl.play();
-        if (playPromise !== undefined) {
-            playPromise.then(_ => {
-                console.log("Audio playing started.");
-            }).catch(error => {
-                console.warn("Autoplay blocked by browser:", error);
-            });
+        if (!item) return;
+
+        console.log("💿 Playing:", item.title);
+
+        // 1. Prepare UI: hide list
+        const libraryGrid = document.getElementById('video-library-grid');
+        libraryGrid.classList.add('hidden');
+
+        // 2. Show audio container (handles sound)
+        document.getElementById('audio-player-container').classList.remove('hidden');
+
+        // 3. ✨ Core: force-hide controls (ensure no buttons at start)
+        const overlay = document.getElementById('audio-control-overlay');
+        if (overlay) {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('visible');
         }
 
-        // 渲染底部控制按钮
-        this.renderControls(gridUI);
+        // 4. Play audio
+        const audioEl = document.getElementById('main-audio');
+        if (audioEl) {
+            audioEl.src = item.src;
+            audioEl.play().catch(e => console.warn("Play error:", e));
+        }
+
+        // 5. ✨ Render now-playing UI (cover + title)
+        // Always do this for both songs and books to keep UI identical
+        this.renderNowPlayingScreen(item);
     }
 
-    // --- 3. 渲染控制按钮 ---
+    // ✨ Unified cover rendering function
+    renderNowPlayingScreen(item) {
+        const libraryGrid = document.getElementById('video-library-grid');
+        libraryGrid.classList.remove('hidden'); // Reuse this area for the large display
+        
+        // Auto-pick default icon: music uses note, book uses book
+        const defaultIcon = item.type === 'music' ? 'assets/icons/music.png' : 'assets/icons/book.png';
+        // If data has no type, fall back to current app type
+        const finalIcon = item.type ? defaultIcon : (this.currentAppType === 'music' ? 'assets/icons/music.png' : 'assets/icons/book.png');
+
+        // Build the large display
+        // We create a div with id="now-playing-container" so toggleBackgroundInfo can control it
+        libraryGrid.innerHTML = `
+            <div id="now-playing-container" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; animation: fadeIn 0.5s;">
+                
+                <div style="width: 280px; height: 280px; margin-bottom: 30px; position: relative;">
+                    <img src="${item.cover}" onerror="this.src='${finalIcon}'" 
+                        style="width: 100%; height: 100%; object-fit: cover; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+                </div>
+
+                <div style="font-size: 3rem; font-weight: bold; color: #4fd1c5; margin-bottom: 10px; text-align: center;">${item.title}</div>
+                <div style="font-size: 1.5rem; color: #aaa; margin-bottom: 40px;">${item.sub || 'Now Playing'}</div>
+
+                <div style="font-size: 1.2rem; color: #666; background: rgba(0,0,0,0.3); padding: 10px 25px; border-radius: 50px;">
+                    ( Close Eyes to Control )
+                </div>
+            </div>
+        `;
+    }
+
+    // --- 3. Render control buttons (triggered by ActionController on eye close) ---
     renderControls(gridUI) {
         const controlGrid = document.getElementById('audio-control-grid');
+        const overlay = document.getElementById('audio-control-overlay');
         controlGrid.innerHTML = '';
 
-        let controls = [];
+        // ✨ 1. Hide background (cover and title disappear)
+        this.toggleBackgroundInfo(false);
 
+        // ✨ 2. Show control overlay
+        if (overlay) {
+            overlay.classList.remove('hidden');
+            void overlay.offsetWidth; // Trigger reflow
+            overlay.classList.add('visible');
+        }
+
+        // ✨ 3. Choose controls based on type
+        let controls = [];
         if (this.currentAppType === 'music') {
             controls = [
-                { id: 'ac-prev', label: 'PREV', sub: 'Last Song', icon: 'rewind.png' },
-                { id: 'ac-pause', label: 'PAUSE', sub: 'Stop', icon: 'pause.png' },
-                { id: 'ac-next', label: 'NEXT', sub: 'Next Song', icon: 'forward.png' },
-                { id: 'ac-exit', label: 'EXIT', sub: 'To Library', icon: 'exit.png' }
+                { id: 'ac-resume', label: 'RESUME', sub: 'Back', icon: 'play.png', type: 'send' },
+                { id: 'ac-exit', label: 'EXIT', sub: 'Library', icon: 'log-out.png', type: 'delete' },
+                { id: 'ac-volup', label: 'VOL +', sub: 'Louder', icon: 'vol-up.png', type: 'tool' },
+                
+                { id: 'ac-prev', label: 'PREV', sub: 'Last', icon: 'rewind.png', type: 'tool' },
+                { id: 'ac-next', label: 'NEXT', sub: 'Next', icon: 'forward.png', type: 'tool' },
+                { id: 'ac-voldown', label: 'VOL -', sub: 'Softer', icon: 'vol-down.png', type: 'tool' }
             ];
         } else {
-            // Audiobook
+            // Audiobook controls (rewind/forward)
             controls = [
-                { id: 'ac-rewind', label: '-15s', sub: 'Rewind', icon: 'rewind.png' },
-                { id: 'ac-pause', label: 'PAUSE', sub: 'Stop', icon: 'pause.png' },
-                { id: 'ac-forward', label: '+15s', sub: 'Skip', icon: 'forward.png' },
-                { id: 'ac-exit', label: 'EXIT', sub: 'To Library', icon: 'exit.png' }
+                { id: 'ac-resume', label: 'RESUME', sub: 'Back', icon: 'play.png', type: 'send' },
+                { id: 'ac-exit', label: 'EXIT', sub: 'Library', icon: 'log-out.png', type: 'delete' },
+                { id: 'ac-volup', label: 'VOL +', sub: 'Louder', icon: 'vol-up.png', type: 'tool' },
+                
+                { id: 'ac-rewind', label: '-15s', sub: 'Rewind', icon: 'rewind.png', type: 'tool' },
+                { id: 'ac-forward', label: '+15s', sub: 'Skip', icon: 'forward.png', type: 'tool' },
+                { id: 'ac-voldown', label: 'VOL -', sub: 'Softer', icon: 'vol-down.png', type: 'tool' }
             ];
         }
 
-        controls.forEach(ctrl => {
+        controls.forEach(item => {
             const card = document.createElement('article');
-            card.className = 'card';
-            card.id = ctrl.id;
-            card.style.flex = "1"; 
+            card.className = `card ${item.type}`;
+            card.id = item.id;
             card.innerHTML = `
                 <div class="scan-bar"></div>
-                <div class="icon"><img src="assets/icons/${ctrl.icon}" onerror="this.style.display='none'"></div>
-                <div class="label">${ctrl.label}</div>
-                <div class="sub-label">${ctrl.sub}</div>
+                <div class="icon"><img src="assets/icons/${item.icon}"></div>
+                <div class="label">${item.label}</div>
+                <div class="sub-label">${item.sub}</div>
                 <div class="confirm-bar"></div>
             `;
             controlGrid.appendChild(card);
         });
 
-        // 刷新 GridUI 扫描目标
         gridUI.refreshCards('#audio-control-grid .card');
     }
 
-    // --- 4. 处理命令 ---
+    // --- 4. Handle commands ---
     handleCommand(cmdId, gridUI, onExitCallback) {
         const audioEl = document.getElementById('main-audio');
+        const overlay = document.getElementById('audio-control-overlay');
+
+        const hideOverlay = () => {
+            if (overlay) {
+                overlay.classList.remove('visible');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        };
+
+        if (cmdId === 'ac-resume') {
+            audioEl.play();
+            hideOverlay();
+            // ✨ When resuming, show cover and title again
+            this.toggleBackgroundInfo(true);
+            return 'RESUMED';
+        }
+
+        if (cmdId === 'ac-volup') {
+            audioEl.volume = Math.min(1, audioEl.volume + 0.2);
+            return 'STAY';
+        }
+        if (cmdId === 'ac-voldown') {
+            audioEl.volume = Math.max(0, audioEl.volume - 0.2);
+            return 'STAY';
+        }
 
         if (cmdId === 'ac-exit') {
             audioEl.pause();
             audioEl.src = ''; 
+            hideOverlay();
+            
+            // Restore background visibility on exit
+            this.toggleBackgroundInfo(true);
+            
             this.renderLibrary(this.currentAppType, gridUI);
             if(onExitCallback) onExitCallback(); 
             return 'EXITED';
         }
-
-        if (cmdId === 'ac-pause') {
-            const pauseCard = document.getElementById('ac-pause');
-            const labelDiv = pauseCard.querySelector('.label');
-            const iconImg = pauseCard.querySelector('.icon img');
-
-            if (audioEl.paused) {
-                audioEl.play();
-                labelDiv.innerText = 'PAUSE';
-                if(iconImg) iconImg.src = 'assets/icons/pause.png';
-            } else {
-                audioEl.pause();
-                labelDiv.innerText = 'PLAY';
-                if(iconImg) iconImg.src = 'assets/icons/play.png';
-            }
-        } 
         
-        else if (cmdId === 'ac-rewind') {
-            audioEl.currentTime = Math.max(0, audioEl.currentTime - 15);
-        } else if (cmdId === 'ac-forward') {
-            audioEl.currentTime += 15;
-        }
-
+        // Playback control logic
+        if (cmdId === 'ac-rewind') audioEl.currentTime = Math.max(0, audioEl.currentTime - 15);
+        else if (cmdId === 'ac-forward') audioEl.currentTime += 15;
         else if (cmdId === 'ac-prev' || cmdId === 'ac-next') {
             const dataList = this.currentAppType === 'music' ? MUSIC_LIST : BOOK_LIST;
             let idx = dataList.findIndex(item => item.id === this.currentAudioId);
+            if (cmdId === 'ac-next') idx = (idx + 1) % dataList.length;
+            else idx = (idx - 1 + dataList.length) % dataList.length;
             
-            if (cmdId === 'ac-next') {
-                idx = (idx + 1) % dataList.length;
-            } else {
-                idx = (idx - 1 + dataList.length) % dataList.length;
-            }
             this.openPlayer(dataList[idx].id, gridUI);
         }
 

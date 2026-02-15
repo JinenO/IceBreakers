@@ -14,12 +14,12 @@ export class KeyboardManager {
         this.currentPredictions = [];
         this.state = 'GROUP';
         
-        // ✨ 新增：默认模式是 'speak' (说话)
-        // 可选值: 'speak' | 'search'
+        // ✨ New: default mode is 'speak'
+        // Options: 'speak' | 'search'
         this.mode = 'speak'; 
     }
 
-    // ✨ 新增：切换模式的方法
+    // ✨ New: method to switch modes
     setMode(mode) {
         this.mode = mode;
     }

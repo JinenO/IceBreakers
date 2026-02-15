@@ -14,10 +14,11 @@ frontend/*.log
 frontend/js/config.js
 frontend/js/api/firebase-config.js
 
-# --- 3. Dependencies ---
-node_modules/
-mobile/build/
-mobile/.dart_tool/
-mobile/.packages
-mobile/.pub/
-mobile/pubspec.lock
+# Firebase Security
+serviceAccountKey.json
+*.json
+
+# 2. Backend Python Envionmennt
+backend/venv/
+__pycache__/
+*.pyc

@@ -42,6 +42,7 @@ let isScanning = false;
 let eyesClosedStartTime = 0;
 let isEyesClosed = false;
 let isProcessingAction = false;
+let wasSOSActive = false;
 const KB_SCAN_SELECTOR = '#kb-prediction-bar .predict-btn, #kb-grid .kb-card';
 const MAIN_SCAN_SELECTOR = '#main-grid .card';
 const SUB_SCAN_SELECTOR = '#sub-grid .card';
@@ -99,13 +100,13 @@ function runScanStep() {
         selector = '#sub-grid .card';
     } else if (viewManager.currentView === 'media-library') {
         selector = '#video-library-grid .card'; 
+    } else if (viewManager.currentView === 'audio-panel') {
+        selector = '#audio-control-grid .card';
     } else if (viewManager.currentView === 'video-panel') {
         selector = '#video-control-grid .card'; 
-    } else if (viewManager.currentView === 'audio-playing') {
-        selector = '#audio-control-grid .card'; 
     }
 
-    if (viewManager.currentView === 'video-playing') return; 
+    if (viewManager.currentView === 'video-playing' || viewManager.currentView === 'audio-playing') return; 
 
     gridUI.refreshCards(selector, true);
 
@@ -253,53 +254,30 @@ function backToMain() {
 // ==========================================
 function handleEyeFrame(data) {
     const isNowClosed = data.eyeOpenness < AppConfig.BLINK_THRESHOLD;
-    const eyeIcon = document.getElementById('eye-icon');
+    const now = Date.now();
 
+    // 1. Always update SOS logic in the background
     sosSystem.update(isNowClosed);
 
-    if (sosSystem.state === 'ARMING') {
-        return;
-    }
-
-    if (sleepManager.isSleeping) {
-        if (isNowClosed) {
-            if (!isEyesClosed) {
-                isEyesClosed = true;
-                eyesClosedStartTime = Date.now();
-            } else if (Date.now() - eyesClosedStartTime >= 1000) {
-                sleepManager.wakeUp();
-            }
-        } else {
-            isEyesClosed = false;
-        }
-        return;
-    }
-
     if (isNowClosed) {
-        if (eyeIcon) eyeIcon.classList.add('active');
-
         if (!isEyesClosed) {
             isEyesClosed = true;
-            eyesClosedStartTime = Date.now();
+            eyesClosedStartTime = now;
         } else {
-            const elapsed = Date.now() - eyesClosedStartTime;
-            const progress = Math.min(
-                (elapsed / AppConfig.REQUIRED_BLINK_TIME) * 100,
-                100
-            );
+            const elapsed = now - eyesClosedStartTime;
 
-            gridUI.updateConfirmBar(progress);
-
-            if (elapsed >= AppConfig.REQUIRED_BLINK_TIME) {
-                if (!isProcessingAction) {
-                    eyesClosedStartTime = Date.now() + 5000;
+            // A. Short blink UI trigger
+            if (elapsed >= AppConfig.REQUIRED_BLINK_TIME && !isProcessingAction) {
+                if (sosSystem.state === 'CHARGING' || sosSystem.state === 'IDLE') {
+                    console.log('UI Trigger reached 1.0s');
                     triggerSelection();
+                    isProcessingAction = true;
                 }
             }
         }
     } else {
-        if (eyeIcon) eyeIcon.classList.remove('active');
         isEyesClosed = false;
+        isProcessingAction = false;
         gridUI.updateConfirmBar(0);
     }
 }

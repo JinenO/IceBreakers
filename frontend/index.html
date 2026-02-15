@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="IRIS FLOW - Eye-tracking communication system for ALS patients" />
     <meta name="theme-color" content="#1a1d2e" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*.googleapis.com https://*.gstatic.com https://*.youtube.com https://*.ytimg.com https://cdn.jsdelivr.net https://storage.googleapis.com;">
-    <title>IRIS FLOW - Eye Command System</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; media-src * data: blob: 'unsafe-inline';">    <title>IRIS FLOW - Eye Command System</title>
     <link rel="stylesheet" href="styles/main.css" />
     <link rel="stylesheet" href="styles/grid.css" />
     <link rel="stylesheet" href="styles/keyboard.css" />
@@ -84,10 +83,11 @@
               <p id="audio-sub" style="color: #a0aec0; font-size: 1.5rem; margin: 0;">Artist or Chapter</p>
           </div>
 
-          <div id="audio-control-grid" style="display: flex; gap: 20px; justify-content: center; width: 90%; max-width: 900px; height: 160px;">
-              </div>
-
           <audio id="main-audio" src=""></audio>
+      </div>
+
+      <div id="audio-control-overlay" class="hidden">
+        <div id="audio-control-grid"></div>
       </div>
 
       <section id="keyboard-view" class="hidden">
