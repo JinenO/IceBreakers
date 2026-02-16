@@ -2,7 +2,45 @@
 
 import { FREQUENCY_GROUPS } from './keyboard-logic.js';
 
-const KB_SCAN_SELECTOR = '#kb-prediction-bar .predict-btn, #kb-grid .kb-card';
+// Zones
+const ZONE_DOWN = '#kb-grid .kb-card';
+const ZONE_UP = '#kb-prediction-bar .predict-btn';
+
+// Offline Dictionary
+const OFFLINE_PREDICTIONS = {
+    "I": ["I AM HUNGRY", "I WANT WATER", "I NEED HELP"],
+    "YOU": ["YOU ARE KIND", "CAN YOU HELP ME?", "HOW ARE YOU?"],
+    "HE": ["HE IS HERE", "WHO IS HE?", "HE IS HELPING"],
+    "SHE": ["SHE IS HERE", "WHO IS SHE?", "SHE IS HELPING"],
+    "WE": ["WE ARE READY", "CAN WE GO?", "WE NEED TIME"],
+    "IT": ["IT HURTS", "IT IS GOOD", "IT IS OKAY"],
+    "THIS": ["THIS IS GOOD", "I WANT THIS", "WHAT IS THIS?"],
+    "THAT": ["I WANT THAT", "THAT IS GOOD", "THAT IS WRONG"],
+    "THE": ["THE TIME IS NOW", "WHERE IS THE NURSE?", "OPEN THE DOOR"],
+    "A": ["I NEED A BREAK", "JUST A MOMENT", "IT IS A GOOD DAY"],
+    "HELLO": ["HELLO THERE", "HELLO FRIEND", "HELLO WORLD"],
+    "THANK": ["THANK YOU", "THANKS A LOT", "THANK YOU SO MUCH"],
+    "YES": ["YES PLEASE", "YES I DO", "YES THAT IS CORRECT"],
+    "NO": ["NO THANK YOU", "NO PROBLEM", "NO NOT NOW"]
+};
+
+// Helper: Safe Predictions
+async function getSafePredictions(kbManager) {
+    const text = kbManager.currentText.trim();
+    try {
+        console.log("☁️ Asking Google API...");
+        const words = await kbManager.getPredictions(kbManager.currentText);
+
+        if (words && words.length > 0) {
+            return words.map(w => w.toUpperCase());
+        }
+        throw new Error("Empty API result");
+    } catch (err) {
+        console.warn("⚠️ API Limit/Error. Using Dictionary.");
+        const lastWord = text.split(' ').pop().toUpperCase();
+        return OFFLINE_PREDICTIONS[lastWord] || ["IS", "AND", "THE"];
+    }
+}
 
 function createKbCard(className, id, label, sub, icon) {
     const div = document.createElement('div');
@@ -20,31 +58,21 @@ function createKbCard(className, id, label, sub, icon) {
     return div;
 }
 
+// ==========================================
+// RENDER FUNCTIONS
+// ==========================================
+
 export function renderKeyboardMatrix(kbManager, gridUI) {
     const kbGrid = document.getElementById('kb-grid');
-    const predictionBar = document.getElementById('kb-prediction-bar');
     if (!kbGrid) return;
-
     kbGrid.innerHTML = '';
 
-    if (predictionBar) {
-        updatePredictions(kbManager.currentPredictions || []);
-    }
-
     FREQUENCY_GROUPS.forEach((group) => {
-        const card = createKbCard('kb-card group', group.id, group.label, '');
+        const card = createKbCard('kb-card group', group.id, group.label.toUpperCase(), '');
         kbGrid.appendChild(card);
     });
 
-    const isSearch = kbManager.mode === 'search';
-    
-    const sendCard = createKbCard(
-        'kb-card send',
-        'kb-send',
-        isSearch ? 'SEARCH' : 'SEND',           
-        isSearch ? 'YouTube' : 'To Caregiver',  
-        isSearch ? 'youtube.png' : 'send.png'   
-    );
+    const sendCard = createKbCard('kb-card send', 'kb-send', 'SEND', 'To Caregiver', 'send.png');
     kbGrid.appendChild(sendCard);
 
     const bottomTools = [
@@ -54,103 +82,91 @@ export function renderKeyboardMatrix(kbManager, gridUI) {
     ];
 
     bottomTools.forEach((tool) => {
-        const card = createKbCard(
-            `kb-card ${tool.type}`,
-            tool.id,
-            tool.label,
-            tool.sub,
-            tool.icon
-        );
+        const card = createKbCard(`kb-card ${tool.type}`, tool.id, tool.label, tool.sub, tool.icon);
         kbGrid.appendChild(card);
     });
 
     kbManager.state = 'GROUP';
-    const textLength = kbManager.currentText.length;
+    updatePredictions(kbManager.currentPredictions || []);
 
     setTimeout(() => {
-        gridUI.refreshCards(KB_SCAN_SELECTOR);
-
-        if (!kbManager.currentPredictions || kbManager.currentPredictions.length === 0) {
-            gridUI.currentIndex = 2; 
-        } else {
-            gridUI.currentIndex = -1; 
-        }
+        gridUI.refreshCards(ZONE_DOWN);
+        gridUI.currentIndex = -1;
     }, 10);
-
     updateDisplay(kbManager);
 }
 
 export function renderLetters(groupId, kbManager, gridUI) {
     const group = FREQUENCY_GROUPS.find((item) => item.id === groupId);
     if (!group) return;
-
     const kbGrid = document.getElementById('kb-grid');
     kbGrid.innerHTML = '';
 
     group.letters.forEach((char) => {
-        const card = createKbCard('kb-card group', `char-${char}`, char, '');
+        const upperChar = char.toUpperCase();
+        const card = createKbCard('kb-card group', `char-${upperChar}`, upperChar, '');
         kbGrid.appendChild(card);
     });
 
     const actions = [
-        { id: 'kb-back-group', label: 'BACK', type: 'tool' },
-        { id: 'kb-space', label: 'SPACE', type: 'tool' },
-        { id: 'kb-delete', label: 'DEL', type: 'delete' }
+        { id: 'kb-back-group', label: 'BACK', type: 'tool', icon: 'back.png' },
+        { id: 'kb-space', label: 'SPACE', type: 'tool', icon: 'space.png' },
+        { id: 'kb-delete', label: 'DEL', type: 'delete', icon: 'delete.png' }
     ];
 
     actions.forEach((action) => {
-        const card = createKbCard(
-            `kb-card ${action.type}`,
-            action.id,
-            action.label,
-            ''
-        );
+        const card = createKbCard(`kb-card ${action.type}`, action.id, action.label, '', action.icon);
         kbGrid.appendChild(card);
     });
 
     kbManager.state = 'LETTER';
-    gridUI.refreshCards('#kb-grid .kb-card');
+    gridUI.refreshCards(ZONE_DOWN);
     gridUI.currentIndex = -1;
 }
 
+// ✨ UPDATED DISPLAY: Makes Spaces Visible!
 export function updateDisplay(kbManager) {
     const display = document.getElementById('kb-current-text');
     if (display) {
-        display.innerText = kbManager.currentText;
+        let text = kbManager.currentText;
+
+        // 1. Prevent HTML Injection
+        let safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+        // 2. Make ALL spaces wide (Non-Breaking Spaces)
+        safeText = safeText.replace(/ /g, "&nbsp;");
+
+        // 3. ✨ VISUAL CURSOR: If the last char is a space, UNDERLINE IT
+        // This makes "Hello " look like "Hello_" so you know the space is there.
+        if (text.endsWith(' ')) {
+            // Remove the last &nbsp; and replace it with a styled one
+            safeText = safeText.slice(0, -6) + '<span style="border-bottom: 3px solid #4fd1c5; display:inline-block; min-width:10px;">&nbsp;</span>';
+        }
+
+        display.innerHTML = safeText;
     }
 }
 
 export function updatePredictions(words) {
-    console.log("🎨 UI UPDATE: Trying to show ->", words);
-
+    const bar = document.getElementById('kb-prediction-bar');
+    if (!bar) return;
+    if (!document.getElementById('pred-0')) {
+        bar.innerHTML = `
+            <div class="kb-card predict-btn" id="pred-0"><span class="word"></span><div class="scan-bar"></div><div class="confirm-bar"></div></div>
+            <div class="kb-card predict-btn" id="pred-1"><span class="word"></span><div class="scan-bar"></div><div class="confirm-bar"></div></div>
+            <div class="kb-card predict-btn" id="pred-2"><span class="word"></span><div class="scan-bar"></div><div class="confirm-bar"></div></div>
+        `;
+    }
     for (let i = 0; i < 3; i += 1) {
         const btn = document.getElementById(`pred-${i}`);
-
-        // Safety Check: Do the buttons exist?
-        if (!btn) {
-            console.error(`❌ ERROR: Button #pred-${i} is missing from HTML!`);
-            continue;
-        }
-
+        if (!btn) continue;
         const wordSpan = btn.querySelector('.word');
-        if (!wordSpan) {
-            console.error(`❌ ERROR: .word span missing inside #pred-${i}`);
-            continue;
-        }
 
-        // Apply the word
-        if (words && words[i]) {
-            wordSpan.innerText = words[i];
-
-            // ✨ FORCE VISIBILITY (Fixes invisible text issues)
-            wordSpan.style.color = "#4fd1c5";
-            wordSpan.style.textShadow = "0px 0px 10px rgba(0,0,0,0.8)";
-            wordSpan.style.display = "block";
-
+        if (words && words[i] && words[i] !== "...") {
+            wordSpan.innerText = words[i].toUpperCase();
             btn.classList.add('has-word');
-            console.log(`✅ Painted "${words[i]}" on button ${i}`);
         } else {
-            wordSpan.innerText = "";
+            wordSpan.innerText = (words && words[i] === "...") ? "..." : "";
             btn.classList.remove('has-word');
         }
     }
@@ -159,7 +175,6 @@ export function updatePredictions(words) {
 export function renderTools(kbManager, gridUI) {
     const kbGrid = document.getElementById('kb-grid');
     if (!kbGrid) return;
-
     kbGrid.innerHTML = '';
 
     const tools = [
@@ -174,85 +189,37 @@ export function renderTools(kbManager, gridUI) {
     ];
 
     tools.forEach((tool) => {
-        const card = createKbCard(
-            `kb-card ${tool.type}`,
-            tool.id,
-            tool.label,
-            tool.sub,
-            tool.icon 
-        );
+        const card = createKbCard(`kb-card ${tool.type}`, tool.id, tool.label, tool.sub, tool.icon);
         kbGrid.appendChild(card);
     });
 
     kbManager.state = 'TOOLS';
-    gridUI.refreshCards('#kb-grid .kb-card');
+    gridUI.refreshCards(ZONE_DOWN);
 }
 
-/* frontend/js/modules/keyboard-ui.js */
+// ==========================================
+// HANDLE ACTION
+// ==========================================
+export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget, callbacks) {
 
-export async function handleKeyboardAction(
-    id,
-    kbManager,
-    gridUI,
-    setScanTarget,
-    callbacks
-) {
-    // --- SEND BUTTON ---
+    // --- SEND ---
     if (id === 'kb-send') {
         const message = kbManager.currentText.trim();
-        if (message.length === 0) return;
-
-        kbManager.speak();
-        if (window.showFeedback) window.showFeedback('MESSAGE SENT ✅', 'success');
-
-        console.log(`📡 API CALL: Sending "${message}"...`);
-
-        kbManager.clear();
-        updateDisplay(kbManager);
-        if (callbacks && callbacks.onExit) setTimeout(() => callbacks.onExit(), 3000);
+        if (message.length > 0) {
+            kbManager.speak();
+            if (window.showFeedback) window.showFeedback('SENT ✅', 'success');
+            kbManager.clear();
+            updateDisplay(kbManager);
+            if (callbacks && callbacks.onExit) setTimeout(() => callbacks.onExit(), 3000);
+        }
         return;
     }
 
-    // --- NAVIGATION TOOLS ---
-    if (id === 'tool-back') {
-        renderKeyboardMatrix(kbManager, gridUI);
-        setScanTarget(KB_SCAN_SELECTOR);
-        return;
-    }
-
-    if (id === 'kb-tools') {
-        renderTools(kbManager, gridUI);
-        setScanTarget('#kb-grid .kb-card');
-        return;
-    }
-
-    if (id === 'tool-speak') {
-        kbManager.speak();
-        return;
-    }
-
-    if (id === 'tool-stop') {
-        window.speechSynthesis.cancel();
-        return;
-    }
-
-    if (id === 'tool-clear') {
-        kbManager.clear();
-        updateDisplay(kbManager);
-        renderKeyboardMatrix(kbManager, gridUI);
-        setScanTarget(KB_SCAN_SELECTOR);
-        return;
-    }
-
-    if (id === 'tool-exit') {
-        if (callbacks && callbacks.onExit) callbacks.onExit();
-        return;
-    }
-
-    // --- QUICK REPLIES ---
-    if (['tool-yes', 'tool-no', 'tool-thanks'].includes(id)) {
-        const text = id === 'tool-yes' ? 'Yes' : id === 'tool-no' ? 'No' : 'Thank you';
-        kbManager.speakText(text);
+    // --- NAVIGATION ---
+    if (id === 'tool-back' || id === 'kb-tools' || id === 'kb-back-group') {
+        if (id === 'kb-tools') renderTools(kbManager, gridUI);
+        else renderKeyboardMatrix(kbManager, gridUI);
+        setScanTarget(ZONE_DOWN);
         return;
     }
 
@@ -260,15 +227,9 @@ export async function handleKeyboardAction(
     if (id === 'kb-delete') {
         kbManager.deleteLast();
         updateDisplay(kbManager);
-        // Clear predictions while waiting for new ones
-        updatePredictions(["...", "...", "..."]);
-
-        const words = await kbManager.getPredictions(kbManager.currentText);
-        kbManager.currentPredictions = words;
-        updatePredictions(words); // Update properly
-
+        updatePredictions(["", "", ""]);
         renderKeyboardMatrix(kbManager, gridUI);
-        setScanTarget(KB_SCAN_SELECTOR);
+        setScanTarget(ZONE_DOWN);
         return;
     }
 
@@ -276,70 +237,87 @@ export async function handleKeyboardAction(
     if (id === 'kb-space') {
         kbManager.addChar(' ');
         updateDisplay(kbManager);
-        kbManager.currentPredictions = [];
-        updatePredictions(["", "", ""]); // Clear buttons
-        renderKeyboardMatrix(kbManager, gridUI);
-        setScanTarget(KB_SCAN_SELECTOR);
-        return;
-    }
 
-    // --- BACK TO GROUPS ---
-    if (id === 'kb-back-group') {
+        // ✨ VISUAL FEEDBACK: Show user they clicked space
+        if (window.showFeedback) window.showFeedback('SPACE ADDED ␣', 'success');
+
+        updatePredictions(["...", "...", "..."]);
         renderKeyboardMatrix(kbManager, gridUI);
-        setScanTarget(KB_SCAN_SELECTOR);
+        setScanTarget(ZONE_DOWN);
+
+        getSafePredictions(kbManager).then(words => {
+            kbManager.currentPredictions = words;
+            updatePredictions(words);
+        });
         return;
     }
 
     // --- CLICKING A PREDICTION ---
     if (id.startsWith('pred-')) {
         const index = Number(id.replace('pred-', ''));
-        const word = kbManager.currentPredictions[index];
-        if (!word) return;
+        const sentence = kbManager.currentPredictions[index];
 
-        const lastIndex = kbManager.currentText.lastIndexOf(' ');
-        kbManager.currentText = (lastIndex >= 0 ? kbManager.currentText.substring(0, lastIndex + 1) : '') + word + ' ';
+        if (sentence) {
+            // SENTENCE MODE: Replace text with selected sentence
+            kbManager.currentText = sentence.toUpperCase() + ' ';
 
-        kbManager.currentPredictions = [];
-        updateDisplay(kbManager);
-        updatePredictions(["", "", ""]); // Clear used predictions
-        renderKeyboardMatrix(kbManager, gridUI);
-        setScanTarget(KB_SCAN_SELECTOR);
+            kbManager.currentPredictions = [];
+            updateDisplay(kbManager);
+
+            // 1. Reset Matrix
+            renderKeyboardMatrix(kbManager, gridUI);
+
+            // 2. Force Scanner Down
+            setScanTarget(ZONE_DOWN);
+
+            // 3. Force Visual Cleanup
+            const bar = document.getElementById('kb-prediction-bar');
+            if (bar) {
+                bar.style.borderColor = 'transparent';
+                bar.style.boxShadow = 'none';
+            }
+            document.getElementById('kb-grid').style.opacity = '1';
+            gridUI.refreshCards(ZONE_DOWN);
+            gridUI.currentIndex = -1;
+
+            updatePredictions(["", "", ""]);
+        }
         return;
     }
 
-    // --- SELECTING A LETTER GROUP ---
+    // --- GROUPS ---
     if (id.startsWith('g')) {
         renderLetters(id, kbManager, gridUI);
-        setScanTarget('#kb-grid .kb-card');
+        setScanTarget(ZONE_DOWN);
         return;
     }
 
-    // --- TYPING A CHARACTER (Crucial Fix Here) ---
+    // --- CHARACTERS ---
     if (id.startsWith('char-')) {
         const char = id.split('-')[1];
         kbManager.addChar(char);
+
         updateDisplay(kbManager);
-
-        // 1. Show "..." immediately so user knows it's thinking
-        kbManager.currentPredictions = ["...", "...", "..."];
-
-        // 2. ✨ CRITICAL FIX: GO BACK TO MAIN SCREEN IMMEDIATELY
-        // This puts the scanner back on the Main Grid + Prediction Bar
+        updatePredictions(["", "", ""]);
         renderKeyboardMatrix(kbManager, gridUI);
-        setScanTarget(KB_SCAN_SELECTOR);
+        setScanTarget(ZONE_DOWN);
+        return;
+    }
 
-        // 3. Fetch AI
-        const words = await kbManager.getPredictions(kbManager.currentText);
-        kbManager.currentPredictions = words;
-
-        // 4. Update the buttons with real words (now that we are on the main screen)
-        kbManager.currentPredictions = words;
-        if (words.length > 0) {
-            updatePredictions(words);
-        } else {
-            updatePredictions(["", "", ""]);
-        }
-
+    if (id === 'tool-speak') { kbManager.speak(); return; }
+    if (id === 'tool-stop') { window.speechSynthesis.cancel(); return; }
+    if (id === 'tool-clear') {
+        kbManager.clear();
+        updateDisplay(kbManager);
+        updatePredictions(["", "", ""]);
+        renderKeyboardMatrix(kbManager, gridUI);
+        setScanTarget(ZONE_DOWN);
+        return;
+    }
+    if (id === 'tool-exit') { if (callbacks && callbacks.onExit) callbacks.onExit(); return; }
+    if (['tool-yes', 'tool-no', 'tool-thanks'].includes(id)) {
+        const text = id === 'tool-yes' ? 'YES' : id === 'tool-no' ? 'NO' : 'THANK YOU';
+        kbManager.speakText(text);
         return;
     }
 }
