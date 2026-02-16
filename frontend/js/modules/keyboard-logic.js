@@ -71,12 +71,18 @@ export class KeyboardManager {
             const modelName = "gemini-2.5-flash"; // Or gemini-2.0-flash
 
             // ✨ UPDATED PROMPT: Force it to start with the characters
+            // IN keyboard-logic.js (Inside getPredictions function)
+
             const prompt = `
-            The user is typing: "${text}"
-            The last word "${lastWord}" is incomplete.
-            Return a JSON array of 3 words that start with "${lastWord}" and make sense in this context.
-            Example if input is "I wa": ["want", "was", "water"]
-            Output JSON only.
+                The user is typing: "${text}"
+                Predict 3 likely COMPLETE SENTENCES that the user is trying to say.
+                - If the last word is incomplete, complete it and finish the sentence.
+                - If the last word is complete, predict the rest of the sentence.
+                - Keep sentences short, conversational, and useful for daily needs.
+                - Example input: "I wa" -> Output: ["I want water.", "I want to go home.", "I want to sleep."]
+                - Example input: "Thank" -> Output: ["Thank you very much.", "Thanks for helping.", "Thank you."]
+                
+                Return ONLY a JSON array of strings.
             `;
 
             const response = await fetch(
