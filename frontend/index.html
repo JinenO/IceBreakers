@@ -40,6 +40,14 @@
         <div class="blink-indicator" id="eye-icon" role="status" aria-live="polite" aria-label="Eye tracking active"></div>
         <div class="status-text" id="status-text" role="status" aria-live="polite">SYSTEM READY</div>
       </div>
+      <div class="status-center"
+        style="text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <div id="clock-time"
+          style="color: #4fd1c5; font-size: 1.5rem; font-weight: bold; letter-spacing: 2px; line-height: 1;">--:--</div>
+        <div id="clock-date"
+          style="color: #a0aec0; font-size: 0.85rem; letter-spacing: 1px; margin-top: 4px; text-transform: uppercase;">--
+        </div>
+      </div>
       <div class="status-right">
         <span class="caregiver-id" aria-label="Caregiver ID number">CAREGIVER ID: 9527</span>
         <button class="settings-trigger" aria-label="Open Settings" type="button">⚙️</button>
@@ -164,5 +172,28 @@
 
 
     <script type="module" src="js/main.js"></script>
+    <script>
+      function updateSystemClock() {
+        const now = new Date();
+
+        // Format Time (e.g., 10:30 AM)
+        const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
+        const timeString = now.toLocaleTimeString('en-US', timeOptions);
+
+        // Format Date (e.g., MONDAY, OCT 24, 2025)
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+        const dateString = now.toLocaleDateString('en-US', dateOptions);
+
+        const timeElement = document.getElementById('clock-time');
+        const dateElement = document.getElementById('clock-date');
+
+        if (timeElement) timeElement.textContent = timeString;
+        if (dateElement) dateElement.textContent = dateString;
+      }
+
+      // Update immediately, then start a 1-second interval loop
+      updateSystemClock();
+      setInterval(updateSystemClock, 1000);
+    </script>
   </body>
 </html>
