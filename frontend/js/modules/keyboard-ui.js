@@ -1,45 +1,17 @@
 /* frontend/js/modules/keyboard-ui.js */
 
 import { FREQUENCY_GROUPS } from './keyboard-logic.js';
+// ✨ IMPORT SMART DICTIONARY
+import { getLocalPredictions, dictionaryEngine } from './dictionary.js';
 
-// Zones
 const ZONE_DOWN = '#kb-grid .kb-card';
 const ZONE_UP = '#kb-prediction-bar .predict-btn';
 
-// Offline Dictionary
-const OFFLINE_PREDICTIONS = {
-    "I": ["I AM HUNGRY", "I WANT WATER", "I NEED HELP"],
-    "YOU": ["YOU ARE KIND", "CAN YOU HELP ME?", "HOW ARE YOU?"],
-    "HE": ["HE IS HERE", "WHO IS HE?", "HE IS HELPING"],
-    "SHE": ["SHE IS HERE", "WHO IS SHE?", "SHE IS HELPING"],
-    "WE": ["WE ARE READY", "CAN WE GO?", "WE NEED TIME"],
-    "IT": ["IT HURTS", "IT IS GOOD", "IT IS OKAY"],
-    "THIS": ["THIS IS GOOD", "I WANT THIS", "WHAT IS THIS?"],
-    "THAT": ["I WANT THAT", "THAT IS GOOD", "THAT IS WRONG"],
-    "THE": ["THE TIME IS NOW", "WHERE IS THE NURSE?", "OPEN THE DOOR"],
-    "A": ["I NEED A BREAK", "JUST A MOMENT", "IT IS A GOOD DAY"],
-    "HELLO": ["HELLO THERE", "HELLO FRIEND", "HELLO WORLD"],
-    "THANK": ["THANK YOU", "THANKS A LOT", "THANK YOU SO MUCH"],
-    "YES": ["YES PLEASE", "YES I DO", "YES THAT IS CORRECT"],
-    "NO": ["NO THANK YOU", "NO PROBLEM", "NO NOT NOW"]
-};
-
-// Helper: Safe Predictions
+// ✨ INSTANT OFFLINE PREDICTIONS (No Gemini API Calls)
 async function getSafePredictions(kbManager) {
-    const text = kbManager.currentText.trim();
-    try {
-        console.log("☁️ Asking Google API...");
-        const words = await kbManager.getPredictions(kbManager.currentText);
-
-        if (words && words.length > 0) {
-            return words.map(w => w.toUpperCase());
-        }
-        throw new Error("Empty API result");
-    } catch (err) {
-        console.warn("⚠️ API Limit/Error. Using Dictionary.");
-        const lastWord = text.split(' ').pop().toUpperCase();
-        return OFFLINE_PREDICTIONS[lastWord] || ["IS", "AND", "THE"];
-    }
+    const words = getLocalPredictions(kbManager.currentText);
+    if (!words || words.length === 0) return ["", "", ""];
+    return words;
 }
 
 function createKbCard(className, id, label, sub, icon) {
@@ -57,10 +29,6 @@ function createKbCard(className, id, label, sub, icon) {
     `;
     return div;
 }
-
-// ==========================================
-// RENDER FUNCTIONS
-// ==========================================
 
 export function renderKeyboardMatrix(kbManager, gridUI) {
     const kbGrid = document.getElementById('kb-grid');
@@ -124,22 +92,14 @@ export function renderLetters(groupId, kbManager, gridUI) {
     gridUI.currentIndex = -1;
 }
 
-// ✨ UPDATED DISPLAY: Makes Spaces Visible!
 export function updateDisplay(kbManager) {
     const display = document.getElementById('kb-current-text');
     if (display) {
         let text = kbManager.currentText;
-
-        // 1. Prevent HTML Injection
         let safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-        // 2. Make ALL spaces wide (Non-Breaking Spaces)
         safeText = safeText.replace(/ /g, "&nbsp;");
 
-        // 3. ✨ VISUAL CURSOR: If the last char is a space, UNDERLINE IT
-        // This makes "Hello " look like "Hello_" so you know the space is there.
         if (text.endsWith(' ')) {
-            // Remove the last &nbsp; and replace it with a styled one
             safeText = safeText.slice(0, -6) + '<span style="border-bottom: 3px solid #4fd1c5; display:inline-block; min-width:10px;">&nbsp;</span>';
         }
 
@@ -166,7 +126,7 @@ export function updatePredictions(words) {
             wordSpan.innerText = words[i].toUpperCase();
             btn.classList.add('has-word');
         } else {
-            wordSpan.innerText = (words && words[i] === "...") ? "..." : "";
+            wordSpan.innerText = "";
             btn.classList.remove('has-word');
         }
     }
@@ -197,25 +157,46 @@ export function renderTools(kbManager, gridUI) {
     gridUI.refreshCards(ZONE_DOWN);
 }
 
-// ==========================================
-// HANDLE ACTION
-// ==========================================
 export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget, callbacks) {
 
     // --- SEND ---
+    // --- SEND ---
+    // --- SEND ---
     if (id === 'kb-send') {
-        const message = kbManager.currentText.trim();
-        if (message.length > 0) {
-            kbManager.speak();
-            if (window.showFeedback) window.showFeedback('SENT ✅', 'success');
-            kbManager.clear();
-            updateDisplay(kbManager);
-            if (callbacks && callbacks.onExit) setTimeout(() => callbacks.onExit(), 3000);
+        const rawKeywords = kbManager.currentText.trim();
+        if (rawKeywords.length > 0) {
+
+            // 1. Learn the custom words
+            dictionaryEngine.learn(rawKeywords);
+
+            // 2. Visual feedback
+            if (window.showFeedback) window.showFeedback('FORMATTING... 🧠', 'info');
+
+            // 3. Ask Gemini to format the keywords
+            kbManager.formatMessageToSentence(rawKeywords).then(finalSentence => {
+
+                console.log("📨 Final Message:", finalSentence);
+
+                // ✨ SHOW THE FINAL SENTENCE IN THE TEXT BOX
+                kbManager.currentText = finalSentence;
+                updateDisplay(kbManager);
+
+                // Speak the beautiful sentence
+                kbManager.speakText(finalSentence);
+
+                if (window.showFeedback) window.showFeedback('SENT ✅', 'success');
+
+                // Wait 3 seconds so the user can read it, then clear and exit
+                setTimeout(() => {
+                    kbManager.clear();
+                    updateDisplay(kbManager);
+                    if (callbacks && callbacks.onExit) callbacks.onExit();
+                }, 3000);
+            });
         }
         return;
     }
 
-    // --- NAVIGATION ---
     if (id === 'tool-back' || id === 'kb-tools' || id === 'kb-back-group') {
         if (id === 'kb-tools') renderTools(kbManager, gridUI);
         else renderKeyboardMatrix(kbManager, gridUI);
@@ -227,7 +208,13 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
     if (id === 'kb-delete') {
         kbManager.deleteLast();
         updateDisplay(kbManager);
-        updatePredictions(["", "", ""]);
+
+        // ✨ INSTANT PREDICTION ON DELETE
+        getSafePredictions(kbManager).then(words => {
+            kbManager.currentPredictions = words;
+            updatePredictions(words);
+        });
+
         renderKeyboardMatrix(kbManager, gridUI);
         setScanTarget(ZONE_DOWN);
         return;
@@ -238,39 +225,46 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
         kbManager.addChar(' ');
         updateDisplay(kbManager);
 
-        // ✨ VISUAL FEEDBACK: Show user they clicked space
         if (window.showFeedback) window.showFeedback('SPACE ADDED ␣', 'success');
 
-        updatePredictions(["...", "...", "..."]);
-        renderKeyboardMatrix(kbManager, gridUI);
-        setScanTarget(ZONE_DOWN);
-
+        // ✨ INSTANT PREDICTION ON SPACE
         getSafePredictions(kbManager).then(words => {
             kbManager.currentPredictions = words;
             updatePredictions(words);
         });
+
+        renderKeyboardMatrix(kbManager, gridUI);
+        setScanTarget(ZONE_DOWN);
         return;
     }
 
     // --- CLICKING A PREDICTION ---
+    // --- CLICKING A PREDICTION ---
     if (id.startsWith('pred-')) {
         const index = Number(id.replace('pred-', ''));
-        const sentence = kbManager.currentPredictions[index];
+        const word = kbManager.currentPredictions[index];
 
-        if (sentence) {
-            // SENTENCE MODE: Replace text with selected sentence
-            kbManager.currentText = sentence.toUpperCase() + ' ';
+        if (word) {
+            // ✨ LEARN THIS WORD
+            dictionaryEngine.learn(word);
+
+            // ✨ THE FIX: Keep previous words, only replace the current incomplete word
+            const lastIndex = kbManager.currentText.lastIndexOf(' ');
+
+            if (lastIndex >= 0) {
+                // Keep everything up to the last space, then add the new word
+                kbManager.currentText = kbManager.currentText.substring(0, lastIndex + 1) + word.toUpperCase() + ' ';
+            } else {
+                // If it's the very first word (no spaces yet), just use the word
+                kbManager.currentText = word.toUpperCase() + ' ';
+            }
 
             kbManager.currentPredictions = [];
             updateDisplay(kbManager);
 
-            // 1. Reset Matrix
             renderKeyboardMatrix(kbManager, gridUI);
-
-            // 2. Force Scanner Down
             setScanTarget(ZONE_DOWN);
 
-            // 3. Force Visual Cleanup
             const bar = document.getElementById('kb-prediction-bar');
             if (bar) {
                 bar.style.borderColor = 'transparent';
@@ -280,12 +274,15 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
             gridUI.refreshCards(ZONE_DOWN);
             gridUI.currentIndex = -1;
 
-            updatePredictions(["", "", ""]);
+            // Generate next predictions based on the new context
+            getSafePredictions(kbManager).then(words => {
+                kbManager.currentPredictions = words;
+                updatePredictions(words);
+            });
         }
         return;
     }
 
-    // --- GROUPS ---
     if (id.startsWith('g')) {
         renderLetters(id, kbManager, gridUI);
         setScanTarget(ZONE_DOWN);
@@ -296,9 +293,14 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
     if (id.startsWith('char-')) {
         const char = id.split('-')[1];
         kbManager.addChar(char);
-
         updateDisplay(kbManager);
-        updatePredictions(["", "", ""]);
+
+        // ✨ INSTANT PREDICTION ON TYPE
+        getSafePredictions(kbManager).then(words => {
+            kbManager.currentPredictions = words;
+            updatePredictions(words);
+        });
+
         renderKeyboardMatrix(kbManager, gridUI);
         setScanTarget(ZONE_DOWN);
         return;

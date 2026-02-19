@@ -15,13 +15,9 @@ export class KeyboardManager {
         this.currentText = '';
         this.currentPredictions = [];
         this.state = 'GROUP';
-        
-        // ✨ New: default mode is 'speak'
-        // Options: 'speak' | 'search'
-        this.mode = 'speak'; 
+        this.mode = 'speak';
     }
 
-    // ✨ New: method to switch modes
     setMode(mode) {
         this.mode = mode;
     }
@@ -52,37 +48,27 @@ export class KeyboardManager {
         window.speechSynthesis.speak(utterance);
     }
 
-    /* In frontend/js/modules/keyboard-logic.js */
+    // ✨ NEW GEMINI FUNCTION: Only used when SENDING the final message!
+    async formatMessageToSentence(keywords) {
+        if (!keywords || keywords.trim().length === 0) return "";
 
-    async getPredictions(text) {
-        if (!text || text.trim().length === 0) return [];
-
-        // Split text to find the last word
-        const words = text.trim().split(' ');
-        const lastWord = words[words.length - 1];
-
-        // If the last word is very short (1 letter), maybe don't ask AI yet (optional)
-        // if (lastWord.length < 2) return [];
-
-        console.log(`🧠 Gemini: Autocompleting word starting with "${lastWord}"...`);
+        console.log(`🧠 Gemini: Formatting keywords into sentence: "${keywords}"`);
 
         try {
             const apiKey = AppConfig.GEMINI_API_KEY;
-            const modelName = "gemini-2.5-flash"; // Or gemini-2.0-flash
-
-            // ✨ UPDATED PROMPT: Force it to start with the characters
-            // IN keyboard-logic.js (Inside getPredictions function)
+            const modelName = "gemini-2.5-flash";
 
             const prompt = `
-                The user is typing: "${text}"
-                Predict 3 likely COMPLETE SENTENCES that the user is trying to say.
-                - If the last word is incomplete, complete it and finish the sentence.
-                - If the last word is complete, predict the rest of the sentence.
-                - Keep sentences short, conversational, and useful for daily needs.
-                - Example input: "I wa" -> Output: ["I want water.", "I want to go home.", "I want to sleep."]
-                - Example input: "Thank" -> Output: ["Thank you very much.", "Thanks for helping.", "Thank you."]
+                You are an AI assistant helping an ALS patient communicate with their caregiver.
+                The user has typed the following rough keywords: "${keywords}"
                 
-                Return ONLY a JSON array of strings.
+                Convert these keywords into a single, natural, polite, and complete sentence.
+                - Use the first person ("I").
+                - Keep it clear, brief, and conversational.
+                - Example: "hungry want water" -> "I am feeling hungry and would like some water."
+                - Example: "pain back medicine" -> "My back is in pain, can I please have my medicine?"
+                
+                Return ONLY the final sentence string. No extra words, no quotes, no formatting.
             `;
 
             const response = await fetch(
@@ -96,36 +82,22 @@ export class KeyboardManager {
                 }
             );
 
-            if (!response.ok) return [];
+            if (!response.ok) throw new Error("API Limit or Network Error");
 
             const data = await response.json();
-            if (!data.candidates || !data.candidates[0].content) return [];
+            if (!data.candidates || !data.candidates[0].content) throw new Error("Invalid API Response");
 
-            let aiText = data.candidates[0].content.parts[0].text;
+            let formattedSentence = data.candidates[0].content.parts[0].text.trim();
 
-            // Smart Cleaner
-            const firstBracket = aiText.indexOf('[');
-            const lastBracket = aiText.lastIndexOf(']');
+            // Remove any accidental quotes the AI might add
+            formattedSentence = formattedSentence.replace(/^"|"$/g, '');
 
-            if (firstBracket !== -1 && lastBracket !== -1) {
-                aiText = aiText.substring(firstBracket, lastBracket + 1);
-                const predictions = JSON.parse(aiText);
-
-                // Extra Safety: Filter results to ensure they actually start with the letters
-                // This fixes cases where AI ignores the instruction
-                const filtered = predictions.filter(w =>
-                    w.toLowerCase().startsWith(lastWord.toLowerCase())
-                );
-
-                // If filter removed everything, just return the raw predictions
-                return filtered.length > 0 ? filtered.slice(0, 3) : predictions.slice(0, 3);
-            } else {
-                return [];
-            }
+            return formattedSentence;
 
         } catch (error) {
-            console.error("Prediction Logic Failed:", error);
-            return [];
+            console.error("Gemini Formatting Failed. Falling back to raw keywords:", error);
+            // Fallback: If API fails, just send the raw keywords so communication never stops
+            return keywords;
         }
     }
 }

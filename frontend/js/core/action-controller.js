@@ -154,44 +154,30 @@ export class ActionController {
                     const sendLabel = document.querySelector('#kb-send .kb-label');
                     if (sendLabel) sendLabel.innerText = 'SEND';
                 }
-                
+
                 this.helpers.backToMain();
                 this.sleepManager.resetTimer();
             }
         };
 
-        if (selectedId === 'kb-send') {
+        // 1. If it is a YouTube Search, handle it here
+        if (selectedId === 'kb-send' && this.viewManager.keyboardMode === 'youtube-search') {
             const text = this.kbManager.currentText;
             if (text.trim().length > 0) {
-                if (this.viewManager.keyboardMode === 'youtube-search') {
-                    console.log('🔍 Searching YouTube for:', text);
-                    this.mediaManager.youtubePlayer.searchAndRender(text, this.gridUI);
+                console.log('🔍 Searching YouTube for:', text);
+                this.mediaManager.youtubePlayer.searchAndRender(text, this.gridUI);
 
-                    this.viewManager.currentView = 'media-library';
-                    setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
-                } else {
-                    console.log('🗣 Speaking:', text);
-                    this.sosSystem.speak(text);
-                    this.kbManager.clear();
-                    this.helpers.renderKeyboardMatrix(this.kbManager, this.gridUI);
-
-                    this.sleepManager.resetTimer();
-                    setTimeout(() => {
-                        this.resetTriggerState();
-                        if (!this.sleepManager.isSleeping) {
-                            this.startScanning();
-                        }
-                    }, 500);
-                }
+                this.viewManager.currentView = 'media-library';
+                setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
             } else {
                 this.resetTriggerState();
-                if (!this.sleepManager.isSleeping) {
-                    this.startScanning();
-                }
+                if (!this.sleepManager.isSleeping) this.startScanning();
             }
             return;
         }
 
+        // 2. For ALL other keyboard actions (including normal SEND), let keyboard-ui.js handle it!
+        // This will trigger your new Gemini API sentence formatter.
         this.helpers.handleKeyboardAction(selectedId, this.kbManager, this.gridUI, (newTarget) => {
             this.helpers.setKbScanTarget(newTarget);
         }, callbacks).then(() => {
@@ -207,7 +193,6 @@ export class ActionController {
             }, 800);
         });
     }
-
     _handleMainMenu(selectedId) {
         if (selectedId === 'c-kb') {
             this.kbManager.setMode('speak');
