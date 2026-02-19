@@ -171,7 +171,8 @@ export class ActionController {
                     setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
                 } else {
                     console.log('🗣 Speaking:', text);
-                    this.sosSystem.speak(text);
+                    this.kbManager.speak(text);
+                    AlertService.sendSimpleAlert('message', text);
                     this.kbManager.clear();
                     this.helpers.renderKeyboardMatrix(this.kbManager, this.gridUI);
 
