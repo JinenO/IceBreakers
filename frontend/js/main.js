@@ -5,7 +5,7 @@ import { SoundUtils } from './utils/sound.js';
 import { SOSSystem } from './modules/sos.js';
 import { SleepManager } from './modules/sleep-manager.js';
 import { KeyboardManager } from './modules/keyboard-logic.js';
-import { renderKeyboardMatrix, handleKeyboardAction } from './modules/keyboard-ui.js';
+import { renderKeyboardMatrix, handleKeyboardAction} from './modules/keyboard-ui.js';
 import { SUB_MENU_DATA, BODY_DETAILS_DATA } from './data.js';
 import { AlertService } from './api/alert-service.js';
 import { MediaManager } from './modules/media/media-manager.js';
@@ -252,33 +252,140 @@ function backToMain() {
 // ==========================================
 // 2. Eye frame callback
 // ==========================================
+// ==========================================
+// BLINK COMMAND VARIABLES
+// ==========================================
+let blinkCount = 0;
+let blinkCommandTimer = null;
+const BLINK_TIMEOUT = 600;      // Time to wait for next blink (milliseconds)
+const CLICK_HOLD_TIME = 1000;   // Hold for 1s to Click (Standard)
+
+// ==========================================
+// 2. Eye frame callback (NEW LOGIC)
+// ==========================================
 function handleEyeFrame(data) {
     const isNowClosed = data.eyeOpenness < AppConfig.BLINK_THRESHOLD;
     const now = Date.now();
 
-    // 1. Always update SOS logic in the background
+    // 1. SOS Logic (Always active)
     sosSystem.update(isNowClosed);
 
     if (isNowClosed) {
         if (!isEyesClosed) {
+            // --- EYES JUST CLOSED ---
             isEyesClosed = true;
             eyesClosedStartTime = now;
         } else {
+            // --- HOLDING EYES CLOSED ---
             const elapsed = now - eyesClosedStartTime;
 
-            // A. Short blink UI trigger
-            if (elapsed >= AppConfig.REQUIRED_BLINK_TIME && !isProcessingAction) {
+            // A. Long Blink (Standard Click)
+            if (elapsed >= CLICK_HOLD_TIME && !isProcessingAction) {
                 if (sosSystem.state === 'CHARGING' || sosSystem.state === 'IDLE') {
-                    console.log('UI Trigger reached 1.0s');
+                    console.log('✅ Long Blink: Triggering Click');
                     triggerSelection();
                     isProcessingAction = true;
+                    blinkCount = 0; // Reset any counts
                 }
             }
         }
     } else {
-        isEyesClosed = false;
-        isProcessingAction = false;
-        gridUI.updateConfirmBar(0);
+        // --- EYES JUST OPENED ---
+        if (isEyesClosed) {
+            const elapsed = now - eyesClosedStartTime;
+            isEyesClosed = false;
+            isProcessingAction = false;
+            gridUI.updateConfirmBar(0);
+
+            // B. Short Blink Logic (< 500ms)
+            // Only count if it wasn't a "Long Blink" click
+            if (elapsed < 500) {
+                blinkCount++;
+
+                // Play a tiny tick sound for feedback (optional)
+                // if (SoundUtils.playTone) SoundUtils.playTone(800, 'sine', 0.05);
+
+                // Reset the timer
+                if (blinkCommandTimer) clearTimeout(blinkCommandTimer);
+
+                // Wait to see if user blinks again
+                blinkCommandTimer = setTimeout(() => {
+                    executeBlinkCommand(blinkCount);
+                    blinkCount = 0; // Reset after execution
+                }, BLINK_TIMEOUT);
+            }
+        }
+    }
+}
+
+// ==========================================
+// 3. EXECUTE COMMANDS (2x = Space, 3x = Toggle)
+// ==========================================
+function executeBlinkCommand(count) {
+    if (viewManager.currentView !== 'keyboard') return;
+
+    // Define Zones locally to ensure we have the strings
+    const ZONE_DOWN = '#kb-grid .kb-card';
+    const ZONE_UP = '#kb-prediction-bar .predict-btn';
+
+    if (count === 2) {
+        // --- SPACE (2 Blinks) ---
+        console.log("⚡ COMMAND: SPACE");
+        handleKeyboardAction('kb-space', kbManager, gridUI, (target) => {
+            kbScanTarget = target;
+        });
+        showFeedback("SPACE Added", "success");
+    }
+    else if (count === 3) {
+        // --- TOGGLE ZONE (3 Blinks) ---
+        console.log("⚡ COMMAND: TOGGLE ZONE");
+
+        // 1. Force Clear ANY existing highlights (Fixes the "Still Shining" bug)
+        document.querySelectorAll('.kb-card, .predict-btn').forEach(el => {
+            el.classList.remove('highlight', 'active');
+        });
+
+        // 2. Determine Logic: If we are currently targeting UP, go DOWN. Otherwise go UP.
+        if (kbScanTarget === ZONE_UP) {
+            // -> SWITCH TO LETTERS
+            kbScanTarget = ZONE_DOWN;
+
+            // Visual Update
+            gridUI.refreshCards(ZONE_DOWN);
+            gridUI.currentIndex = -1;
+
+            const bar = document.getElementById('kb-prediction-bar');
+            if (bar) {
+                bar.style.borderColor = 'transparent';
+                bar.style.boxShadow = 'none';
+            }
+            document.getElementById('kb-grid').style.opacity = '1';
+
+            showFeedback("LETTERS", "info");
+        }
+        else {
+            // -> SWITCH TO PREDICTIONS
+            // Safety: Are there predictions to select?
+            if (document.querySelectorAll(ZONE_UP).length === 0) {
+                showFeedback("No Predictions", "warning");
+                return;
+            }
+
+            kbScanTarget = ZONE_UP;
+
+            // Visual Update
+            gridUI.refreshCards(ZONE_UP);
+            gridUI.currentIndex = -1;
+
+            const bar = document.getElementById('kb-prediction-bar');
+            if (bar) {
+                bar.style.borderColor = '#4fd1c5';
+                bar.style.boxShadow = '0 0 15px #4fd1c5';
+            }
+            document.getElementById('kb-grid').style.opacity = '0.4';
+
+            showFeedback("PREDICTIONS", "info");
+        }
     }
 }
 

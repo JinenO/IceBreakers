@@ -9,6 +9,8 @@ export class EyeEngine {
         this.lastVideoTime = -1;
         this.onFrameCallback = null;
         this.running = false;
+
+        this.GAZE_THRESHOLD = 0.45;
     }
 
     async init(onFrame) {
@@ -27,7 +29,8 @@ export class EyeEngine {
                     delegate: 'GPU'
                 },
                 runningMode: 'VIDEO',
-                numFaces: 1
+                numFaces: 1,
+                refineLandmarks: true
             });
             console.log('EyeEngine: 2. AI Model Loaded!');
 
