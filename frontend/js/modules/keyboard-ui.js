@@ -3,6 +3,10 @@
 import { FREQUENCY_GROUPS } from './keyboard-logic.js';
 // ✨ IMPORT SMART DICTIONARY
 import { getLocalPredictions, dictionaryEngine } from './dictionary.js';
+import { AlertService } from '../api/alert-service.js';
+import { showFeedback as _showFeedback } from '../modules/ui-utils.js';
+window.showFeedback = _showFeedback;  
+
 
 const ZONE_DOWN = '#kb-grid .kb-card';
 const ZONE_UP = '#kb-prediction-bar .predict-btn';
@@ -162,6 +166,7 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
     // --- SEND ---
     // --- SEND ---
     // --- SEND ---
+    // --- SEND ---
     if (id === 'kb-send') {
         const rawKeywords = kbManager.currentText.trim();
         if (rawKeywords.length > 0) {
@@ -183,6 +188,15 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
 
                 // Speak the beautiful sentence
                 kbManager.speakText(finalSentence);
+
+                // ✨ SEND TO YOUR DATABASE ✨
+                // Now it sends the perfectly formatted sentence!
+                try {
+                    AlertService.sendSimpleAlert('message', finalSentence);
+                    console.log("✅ SENT TO ALERT SERVICE");
+                } catch(e) {
+                    console.error("❌ ALERT ERROR:", e);
+                }
 
                 if (window.showFeedback) window.showFeedback('SENT ✅', 'success');
 
