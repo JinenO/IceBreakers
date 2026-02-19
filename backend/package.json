@@ -2,17 +2,20 @@
   "name": "backend",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "concurrently": "^9.2.1",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "firebase": "^12.9.0",
     "firebase-admin": "^13.6.1"
-  }
+  },
+  "description": ""
 }
