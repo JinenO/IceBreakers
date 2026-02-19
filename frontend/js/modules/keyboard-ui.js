@@ -1,6 +1,10 @@
 /* frontend/js/modules/keyboard-ui.js */
 
 import { FREQUENCY_GROUPS } from './keyboard-logic.js';
+import { AlertService } from '../api/alert-service.js';
+import { showFeedback as _showFeedback } from '../modules/ui-utils.js';
+window.showFeedback = _showFeedback;  
+
 
 // Zones
 const ZONE_DOWN = '#kb-grid .kb-card';
@@ -205,14 +209,22 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
     // --- SEND ---
     if (id === 'kb-send') {
         const message = kbManager.currentText.trim();
-        if (message.length > 0) {
-            kbManager.speak();
-            if (window.showFeedback) window.showFeedback('SENT ✅', 'success');
-            kbManager.clear();
-            updateDisplay(kbManager);
-            if (callbacks && callbacks.onExit) setTimeout(() => callbacks.onExit(), 3000);
+        if (!message) return;
+
+        try {
+            AlertService.sendSimpleAlert('message', message);
+            console.log("✅ SENT TO ALERT SERVICE");
+            window.showFeedback(`MESSAGE SENT ✅`, 'success');  
+        } catch(e) {
+            console.error("❌ ALERT ERROR:", e);
         }
-        return;
+
+        kbManager.speak();
+        kbManager.clear();
+        updateDisplay(kbManager);
+
+        if (callbacks && callbacks.onExit)
+            setTimeout(() => callbacks.onExit(), 3000);
     }
 
     // --- NAVIGATION ---
