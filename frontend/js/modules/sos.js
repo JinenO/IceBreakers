@@ -1,5 +1,6 @@
 /* frontend/js/modules/sos.js */
 import { SoundUtils } from '../utils/sound.js';
+import { AlertService } from '../api/alert-service.js';
 
 export class SOSSystem {
   constructor() {
@@ -102,19 +103,23 @@ export class SOSSystem {
   }
 
   sendSOS() {
-    if (this.state === 'SENT') return;
-    this.state = 'SENT';
+      if (this.state === 'SENT') return;
+      this.state = 'SENT';
 
-    this.overlay.classList.remove('visible');
+      // Send to Firebase
+      AlertService.sendSimpleAlert('SOS', 
+        'User triggered SOS via eye detection');
 
-    if (window.showFeedback) {
-      window.showFeedback('EMERGENCY SENT', 'emergency');
-    }
+      this.overlay.classList.remove('visible');
 
-    SoundUtils.playBeep(1200, 'square', 1.0);
-    console.log('SOS SENT');
+      if (window.showFeedback) {
+        window.showFeedback('EMERGENCY SENT', 'emergency');
+      }
 
-    setTimeout(() => this.reset(), 5000);
+      SoundUtils.playBeep(1200, 'square', 1.0);
+      console.log('SOS SENT');
+
+      setTimeout(() => this.reset(), 5000);
   }
 
   cancelSOS(reason) {

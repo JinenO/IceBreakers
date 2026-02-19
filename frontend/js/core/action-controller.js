@@ -259,6 +259,16 @@ export class ActionController {
             return;
         }
 
+        const needsCmds = ['cmd-water', 'cmd-food', 'cmd-toilet', 'cmd-meds', 'cmd-suction'];
+        if(needsCmds.includes(selectedId)) {
+            const needType = selectedId.replace('cmd-', '');
+            AlertService.sendSimpleAlert('need', needType);
+            showFeedback(`${needType.toUpperCase()} SENT ✅`, 'success');
+
+            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
+            return;
+        }
+        
         const mediaCommands = ['cmd-local', 'cmd-music', 'cmd-audiobook', 'cmd-photos'];
         if (mediaCommands.includes(selectedId)) {
             const appType = selectedId.replace('cmd-', '');
@@ -352,7 +362,11 @@ export class ActionController {
         }
 
         // 5. Send alert (API)
-        AlertService.sendSimpleAlert('body-update', detailId);
+        if(detailId === 'too-hot' || detailId === 'too-cold') {
+            AlertService.sendSimpleAlert('temp', detailId);
+        } else if (['head', 'back', 'arm', 'leg'].includes(detailId)) {
+            AlertService.sendSimpleAlert('itch', detailId);
+        }
         showFeedback(`SENT: ${detailId.toUpperCase()} ✅`, 'success');
 
         // 6. Stay mode: resume scanning after brief feedback

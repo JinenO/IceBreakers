@@ -18,5 +18,5 @@ frontend/js/api/firebase-config.js
 serviceAccountKey.json
 *.json
 
-# 2. Backend  Envionmennt
-backend/node_modules/
+node_modules/
+**/node_modules/

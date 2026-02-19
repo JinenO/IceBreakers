@@ -7,7 +7,6 @@ import { SleepManager } from './modules/sleep-manager.js';
 import { KeyboardManager } from './modules/keyboard-logic.js';
 import { renderKeyboardMatrix, handleKeyboardAction} from './modules/keyboard-ui.js';
 import { SUB_MENU_DATA, BODY_DETAILS_DATA } from './data.js';
-import { AlertService } from './api/alert-service.js';
 import { MediaManager } from './modules/media/media-manager.js';
 import { ViewManager } from './modules/view-manager.js';
 import { renderMainGrid, showFeedback } from './modules/ui-utils.js';
@@ -172,7 +171,7 @@ async function handleSyncRequest(commandId) {
 
     // 3. Call API (simulated app request)
     try {
-        await AlertService.requestCaregiverAssist(commandId);
+        //await AlertService.requestCaregiverAssist(commandId);
 
         // 4. Hide waiting overlay
         if (waitOverlay) {
