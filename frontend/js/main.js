@@ -5,7 +5,7 @@ import { SoundUtils } from './utils/sound.js';
 import { SOSSystem } from './modules/sos.js';
 import { SleepManager } from './modules/sleep-manager.js';
 import { KeyboardManager } from './modules/keyboard-logic.js';
-import { renderKeyboardMatrix, handleKeyboardAction} from './modules/keyboard-ui.js';
+import { renderKeyboardMatrix, handleKeyboardAction } from './modules/keyboard-ui.js';
 import { SUB_MENU_DATA, BODY_DETAILS_DATA } from './data.js';
 import { MediaManager } from './modules/media/media-manager.js';
 import { ViewManager } from './modules/view-manager.js';
@@ -28,7 +28,7 @@ const viewManager = new ViewManager(gridUI, kbManager, renderKeyboardMatrix);
 const sleepManager = new SleepManager(
     () => stopScanning(),
     () => {
-        SoundUtils.playBeep(600, 'sine', 0.1);
+        if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(600, 'sine', 0.1);
         startScanning();
     }
 );
@@ -41,8 +41,9 @@ let isScanning = false;
 let eyesClosedStartTime = 0;
 let isEyesClosed = false;
 let isProcessingAction = false;
-let wasSOSActive = false;
-const KB_SCAN_SELECTOR = '#kb-prediction-bar .predict-btn, #kb-grid .kb-card';
+
+// ✨ FIX: Start keyboard scanner ONLY on the letters by default, not both zones
+const KB_SCAN_SELECTOR = '#kb-grid .kb-card';
 const MAIN_SCAN_SELECTOR = '#main-grid .card';
 const SUB_SCAN_SELECTOR = '#sub-grid .card';
 let kbScanTarget = KB_SCAN_SELECTOR;
@@ -65,9 +66,9 @@ const actionController = new ActionController({
         renderKeyboardMatrix,
         handleKeyboardAction,
         setKbScanTarget: (target) => { kbScanTarget = target; },
-        setEyeState: (closed, time) => { 
-            isEyesClosed = closed; 
-            eyesClosedStartTime = time; 
+        setEyeState: (closed, time) => {
+            isEyesClosed = closed;
+            eyesClosedStartTime = time;
         }
     }
 });
@@ -98,20 +99,18 @@ function runScanStep() {
     } else if (viewManager.currentView === 'body-details') {
         selector = '#sub-grid .card';
     } else if (viewManager.currentView === 'media-library') {
-        selector = '#video-library-grid .card'; 
+        selector = '#video-library-grid .card';
     } else if (viewManager.currentView === 'audio-panel') {
         selector = '#audio-control-grid .card';
     } else if (viewManager.currentView === 'video-panel') {
-        selector = '#video-control-grid .card'; 
+        selector = '#video-control-grid .card';
     }
 
-    if (viewManager.currentView === 'video-playing' || viewManager.currentView === 'audio-playing') return; 
+    if (viewManager.currentView === 'video-playing' || viewManager.currentView === 'audio-playing') return;
 
     gridUI.refreshCards(selector, true);
-
     gridUI.highlightNext();
     gridUI.startScanBarAnimation(AppConfig.SCAN_SPEED);
-
     sleepManager.recordRound(gridUI.currentIndex, gridUI.cards.length);
 }
 
@@ -125,14 +124,9 @@ function stopScanning() {
 // ==========================================
 function openSubMenu(menuId) {
     const menuData = SUB_MENU_DATA[menuId];
-    if (!menuData) {
-        console.warn('No sub-menu found for:', menuId);
-        return;
-    }
+    if (!menuData) return;
 
-    // Clear old highlights before rendering new view
     gridUI.clearHighlights();
-
     const subGrid = document.getElementById('sub-grid');
     subGrid.innerHTML = '';
 
@@ -140,7 +134,6 @@ function openSubMenu(menuId) {
         const card = document.createElement('article');
         card.className = 'card';
         card.id = item.id === 'back' ? 'btn-back' : `cmd-${item.id}`;
-
         card.innerHTML = `
             <div class="scan-bar"></div>
             <div class="icon"><img src="assets/icons/${item.icon}" alt=""></div>
@@ -153,52 +146,32 @@ function openSubMenu(menuId) {
 
     viewManager.goSubMenu(menuData.title);
     gridUI.refreshCards(SUB_SCAN_SELECTOR);
-
     stopScanning();
     setTimeout(startScanning, 500);
 }
 
-// ✨ Added: handle synchronous requests (Temp / Itch)
 async function handleSyncRequest(commandId) {
-    // 1. Pause scanning
     stopScanning();
-
-    // 2. Show waiting overlay
     const waitOverlay = document.getElementById('caregiver-wait-overlay');
-    if (waitOverlay) {
-        waitOverlay.classList.remove('hidden');
-    }
+    if (waitOverlay) waitOverlay.classList.remove('hidden');
 
-    // 3. Call API (simulated app request)
     try {
-        //await AlertService.requestCaregiverAssist(commandId);
-
-        // 4. Hide waiting overlay
-        if (waitOverlay) {
-            waitOverlay.classList.add('hidden');
-        }
-
-        // 5. Open the corresponding detail menu (Too Hot / Body Parts)
+        if (waitOverlay) waitOverlay.classList.add('hidden');
         openBodyDetailMenu(commandId);
     } catch (err) {
         console.error('Sync failed:', err);
-        if (waitOverlay) {
-            waitOverlay.classList.add('hidden');
-        }
+        if (waitOverlay) waitOverlay.classList.add('hidden');
         startScanning();
     } finally {
         resetTriggerState();
     }
 }
 
-// ✨ Added: open detail menu (render Hot/Cold or Body Parts)
 function openBodyDetailMenu(type) {
     const detailData = BODY_DETAILS_DATA[type];
     if (!detailData) return;
 
-    // Clear old highlights before rendering detail menu
     gridUI.clearHighlights();
-
     const subGrid = document.getElementById('sub-grid');
     subGrid.innerHTML = '';
 
@@ -206,7 +179,6 @@ function openBodyDetailMenu(type) {
         const card = document.createElement('article');
         card.className = 'card';
         card.id = item.id === 'back' ? 'body-back' : `detail-${item.id}`;
-
         card.innerHTML = `
             <div class="scan-bar"></div>
             <div class="icon"><img src="assets/icons/${item.icon}" alt=""></div>
@@ -223,14 +195,13 @@ function openBodyDetailMenu(type) {
 }
 
 function openKeyboard() {
-    // Clear old highlights before entering keyboard
     gridUI.clearHighlights();
-
     kbScanTarget = viewManager.goKeyboard('speak');
 
     stopScanning();
     setTimeout(() => {
-        const selector = '#kb-prediction-bar .predict-btn, #kb-grid .kb-card';
+        // ✨ FIX: Start scanner only on the Letters grid initially
+        const selector = '#kb-grid .kb-card';
         gridUI.refreshCards(selector);
         gridUI.currentIndex = 2;
         startScanning();
@@ -238,79 +209,56 @@ function openKeyboard() {
 }
 
 function backToMain() {
-    // Clear old highlights before returning to main
     gridUI.clearHighlights();
-
     viewManager.goMain();
     gridUI.refreshCards(MAIN_SCAN_SELECTOR);
-
     stopScanning();
     setTimeout(startScanning, 500);
 }
 
 // ==========================================
-// 2. Eye frame callback
-// ==========================================
-// ==========================================
-// BLINK COMMAND VARIABLES
+// 2. Eye frame callback (Blink Logic)
 // ==========================================
 let blinkCount = 0;
 let blinkCommandTimer = null;
-const BLINK_TIMEOUT = 600;      // Time to wait for next blink (milliseconds)
-const CLICK_HOLD_TIME = 1000;   // Hold for 1s to Click (Standard)
+const BLINK_TIMEOUT = 600;
+const CLICK_HOLD_TIME = 1000;
 
-// ==========================================
-// 2. Eye frame callback (NEW LOGIC)
-// ==========================================
 function handleEyeFrame(data) {
     const isNowClosed = data.eyeOpenness < AppConfig.BLINK_THRESHOLD;
     const now = Date.now();
 
-    // 1. SOS Logic (Always active)
     sosSystem.update(isNowClosed);
 
     if (isNowClosed) {
         if (!isEyesClosed) {
-            // --- EYES JUST CLOSED ---
             isEyesClosed = true;
             eyesClosedStartTime = now;
         } else {
-            // --- HOLDING EYES CLOSED ---
             const elapsed = now - eyesClosedStartTime;
-
-            // A. Long Blink (Standard Click)
             if (elapsed >= CLICK_HOLD_TIME && !isProcessingAction) {
                 if (sosSystem.state === 'CHARGING' || sosSystem.state === 'IDLE') {
                     console.log('✅ Long Blink: Triggering Click');
                     triggerSelection();
                     isProcessingAction = true;
-                    blinkCount = 0; // Reset any counts
+                    blinkCount = 0;
                 }
             }
         }
     } else {
-        // --- EYES JUST OPENED ---
         if (isEyesClosed) {
             const elapsed = now - eyesClosedStartTime;
             isEyesClosed = false;
             isProcessingAction = false;
             gridUI.updateConfirmBar(0);
 
-            // B. Short Blink Logic (< 500ms)
-            // Only count if it wasn't a "Long Blink" click
             if (elapsed < 500) {
                 blinkCount++;
-
-                // Play a tiny tick sound for feedback (optional)
-                // if (SoundUtils.playTone) SoundUtils.playTone(800, 'sine', 0.05);
-
-                // Reset the timer
                 if (blinkCommandTimer) clearTimeout(blinkCommandTimer);
 
-                // Wait to see if user blinks again
                 blinkCommandTimer = setTimeout(() => {
                     executeBlinkCommand(blinkCount);
-                    blinkCount = 0; // Reset after execution
+                    blinkCount = 0;
                 }, BLINK_TIMEOUT);
             }
         }
@@ -323,33 +271,34 @@ function handleEyeFrame(data) {
 function executeBlinkCommand(count) {
     if (viewManager.currentView !== 'keyboard') return;
 
-    // Define Zones locally to ensure we have the strings
     const ZONE_DOWN = '#kb-grid .kb-card';
     const ZONE_UP = '#kb-prediction-bar .predict-btn';
 
     if (count === 2) {
-        // --- SPACE (2 Blinks) ---
         console.log("⚡ COMMAND: SPACE");
+
+        // Add a safe beep sound so the user knows it registered
+        if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(500, 'sine', 0.05);
+
         handleKeyboardAction('kb-space', kbManager, gridUI, (target) => {
             kbScanTarget = target;
         });
-        showFeedback("SPACE Added", "success");
     }
     else if (count === 3) {
-        // --- TOGGLE ZONE (3 Blinks) ---
         console.log("⚡ COMMAND: TOGGLE ZONE");
 
-        // 1. Force Clear ANY existing highlights (Fixes the "Still Shining" bug)
+        // Add a distinct double beep to indicate a mode switch
+        if (SoundUtils && SoundUtils.playBeep) {
+            SoundUtils.playBeep(700, 'square', 0.05);
+            setTimeout(() => SoundUtils.playBeep(900, 'square', 0.05), 100);
+        }
+
         document.querySelectorAll('.kb-card, .predict-btn').forEach(el => {
             el.classList.remove('highlight', 'active');
         });
 
-        // 2. Determine Logic: If we are currently targeting UP, go DOWN. Otherwise go UP.
         if (kbScanTarget === ZONE_UP) {
-            // -> SWITCH TO LETTERS
             kbScanTarget = ZONE_DOWN;
-
-            // Visual Update
             gridUI.refreshCards(ZONE_DOWN);
             gridUI.currentIndex = -1;
 
@@ -359,20 +308,11 @@ function executeBlinkCommand(count) {
                 bar.style.boxShadow = 'none';
             }
             document.getElementById('kb-grid').style.opacity = '1';
-
-            showFeedback("LETTERS", "info");
         }
         else {
-            // -> SWITCH TO PREDICTIONS
-            // Safety: Are there predictions to select?
-            if (document.querySelectorAll(ZONE_UP).length === 0) {
-                showFeedback("No Predictions", "warning");
-                return;
-            }
+            if (document.querySelectorAll(ZONE_UP).length === 0) return;
 
             kbScanTarget = ZONE_UP;
-
-            // Visual Update
             gridUI.refreshCards(ZONE_UP);
             gridUI.currentIndex = -1;
 
@@ -382,14 +322,12 @@ function executeBlinkCommand(count) {
                 bar.style.boxShadow = '0 0 15px #4fd1c5';
             }
             document.getElementById('kb-grid').style.opacity = '0.4';
-
-            showFeedback("PREDICTIONS", "info");
         }
     }
 }
 
 // ==========================================
-// 3. Trigger selection (Fixed for Video Mode)
+// 4. Trigger selection & Developer Mode
 // ==========================================
 let isTriggering = false;
 
@@ -404,25 +342,48 @@ function resetTriggerState() {
     actionController.isTriggering = false;
 }
 
+function initDevMode() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has('dev')) return;
+
+    console.warn("🛠️ DEVELOPER MODE ACTIVE: Mouse Click Trigger Enabled");
+
+    document.body.style.cursor = "auto";
+    document.addEventListener('click', (e) => {
+        const target = e.target.closest('.card, .kb-card, .predict-btn');
+        if (!target) return;
+
+        console.log(`🖱️ Dev Clicked: ${target.id}`);
+        const index = gridUI.cards.findIndex(card => card.id === target.id);
+
+        if (index !== -1) {
+            stopScanning();
+            gridUI.currentIndex = index;
+            gridUI.highlightCard(index);
+
+            setTimeout(() => {
+                triggerSelection();
+            }, 10);
+        }
+    }, true);
+}
+
 // ==========================================
-// 4. Entry point (Modified for ALS Context)
+// 5. Entry point (Merged securely)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     const startOverlay = document.getElementById('start-overlay');
 
     const initSystem = async () => {
-        // 1. Play a very short silent sound to unlock AudioContext
         SoundUtils.unlock();
-        SoundUtils.playBeep(440, 'sine', 0.1);
+        if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(440, 'sine', 0.1);
 
-        // 2. Hide the start overlay
         startOverlay.style.opacity = '0';
         startOverlay.style.transition = 'opacity 0.5s ease';
         setTimeout(() => {
             startOverlay.classList.add('hidden');
         }, 500);
 
-        // 3. Start camera and eye tracking only after user interaction
         try {
             console.log('🚀 System Initialized by User Interaction');
             await eyeEngine.init(handleEyeFrame);
@@ -433,50 +394,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Listen for click
     startOverlay.addEventListener('click', initSystem, { once: true });
-});
 
-// ==========================================
-// 5. Developer Mode (Mouse Click Support)
-// ==========================================
-
-function initDevMode() {
-    // Enable only when URL has ?dev=1, e.g., http://localhost:3000/?dev=1
-    const urlParams = new URLSearchParams(window.location.search);
-    if (!urlParams.has('dev')) return;
-
-    console.warn("🛠️ DEVELOPER MODE ACTIVE: Mouse Click Trigger Enabled");
-    
-    document.body.style.cursor = "auto";
-    document.addEventListener('click', (e) => {
-        const target = e.target.closest('.card, .kb-card, .predict-btn');
-        if (!target) return;
-
-        console.log(`🖱️ Dev Clicked: ${target.id}`);
-
-        const index = gridUI.cards.findIndex(card => card.id === target.id);
-
-        if (index !== -1) {
-            stopScanning();
-
-            gridUI.currentIndex = index;
-            
-            gridUI.highlightCard(index);
-
-            setTimeout(() => {
-                triggerSelection();
-            }, 10);
-        } else {
-            console.warn("⚠️ Clicked element is not in the current scanning list.");
-        }
-    }, true); 
-}
-
-// Do not forget to call this on startup!
-document.addEventListener('DOMContentLoaded', () => {
-    // ... (your existing initSystem logic) ...
-    
-    // ✨ Add this at the end
+    // Initialize dev mode if in URL
     initDevMode();
 });
