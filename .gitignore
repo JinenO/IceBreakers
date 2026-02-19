@@ -18,7 +18,5 @@ frontend/js/api/firebase-config.js
 serviceAccountKey.json
 *.json
 
-# 2. Backend Python Envionmennt
-backend/venv/
-__pycache__/
-*.pyc
+# 2. Backend  Envionmennt
+backend/node_modules/
