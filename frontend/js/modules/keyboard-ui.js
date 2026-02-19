@@ -214,7 +214,7 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
         try {
             AlertService.sendSimpleAlert('message', message);
             console.log("✅ SENT TO ALERT SERVICE");
-            showFeedback(`MESSAGE SENT ✅`, 'success');  
+            window.showFeedback(`MESSAGE SENT ✅`, 'success');  
         } catch(e) {
             console.error("❌ ALERT ERROR:", e);
         }
