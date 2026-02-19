@@ -3,6 +3,12 @@
     "firebase": "^12.9.0"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "firebase-tools": "^15.6.0"
+  },
+  "scripts": {
+    "start:backend": "node backend/server.js",
+    "start:frontend": "live-server frontend --port=5500",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
   }
 }
