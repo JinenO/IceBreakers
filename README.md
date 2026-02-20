@@ -33,8 +33,38 @@ Make sure you have installed :
 
 1. Clone the repository
 ```
-git clone
+git clone https://github.com/JinenO/IceBreakers.git
 cd IceBreakers
+```
+2. Initialize Backend & Install Project Dependencies (First Time Only)
+```
+cd backend
+npm init -y
+cd ..
+npm install
+```
+3. Firebase Service Account Setup (Required)
+   The backend requires a Firebase private key file named:
+```
+serviceAccountKey.json
+```
+How To Download the Key?
+a. Open Firebase Console
+b. Select your porject
+c. Go To Project Setting -> Service Accounts
+d. Click "Generate New Private Key"
+e. Download the JSON file.
+
+Place the downloaded file into:
+```
+IceBreakers/backend/serviceAccountKey.json
+```
+### Never upload this serviceAccountKey.json to github. Add to .gitignore file.
+
+4. Start Frontend & Backend Server by one command:
+```
+cd ..
+npm start
 ```
 
 # Core Features
