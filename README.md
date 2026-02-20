@@ -49,11 +49,17 @@ npm install
 serviceAccountKey.json
 ```
 How To Download the Key?
+
 a. Open Firebase Console
+
 b. Select your porject
+
 c. Go To Project Setting -> Service Accounts
+
 d. Click "Generate New Private Key"
+
 e. Download the JSON file.
+
 
 Place the downloaded file into:
 ```
