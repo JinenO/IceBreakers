@@ -24,6 +24,19 @@ Enable critical communication using minimal motor control.
 
 ---
 
+# Installation & Setup
+## Requirements
+Make sure you have installed :
+- Node.js (v18 or newer recommended)
+- npm (comes with Node.js)
+- Webcam (required for eye detection)
+
+1. Clone the repository
+```
+git clone
+cd IceBreakers
+```
+
 # Core Features
 
 ## Life-Critical Safety Systems
