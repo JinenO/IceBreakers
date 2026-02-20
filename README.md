@@ -25,7 +25,7 @@ Enable critical communication using minimal motor control.
 ---
 
 # Installation & Setup
-## Requirements
+### Requirements
 Make sure you have installed :
 - Node.js (v18 or newer recommended)
 - npm (comes with Node.js)
