@@ -30,7 +30,8 @@ export const SettingsService = {
     },
 
     initUI() {
-        const btn = document.getElementById('web-settings-btn');
+        // Find the existing settings icon in the top right header (lines 62 of index.html)
+        const btn = document.querySelector('.settings-trigger');
         const modal = document.getElementById('web-settings-modal');
         const closeBtn = document.getElementById('close-settings-btn');
 
