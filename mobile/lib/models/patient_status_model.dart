@@ -16,7 +16,8 @@ class PatientStatusModel {
   factory PatientStatusModel.fromMap(Map<dynamic, dynamic> data) {
     return PatientStatusModel(
       isOnline: data['isOnline'] as bool? ?? false,
-      batteryLevel: (data['batteryLevel'] as num?)?.toDouble() ?? 0.0,
+      batteryLevel:
+          (data['batteryLevel'] as num?)?.toDouble().roundToDouble() ?? 0.0,
       isCharging: data['isCharging'] as bool? ?? false,
       eyeTrackerActive: data['eyeTrackerActive'] as bool? ?? false,
       lastSeen: data['lastSeen'] as int? ?? 0,

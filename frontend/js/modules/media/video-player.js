@@ -105,8 +105,8 @@ export class VideoPlayer {
       if (iframeEl) {
         iframeEl.style.display = 'block';
         iframeEl.classList.remove("hidden");
-        // Simplified embed string to avoid CORS / Video Unavailable blocks on localhost
-        const embedUrl = `https://www.youtube.com/embed/${realId}?autoplay=1&controls=1&rel=0`;
+        // Use nocookie domain to bypass some domain-based playback restrictions
+        const embedUrl = `https://www.youtube-nocookie.com/embed/${realId}?autoplay=1&controls=1&rel=0`;
         console.log("Loading YouTube iframe with URL:", embedUrl);
         iframeEl.src = embedUrl;
       }

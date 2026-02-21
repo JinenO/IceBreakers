@@ -253,10 +253,15 @@ function handleEyeFrame(data) {
             if (elapsed >= holdTimeRequired && !isProcessingAction) {
                 if (sosSystem.state === 'CHARGING' || sosSystem.state === 'IDLE') {
                     console.log('✅ Long Blink: Triggering Click');
+                    gridUI.updateConfirmBar(100); // Fill it up at trigger
                     triggerSelection();
                     isProcessingAction = true;
                     blinkCount = 0;
                 }
+            } else {
+                // Update confirm bar visually as user holds eyes closed
+                const progress = Math.min((elapsed / holdTimeRequired) * 100, 100);
+                gridUI.updateConfirmBar(progress);
             }
         }
     } else {
