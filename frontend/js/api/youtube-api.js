@@ -15,14 +15,16 @@ export async function searchYouTube(query) {
             return [];
         }
 
-        const formattedResults = data.items.map((item) => {
-            return {
-                id: `yt-${item.id.videoId}`,
-                title: item.snippet.title.substring(0, 30) + '...',
-                sub: item.snippet.channelTitle,
-                cover: item.snippet.thumbnails.high.url
-            };
-        });
+        const formattedResults = data.items
+            .filter((item) => item.id && item.id.videoId)
+            .map((item) => {
+                return {
+                    id: `yt-${item.id.videoId}`,
+                    title: item.snippet.title.substring(0, 30) + '...',
+                    sub: item.snippet.channelTitle,
+                    cover: item.snippet.thumbnails.high.url
+                };
+            });
 
         console.log('YouTube data received:', formattedResults);
         return formattedResults;

@@ -105,7 +105,9 @@ export class VideoPlayer {
       if (iframeEl) {
         iframeEl.style.display = 'block';
         iframeEl.classList.remove("hidden");
-        iframeEl.src = `https://www.youtube.com/embed/${realId}?autoplay=1&controls=0&rel=0&enablejsapi=1`;
+        const embedUrl = `https://www.youtube.com/embed/${realId}?autoplay=1&controls=0&rel=0&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
+        console.log("Loading YouTube iframe with URL:", embedUrl);
+        iframeEl.src = embedUrl;
       }
 
       console.log(`🎬 YouTube Playing: ${realId}`);

@@ -169,6 +169,46 @@
     </div>
   </div>
 
+  <!-- Settings Button (Top Left) -->
+  <button id="web-settings-btn"
+    style="position:fixed; top:20px; left:20px; z-index:9000; background:#1e1e1e; border:2px solid #4fd1c5; color:#fff; border-radius:50%; width:50px; height:50px; font-size:24px; cursor:pointer;"
+    aria-label="Open Settings">⚙️</button>
+
+  <!-- Web Settings Modal -->
+  <div id="web-settings-modal" class="hidden"
+    style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; display:flex; justify-content:center; align-items:center;">
+    <div
+      style="background:#1e1e1e; border: 2px solid #4fd1c5; border-radius: 12px; padding: 24px; width: 400px; color:#fff; display:flex; flex-direction:column; gap: 16px;">
+      <h2 style="color:#4fd1c5; margin:0; text-align:center;">Global Configuration</h2>
+
+      <div>
+        <label style="display:block; margin-bottom:8px;">Scan Speed (<span id="set-scan-val">2500</span>ms)</label>
+        <input type="range" id="set-scan-slider" min="1000" max="5000" step="100" value="2500"
+          style="width:100%; accent-color:#4fd1c5;">
+      </div>
+
+      <div>
+        <label style="display:block; margin-bottom:8px;">Require Blink Time (<span
+            id="set-hold-val">1000</span>ms)</label>
+        <input type="range" id="set-hold-slider" min="500" max="3000" step="100" value="1000"
+          style="width:100%; accent-color:#4fd1c5;">
+        <p style="font-size:12px; color:#999; margin-top:4px;">Time user must hold eyes closed to click.</p>
+      </div>
+
+      <div>
+        <label style="display:block; margin-bottom:8px;">Blink Sensitivity Threshold (<span
+            id="set-thresh-val">0.012</span>)</label>
+        <input type="range" id="set-thresh-slider" min="0.005" max="0.025" step="0.001" value="0.012"
+          style="width:100%; accent-color:#4fd1c5;">
+        <p style="font-size:12px; color:#999; margin-top:4px;">Lower this if user struggles to fully close eyes.</p>
+      </div>
+
+      <button id="close-settings-btn"
+        style="background:#4fd1c5; color:#121212; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; margin-top: 10px;">SAVE
+        & CLOSE</button>
+    </div>
+  </div>
+
   <div id="overlay-sleep" class="overlay" role="status" aria-live="polite" aria-label="System in standby mode">
     <div class="sleep-text">System Standby... Long Blink to Wake</div>
   </div>
