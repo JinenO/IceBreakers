@@ -24,15 +24,15 @@ export class ActionController {
         this.kbManager = kbManager;
         this.mediaManager = mediaManager;
         this.sosSystem = sosSystem;
-        
+
         // Callbacks to control scanning from main.js
         this.stopScanning = onStopScanning;
         this.startScanning = onStartScanning;
         this.resetTriggerState = onResetTriggerState;
-        
+
         // Helper functions passed from main.js
         this.helpers = helpers;
-        
+
         // State flags
         this.isProcessingAction = false;
         this.isTriggering = false;
@@ -51,10 +51,10 @@ export class ActionController {
             console.log("📺 Video Playing Mode: Waking up controls...");
             this.mediaManager.videoPlayer.showControlPanel(this.gridUI);
             this.viewManager.currentView = 'video-panel';
-            
-            setTimeout(() => { 
-                this.resetTriggerState(); 
-                this.startScanning(); 
+
+            setTimeout(() => {
+                this.resetTriggerState();
+                this.startScanning();
             }, 500);
             return;
         }
@@ -74,9 +74,9 @@ export class ActionController {
             this.mediaManager.audioPlayer.renderControls(this.gridUI);
             this.viewManager.currentView = 'audio-panel';
 
-            setTimeout(() => { 
-                this.resetTriggerState(); 
-                this.startScanning(); 
+            setTimeout(() => {
+                this.resetTriggerState();
+                this.startScanning();
             }, 500);
             return;
         }
@@ -112,7 +112,7 @@ export class ActionController {
             this._handleMainMenu(selectedId);
             return;
         }
-        
+
         // --- Sub Menu ---
         if (this.viewManager.currentView === 'sub') {
             this._handleSubMenu(selectedId);
@@ -124,19 +124,19 @@ export class ActionController {
             this._handleBodyDetails(selectedId);
             return;
         }
-        
+
         // --- Media Library ---
         if (this.viewManager.currentView === 'media-library') {
             this._handleMediaLibrary(selectedId);
             return;
         }
-        
+
         // --- Video Control Panel ---
         if (this.viewManager.currentView === 'video-panel') {
             this._handleVideoPanel(selectedId);
             return;
         }
-        
+
         // Default fallback
         setTimeout(() => {
             this.resetTriggerState();
@@ -174,10 +174,36 @@ export class ActionController {
                 if (!this.sleepManager.isSleeping) this.startScanning();
             }
             return;
+        } else if (selectedId === 'kb-send') {
+            const text = this.kbManager.currentText;
+            if (text.trim().length > 0) {
+                console.log('🗣 Speaking:', text);
+                this.kbManager.speakText(text);
+
+                // Sync with Caregiver App
+                AlertService.sendSimpleAlert('MESSAGE', text);
+
+                this.kbManager.clear();
+                this.helpers.renderKeyboardMatrix(this.kbManager, this.gridUI);
+
+                if (window.showFeedback) window.showFeedback('SENT ✅', 'success');
+                this.helpers.backToMain();
+
+                this.sleepManager.resetTimer();
+                setTimeout(() => {
+                    this.resetTriggerState();
+                    if (!this.sleepManager.isSleeping) {
+                        this.startScanning();
+                    }
+                }, 500);
+            } else {
+                this.resetTriggerState();
+                if (!this.sleepManager.isSleeping) this.startScanning();
+            }
+            return;
         }
 
-        // 2. For ALL other keyboard actions (including normal SEND), let keyboard-ui.js handle it!
-        // This will trigger your new Gemini API sentence formatter.
+        // 2. For ALL other keyboard actions, let keyboard-ui.js handle it!
         this.helpers.handleKeyboardAction(selectedId, this.kbManager, this.gridUI, (newTarget) => {
             this.helpers.setKbScanTarget(newTarget);
         }, callbacks).then(() => {
@@ -193,6 +219,7 @@ export class ActionController {
             }, 800);
         });
     }
+
     _handleMainMenu(selectedId) {
         if (selectedId === 'c-kb') {
             this.kbManager.setMode('speak');
@@ -245,7 +272,7 @@ export class ActionController {
         }
 
         const needsCmds = ['cmd-water', 'cmd-food', 'cmd-toilet', 'cmd-meds', 'cmd-suction'];
-        if(needsCmds.includes(selectedId)) {
+        if (needsCmds.includes(selectedId)) {
             const needType = selectedId.replace('cmd-', '');
             AlertService.sendSimpleAlert('need', needType);
             showFeedback(`${needType.toUpperCase()} SENT ✅`, 'success');
@@ -253,7 +280,7 @@ export class ActionController {
             setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
             return;
         }
-        
+
         const mediaCommands = ['cmd-local', 'cmd-music', 'cmd-audiobook', 'cmd-photos'];
         if (mediaCommands.includes(selectedId)) {
             const appType = selectedId.replace('cmd-', '');
@@ -264,38 +291,37 @@ export class ActionController {
             return;
         }
 
-        const simpleBodyCmds = ['cmd-roll', 'cmd-head', 'cmd-legs'];
-        if (simpleBodyCmds.includes(selectedId)) {
+        if (selectedId.startsWith('cmd-')) {
             const action = selectedId.replace('cmd-', '');
 
-            SoundUtils.playBeep(880, 'sine', 0.1);
+            // 1. Specialized sync requests (Temp / Itch)
+            const syncBodyCmds = ['temp', 'itch'];
+            if (syncBodyCmds.includes(action)) {
+                this.helpers.handleSyncRequest(action);
+                return;
+            }
+
+            // 2. Navigation / Special items
+            if (action === 'youtube' || action === 'back') return; // Handled separately or navigation
+            if (['local', 'music', 'audiobook', 'photos'].includes(action)) return; // Media handled above
+
+            // 3. Default: Send Alert to Caregiver
+            console.log(`🚀 SYNCING COMMAND: ${action}`);
             AlertService.sendSimpleAlert(action);
             showFeedback(`${action.toUpperCase()} SENT ✅`, 'success');
 
             setTimeout(() => {
+                this.sleepManager.resetTimer();
                 this.resetTriggerState();
-                this.startScanning();
+                if (!this.sleepManager.isSleeping) this.startScanning();
             }, 2000);
             return;
         }
 
-        const syncBodyCmds = ['cmd-temp', 'cmd-itch'];
-        if (syncBodyCmds.includes(selectedId)) {
-            const action = selectedId.replace('cmd-', '');
-            this.helpers.handleSyncRequest(action);
-            return;
-        }
-        
-        // Placeholder for other commands
-        console.log(`🚀 COMMAND SENT: ${selectedId}`);
-        const msg = `${selectedId.toUpperCase()} SENT ✅`;
-        showFeedback(msg, 'success');
-
-        setTimeout(() => {
-            this.sleepManager.resetTimer();
-            this.resetTriggerState();
-            if (!this.sleepManager.isSleeping) this.startScanning();
-        }, 3000);
+        // Placeholder for other unexpected commands
+        console.warn(`⚠️ UNKNOWN COMMAND: ${selectedId}`);
+        this.resetTriggerState();
+        if (!this.sleepManager.isSleeping) this.startScanning();
     }
 
     _handleBodyDetails(selectedId) {
@@ -347,7 +373,7 @@ export class ActionController {
         }
 
         // 5. Send alert (API)
-        if(detailId === 'too-hot' || detailId === 'too-cold') {
+        if (detailId === 'too-hot' || detailId === 'too-cold') {
             AlertService.sendSimpleAlert('temp', detailId);
         } else if (['head', 'back', 'arm', 'leg'].includes(detailId)) {
             AlertService.sendSimpleAlert('itch', detailId);
@@ -372,7 +398,7 @@ export class ActionController {
             setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
             return;
         }
-        
+
         if (selectedId === 'media-lib-back') {
             this.mediaManager.exit();
             this.viewManager.currentView = 'sub';
@@ -380,7 +406,7 @@ export class ActionController {
             setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
             return;
         }
-        
+
         if (selectedId.startsWith('vid-') || selectedId.startsWith('yt-')) {
             console.log('🎥 Video Selected:', selectedId);
             this.mediaManager.videoPlayer.playVideo(selectedId);
@@ -389,7 +415,7 @@ export class ActionController {
             setTimeout(() => { this.resetTriggerState(); }, 500);
             return;
         }
-        
+
         if (selectedId.startsWith('aud-')) {
             console.log("💿 Selected Audio:", selectedId);
             this.mediaManager.audioPlayer.openPlayer(selectedId, this.gridUI);
@@ -409,8 +435,8 @@ export class ActionController {
         const actionResult = this.mediaManager.videoPlayer.handleCommand(selectedId, this.gridUI, () => {
             console.log("🔙 Exiting Video... Force Hiding Everything!");
 
-            this.viewManager.currentView = 'media-library'; 
-            
+            this.viewManager.currentView = 'media-library';
+
             const playerContainer = document.getElementById('video-player-container');
             const iframeEl = document.getElementById('youtube-iframe');
             const controlOverlay = document.getElementById('video-control-overlay');
@@ -418,25 +444,25 @@ export class ActionController {
             const libraryGrid = document.getElementById('video-library-grid');
 
             if (playerContainer) {
-                playerContainer.style.display = 'none'; 
-                playerContainer.classList.add('hidden'); 
+                playerContainer.style.display = 'none';
+                playerContainer.classList.add('hidden');
             }
             if (iframeEl) {
-                iframeEl.style.display = 'none'; 
-                iframeEl.src = ''; 
+                iframeEl.style.display = 'none';
+                iframeEl.src = '';
             }
             if (controlOverlay) {
-                controlOverlay.style.display = 'none'; 
+                controlOverlay.style.display = 'none';
                 controlOverlay.classList.add('hidden');
             }
 
             if (mediaView) {
-                mediaView.style.display = 'block'; 
+                mediaView.style.display = 'block';
                 mediaView.classList.remove('hidden');
             }
-            
+
             if (libraryGrid) {
-                libraryGrid.style.display = 'grid'; 
+                libraryGrid.style.display = 'grid';
                 libraryGrid.classList.remove('hidden');
             }
 
@@ -452,7 +478,7 @@ export class ActionController {
             setTimeout(() => { this.resetTriggerState(); }, 500);
             return;
         }
-        
+
         if (actionResult === 'STAY_IN_PANEL') {
             setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
             return;

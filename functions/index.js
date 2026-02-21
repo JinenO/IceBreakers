@@ -41,8 +41,8 @@ exports.sendAlertNotification = onValueCreated(
         // Notification payload
         const payload = {
             notification: {
-                title: '⚠️ Patient Alert!',
-                body: `Request: ${commandId} ${details ? `(${details})` : ''}`,
+                title: commandId === 'SOS' ? '🚨 EMERGENCY SOS!' : '⚠️ Patient Alert!',
+                body: commandId === 'SOS' ? 'Patient needs immediate assistance!' : `Request: ${commandId} ${details ? `(${details})` : ''}`,
             },
             data: {
                 alertId: alertId,
@@ -50,7 +50,28 @@ exports.sendAlertNotification = onValueCreated(
                 type: type,
                 click_action: 'FLUTTER_NOTIFICATION_CLICK'
             },
-            topic: 'caregivers' // Send to all subscribed caregivers
+            android: {
+                priority: 'high',
+                notification: {
+                    channelId: commandId === 'SOS' ? 'sos_channel' : 'high_importance_channel',
+                    priority: 'high',
+                    sticky: commandId === 'SOS',
+                    visibility: 'public'
+                }
+            },
+            apns: {
+                headers: {
+                    'apns-priority': commandId === 'SOS' ? '10' : '5',
+                    'apns-expiration': '0' // Try to deliver immediately, don't store
+                },
+                payload: {
+                    aps: {
+                        sound: 'default',
+                        critical: commandId === 'SOS' ? 1 : 0
+                    }
+                }
+            },
+            topic: 'caregivers'
         };
 
         try {

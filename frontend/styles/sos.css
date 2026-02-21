@@ -5,22 +5,37 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255, 0, 0, 0.3); /* semi-transparent red background */
-  border: 10px solid red;
-  z-index: 999; /* top layer */
+  background: radial-gradient(circle, transparent 100%, rgba(255, 193, 7, 0) 100%);
+  z-index: 999;
+  /* top layer */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  pointer-events: none; /* allow clicks through by default */
+  pointer-events: none;
+  /* allow clicks through by default */
   transition: opacity 0.3s;
+}
+
+@keyframes vignette-bleed {
+  0% {
+    background: radial-gradient(circle, transparent 80%, rgba(255, 193, 7, 0.4) 100%);
+  }
+
+  50% {
+    background: radial-gradient(circle, transparent 60%, rgba(255, 193, 7, 0.6) 100%);
+  }
+
+  100% {
+    background: radial-gradient(circle, transparent 40%, rgba(211, 47, 47, 0.8) 100%);
+  }
 }
 
 .sos-overlay.visible {
   opacity: 1;
   pointer-events: auto;
-  animation: pulseRed 1s infinite;
+  animation: vignette-bleed 2s forwards;
 }
 
 .sos-text {
@@ -52,9 +67,11 @@
   0% {
     background: rgba(255, 0, 0, 0.2);
   }
+
   50% {
     background: rgba(255, 0, 0, 0.6);
   }
+
   100% {
     background: rgba(255, 0, 0, 0.2);
   }

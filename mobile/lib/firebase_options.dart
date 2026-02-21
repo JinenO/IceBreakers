@@ -54,6 +54,8 @@ class DefaultFirebaseOptions {
     appId: '1:308646169856:android:5ce407673cc2e1aefdf7e5',
     messagingSenderId: '308646169856',
     projectId: 'irisflow-c7dba',
+    databaseURL:
+        'https://irisflow-c7dba-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'irisflow-c7dba.firebasestorage.app',
   );
 

@@ -79,12 +79,13 @@ export class VideoPlayer {
   }
 
   playVideo(videoId) {
+    this.isPaused = false;
     const videoEl = document.getElementById("main-video");
     const iframeEl = document.getElementById("youtube-iframe");
     const container = document.getElementById("video-player-container");
 
     if (container) {
-      container.style.display = 'block'; 
+      container.style.display = 'block';
       container.classList.remove("hidden");
     }
 
@@ -128,6 +129,30 @@ export class VideoPlayer {
     videoEl.play();
 
     console.log(`▶️ Local Playing: ${videoData.title}`);
+  }
+
+  togglePlayPause() {
+    const videoEl = document.getElementById("main-video");
+    const iframeEl = document.getElementById("youtube-iframe");
+    const isYouTube = !iframeEl.classList.contains("hidden");
+
+    if (isYouTube) {
+      this.isPaused = !this.isPaused;
+      const cmd = this.isPaused ? 'pauseVideo' : 'playVideo';
+      if (iframeEl.contentWindow) {
+        iframeEl.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
+      }
+      return this.isPaused ? "PAUSED" : "PLAYING";
+    } else {
+      if (!videoEl) return "ERROR";
+      if (videoEl.paused) {
+        videoEl.play();
+        return "PLAYING";
+      } else {
+        videoEl.pause();
+        return "PAUSED";
+      }
+    }
   }
 
   showControlPanel(gridUI) {

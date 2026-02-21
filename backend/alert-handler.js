@@ -1,6 +1,6 @@
 import { db } from "./firebase-admin.js";
 
-export async function sendSimpleAlert(commandId, datails='') {
+export async function sendSimpleAlert(commandId, datails = '') {
   const newRef = db.ref('alerts').push();
   await newRef.set({
     commandId: commandId,
@@ -9,7 +9,7 @@ export async function sendSimpleAlert(commandId, datails='') {
     timestamp: Date.now()
   });
 
-  return { success: true };
+  return { success: true, alertId: newRef.key };
 }
 
 export async function requestCaregiverAssist(commandId) {

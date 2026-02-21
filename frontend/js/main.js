@@ -11,6 +11,7 @@ import { MediaManager } from './modules/media/media-manager.js';
 import { ViewManager } from './modules/view-manager.js';
 import { renderMainGrid, showFeedback } from './modules/ui-utils.js';
 import { ActionController } from './core/action-controller.js';
+import { StatusService } from './api/status-service.js';
 
 // ==========================================
 // 0. Render main menu
@@ -230,13 +231,25 @@ function handleEyeFrame(data) {
 
     sosSystem.update(isNowClosed);
 
+    // Update real-time eye-tracker status (e.g., if user is blinking/active)
+    if (now % 5000 < 100) { // Throttled update approx every 5s during the loop
+        StatusService.updateStatus({ eyeTrackerActive: !isNowClosed });
+    }
+
     if (isNowClosed) {
         if (!isEyesClosed) {
             isEyesClosed = true;
             eyesClosedStartTime = now;
         } else {
             const elapsed = now - eyesClosedStartTime;
-            if (elapsed >= CLICK_HOLD_TIME && !isProcessingAction) {
+
+            // A. Long Blink (Standard Click / Long Hold)
+            let holdTimeRequired = CLICK_HOLD_TIME; // Default 1000ms
+            if (viewManager.currentView === 'video-playing') {
+                holdTimeRequired = 2000; // 2 seconds to pop out settings
+            }
+
+            if (elapsed >= holdTimeRequired && !isProcessingAction) {
                 if (sosSystem.state === 'CHARGING' || sosSystem.state === 'IDLE') {
                     console.log('✅ Long Blink: Triggering Click');
                     triggerSelection();
@@ -269,6 +282,16 @@ function handleEyeFrame(data) {
 // 3. EXECUTE COMMANDS (2x = Space, 3x = Toggle)
 // ==========================================
 function executeBlinkCommand(count) {
+    // Check if we are in video mode for single blink
+    if (viewManager.currentView === 'video-playing') {
+        if (count === 1) {
+            console.log("⚡ COMMAND: TOGGLE PLAY/PAUSE (Blink)");
+            const state = mediaManager.videoPlayer.togglePlayPause();
+            showFeedback(state, "info");
+        }
+        return; // No other blink commands in video playing mode
+    }
+
     if (viewManager.currentView !== 'keyboard') return;
 
     const ZONE_DOWN = '#kb-grid .kb-card';
@@ -353,7 +376,7 @@ function initDevMode() {
         const target = e.target.closest('.card, .kb-card, .predict-btn');
         if (!target) return;
 
-        console.log(`🖱️ Dev Clicked: ${target.id}`);
+        console.log(`鼠标点选: ${target.id}`);
         const index = gridUI.cards.findIndex(card => card.id === target.id);
 
         if (index !== -1) {
@@ -369,7 +392,7 @@ function initDevMode() {
 }
 
 // ==========================================
-// 5. Entry point (Merged securely)
+// 5. Entry point
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     const startOverlay = document.getElementById('start-overlay');
@@ -396,6 +419,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     startOverlay.addEventListener('click', initSystem, { once: true });
 
-    // Initialize dev mode if in URL
+    StatusService.startHeartbeat();
     initDevMode();
 });

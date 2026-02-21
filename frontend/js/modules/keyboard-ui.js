@@ -1,19 +1,15 @@
 /* frontend/js/modules/keyboard-ui.js */
 
 import { FREQUENCY_GROUPS } from './keyboard-logic.js';
-// ✨ IMPORT SMART DICTIONARY
-import { getLocalPredictions, dictionaryEngine } from './dictionary.js';
 import { AlertService } from '../api/alert-service.js';
-import { showFeedback as _showFeedback } from '../modules/ui-utils.js';
-window.showFeedback = _showFeedback;  
-
 
 const ZONE_DOWN = '#kb-grid .kb-card';
 const ZONE_UP = '#kb-prediction-bar .predict-btn';
 
-// ✨ INSTANT OFFLINE PREDICTIONS (No Gemini API Calls)
+// ✨ INSTANT OFFLINE PREDICTIONS
 async function getSafePredictions(kbManager) {
-    const words = getLocalPredictions(kbManager.currentText);
+    const text = kbManager.currentText;
+    const words = await kbManager.getPredictions(text);
     if (!words || words.length === 0) return ["", "", ""];
     return words;
 }
@@ -126,7 +122,7 @@ export function updatePredictions(words) {
         if (!btn) continue;
         const wordSpan = btn.querySelector('.word');
 
-        if (words && words[i] && words[i] !== "...") {
+        if (words && words[i] && words[i] !== "") {
             wordSpan.innerText = words[i].toUpperCase();
             btn.classList.add('has-word');
         } else {
@@ -163,50 +159,18 @@ export function renderTools(kbManager, gridUI) {
 
 export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget, callbacks) {
 
-    // --- SEND ---
-    // --- SEND ---
-    // --- SEND ---
-    // --- SEND ---
     if (id === 'kb-send') {
-        const rawKeywords = kbManager.currentText.trim();
-        if (rawKeywords.length > 0) {
+        const message = kbManager.currentText.trim();
+        if (message.length > 0) {
+            kbManager.speak();
 
-            // 1. Learn the custom words
-            dictionaryEngine.learn(rawKeywords);
+            // Sync with Caregiver App
+            AlertService.sendSimpleAlert('MESSAGE', message);
 
-            // 2. Visual feedback
-            if (window.showFeedback) window.showFeedback('FORMATTING... 🧠', 'info');
-
-            // 3. Ask Gemini to format the keywords
-            kbManager.formatMessageToSentence(rawKeywords).then(finalSentence => {
-
-                console.log("📨 Final Message:", finalSentence);
-
-                // ✨ SHOW THE FINAL SENTENCE IN THE TEXT BOX
-                kbManager.currentText = finalSentence;
-                updateDisplay(kbManager);
-
-                // Speak the beautiful sentence
-                kbManager.speakText(finalSentence);
-
-                // ✨ SEND TO YOUR DATABASE ✨
-                // Now it sends the perfectly formatted sentence!
-                try {
-                    AlertService.sendSimpleAlert('message', finalSentence);
-                    console.log("✅ SENT TO ALERT SERVICE");
-                } catch(e) {
-                    console.error("❌ ALERT ERROR:", e);
-                }
-
-                if (window.showFeedback) window.showFeedback('SENT ✅', 'success');
-
-                // Wait 3 seconds so the user can read it, then clear and exit
-                setTimeout(() => {
-                    kbManager.clear();
-                    updateDisplay(kbManager);
-                    if (callbacks && callbacks.onExit) callbacks.onExit();
-                }, 3000);
-            });
+            if (window.showFeedback) window.showFeedback('SENT ✅', 'success');
+            kbManager.clear();
+            updateDisplay(kbManager);
+            if (callbacks && callbacks.onExit) setTimeout(() => callbacks.onExit(), 3000);
         }
         return;
     }
@@ -223,14 +187,19 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
         kbManager.deleteLast();
         updateDisplay(kbManager);
 
-        // ✨ INSTANT PREDICTION ON DELETE
-        getSafePredictions(kbManager).then(words => {
-            kbManager.currentPredictions = words;
-            updatePredictions(words);
-        });
-
-        renderKeyboardMatrix(kbManager, gridUI);
-        setScanTarget(ZONE_DOWN);
+        if (kbManager.currentText.length > 0) {
+            updatePredictions(["...", "...", "..."]);
+            renderKeyboardMatrix(kbManager, gridUI);
+            setScanTarget(ZONE_DOWN);
+            getSafePredictions(kbManager).then(words => {
+                kbManager.currentPredictions = words;
+                updatePredictions(words);
+            });
+        } else {
+            updatePredictions(["", "", ""]);
+            renderKeyboardMatrix(kbManager, gridUI);
+            setScanTarget(ZONE_DOWN);
+        }
         return;
     }
 
@@ -241,7 +210,6 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
 
         if (window.showFeedback) window.showFeedback('SPACE ADDED ␣', 'success');
 
-        // ✨ INSTANT PREDICTION ON SPACE
         getSafePredictions(kbManager).then(words => {
             kbManager.currentPredictions = words;
             updatePredictions(words);
@@ -253,25 +221,15 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
     }
 
     // --- CLICKING A PREDICTION ---
-    // --- CLICKING A PREDICTION ---
     if (id.startsWith('pred-')) {
         const index = Number(id.replace('pred-', ''));
         const word = kbManager.currentPredictions[index];
 
         if (word) {
-            // ✨ LEARN THIS WORD
-            dictionaryEngine.learn(word);
-
-            // ✨ THE FIX: Keep previous words, only replace the current incomplete word
-            const lastIndex = kbManager.currentText.lastIndexOf(' ');
-
-            if (lastIndex >= 0) {
-                // Keep everything up to the last space, then add the new word
-                kbManager.currentText = kbManager.currentText.substring(0, lastIndex + 1) + word.toUpperCase() + ' ';
-            } else {
-                // If it's the very first word (no spaces yet), just use the word
-                kbManager.currentText = word.toUpperCase() + ' ';
-            }
+            const words = kbManager.currentText.trimEnd().split(' ');
+            words.pop(); // remove the partial word
+            words.push(word.toUpperCase());
+            kbManager.currentText = words.join(' ') + ' ';
 
             kbManager.currentPredictions = [];
             updateDisplay(kbManager);
@@ -288,7 +246,6 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
             gridUI.refreshCards(ZONE_DOWN);
             gridUI.currentIndex = -1;
 
-            // Generate next predictions based on the new context
             getSafePredictions(kbManager).then(words => {
                 kbManager.currentPredictions = words;
                 updatePredictions(words);
@@ -309,14 +266,14 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
         kbManager.addChar(char);
         updateDisplay(kbManager);
 
-        // ✨ INSTANT PREDICTION ON TYPE
+        updatePredictions(["...", "...", "..."]);
+        renderKeyboardMatrix(kbManager, gridUI);
+        setScanTarget(ZONE_DOWN);
+
         getSafePredictions(kbManager).then(words => {
             kbManager.currentPredictions = words;
             updatePredictions(words);
         });
-
-        renderKeyboardMatrix(kbManager, gridUI);
-        setScanTarget(ZONE_DOWN);
         return;
     }
 
@@ -334,6 +291,9 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
     if (['tool-yes', 'tool-no', 'tool-thanks'].includes(id)) {
         const text = id === 'tool-yes' ? 'YES' : id === 'tool-no' ? 'NO' : 'THANK YOU';
         kbManager.speakText(text);
+
+        // Sync with Caregiver App
+        AlertService.sendSimpleAlert('RESPONSE', text);
         return;
     }
 }

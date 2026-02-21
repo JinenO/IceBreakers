@@ -1,4 +1,4 @@
-# --- 1. Global / OS Junk (大家都需要的) ---
+# --- 1. Global / OS Junk ---
 .DS_Store
 Thumbs.db
 .idea/
@@ -14,9 +14,21 @@ frontend/*.log
 frontend/js/config.js
 frontend/js/api/firebase-config.js
 
+# --- 3. Backend ---
+backend/node_modules/
+backend/.env
+
+# --- 4. Mobile ---
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/build/
+
 # Firebase Security
 serviceAccountKey.json
 *.json
 
+# General dependencies
 node_modules/
 **/node_modules/

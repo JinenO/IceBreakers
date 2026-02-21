@@ -48,56 +48,46 @@ export class KeyboardManager {
         window.speechSynthesis.speak(utterance);
     }
 
-    // ✨ NEW GEMINI FUNCTION: Only used when SENDING the final message!
-    async formatMessageToSentence(keywords) {
-        if (!keywords || keywords.trim().length === 0) return "";
+    async getPredictions(text) {
+        if (!text || text.trim().length === 0) return [];
 
-        console.log(`🧠 Gemini: Formatting keywords into sentence: "${keywords}"`);
+        const words = text.trim().split(' ');
+        const lastWord = words[words.length - 1].toLowerCase();
 
-        try {
-            const apiKey = AppConfig.GEMINI_API_KEY;
-            const modelName = "gemini-2.5-flash";
+        if (lastWord.length === 0) return [];
 
-            const prompt = `
-                You are an AI assistant helping an ALS patient communicate with their caregiver.
-                The user has typed the following rough keywords: "${keywords}"
-                
-                Convert these keywords into a single, natural, polite, and complete sentence.
-                - Use the first person ("I").
-                - Keep it clear, brief, and conversational.
-                - Example: "hungry want water" -> "I am feeling hungry and would like some water."
-                - Example: "pain back medicine" -> "My back is in pain, can I please have my medicine?"
-                
-                Return ONLY the final sentence string. No extra words, no quotes, no formatting.
-            `;
+        const COMMON_WORDS = [
+            "apple", "and", "are", "about", "after", "all",
+            "be", "because", "but", "by", "before", "back",
+            "can", "could", "call", "come", "care", "cat",
+            "do", "down", "day", "doctor", "door", "drink",
+            "eat", "every", "eye", "ear", "easy", "end",
+            "for", "from", "feel", "food", "family", "find",
+            "go", "get", "good", "great", "give", "girl",
+            "have", "he", "here", "help", "home", "how",
+            "i", "is", "it", "in", "if", "into",
+            "just", "job", "join", "jump", "joke", "juice",
+            "know", "keep", "kind", "key", "kid", "kiss",
+            "like", "look", "love", "little", "let", "live",
+            "my", "me", "more", "make", "much", "many",
+            "no", "not", "now", "need", "never", "new",
+            "of", "on", "out", "one", "other", "over",
+            "people", "please", "pain", "pill", "play", "put",
+            "quiet", "quick", "question", "queen", "quit", "quite",
+            "right", "room", "really", "read", "rest", "run",
+            "so", "some", "see", "say", "sick", "sleep",
+            "the", "to", "that", "this", "they", "there",
+            "up", "us", "use", "under", "until", "upon",
+            "very", "hot", "water", "cold", "voice", "view",
+            "we", "want", "with", "what", "when", "will",
+            "you", "your", "yes", "year", "yellow", "young",
+            "zoo", "zero", "zip", "zone", "zoom"
+        ];
 
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
-                    })
-                }
-            );
+        // Find words that exactly start with the typed letters
+        const matches = COMMON_WORDS.filter(w => w.startsWith(lastWord));
 
-            if (!response.ok) throw new Error("API Limit or Network Error");
-
-            const data = await response.json();
-            if (!data.candidates || !data.candidates[0].content) throw new Error("Invalid API Response");
-
-            let formattedSentence = data.candidates[0].content.parts[0].text.trim();
-
-            // Remove any accidental quotes the AI might add
-            formattedSentence = formattedSentence.replace(/^"|"$/g, '');
-
-            return formattedSentence;
-
-        } catch (error) {
-            console.error("Gemini Formatting Failed. Falling back to raw keywords:", error);
-            // Fallback: If API fails, just send the raw keywords so communication never stops
-            return keywords;
-        }
+        // Return top 3 matches in uppercase
+        return matches.slice(0, 3).map(w => w.toUpperCase());
     }
 }
