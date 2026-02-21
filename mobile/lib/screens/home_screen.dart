@@ -5,6 +5,7 @@ import '../models/patient_status_model.dart';
 import '../widgets/patient_status_card.dart';
 import '../widgets/sos_overlay.dart';
 import 'alert_detail_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,10 +21,18 @@ class _HomeScreenState extends State<HomeScreen> {
   );
 
   Future<void> _acknowledgeAlert(String key) async {
+    // 1. Mark as acknowledged
     await _alertsRef.child(key).update({
       'status': 'ack',
       'ackTimestamp': DateTime.now().millisecondsSinceEpoch,
     });
+
+    // 2. Send live response back to patient web app
+    await _alertsRef.child('$key/responses').push().set({
+      'text': 'ACKNOWLEDGED',
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+
     if (mounted) {
       ScaffoldMessenger.of(
         context,
@@ -42,6 +51,15 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => setState(() {}),
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
           ),
         ],
       ),
@@ -113,11 +131,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             "${alert.dateTime.hour}:${alert.dateTime.minute.toString().padLeft(2, '0')}";
 
                         Color getAlertColor(String commandId, bool isAck) {
-                          if (isAck)
+                          if (isAck) {
                             return const Color(0xFF1E1E1E); // Surface Dark
+                          }
                           final cmd = commandId.toLowerCase();
-                          if (cmd == 'sos')
+                          if (cmd == 'sos') {
                             return const Color(0xFFD32F2F); // SOS Red
+                          }
                           if (['suction', 'pain', 'choking'].contains(cmd)) {
                             return const Color(0xFFFF5722); // Blood Orange
                           }

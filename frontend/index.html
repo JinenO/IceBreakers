@@ -1,200 +1,222 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="IRIS FLOW - Eye-tracking communication system for ALS patients" />
-    <meta name="theme-color" content="#1a1d2e" />
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; media-src * data: blob: 'unsafe-inline';">    <title>IRIS FLOW - Eye Command System</title>
-    <link rel="stylesheet" href="styles/main.css" />
-    <link rel="stylesheet" href="styles/grid.css" />
-    <link rel="stylesheet" href="styles/keyboard.css" />
-    <link rel="stylesheet" href="styles/media.css" />
-    <link rel="stylesheet" href="styles/sos.css" />
-    <link rel="stylesheet" href="styles/overlays.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 
-  <body>
-    <div id="start-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; cursor: pointer;">
-      <h1 style="font-size: 3rem; color: #4fd1c5; margin-bottom: 20px;">EYE TRACKER SYSTEM</h1>
-      <div style="border: 2px solid #4fd1c5; padding: 20px 60px; border-radius: 50px; font-size: 1.5rem; background: rgba(79, 209, 197, 0.2);">
-        CLICK TO INITIALIZE
-        <br>
-        <span style="font-size: 0.8rem; color: #aaa;">(Caregiver: Please click once to unlock audio)</span>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="IRIS FLOW - Eye-tracking communication system for ALS patients" />
+  <meta name="theme-color" content="#1a1d2e" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; media-src * data: blob: 'unsafe-inline';">
+  <title>IRIS FLOW - Eye Command System</title>
+  <link rel="stylesheet" href="styles/main.css" />
+  <link rel="stylesheet" href="styles/grid.css" />
+  <link rel="stylesheet" href="styles/keyboard.css" />
+  <link rel="stylesheet" href="styles/media.css" />
+  <link rel="stylesheet" href="styles/sos.css" />
+  <link rel="stylesheet" href="styles/overlays.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+    rel="stylesheet">
+
+<body>
+  <div id="start-overlay"
+    style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; cursor: pointer;">
+    <h1 style="font-size: 3rem; color: #4fd1c5; margin-bottom: 20px;">EYE TRACKER SYSTEM</h1>
+    <div
+      style="border: 2px solid #4fd1c5; padding: 20px 60px; border-radius: 50px; font-size: 1.5rem; background: rgba(79, 209, 197, 0.2);">
+      CLICK TO INITIALIZE
+      <br>
+      <span style="font-size: 0.8rem; color: #aaa;">(Caregiver: Please click once to unlock audio)</span>
+    </div>
+  </div>
+
+  <div id="caregiver-wait-overlay" class="hidden">
+    <div class="wait-content">
+      <div class="pulse-ring"></div>
+      <img src="assets/icons/sos.png" alt="Calling" class="wait-icon">
+      <h2>Calling Caregiver...</h2>
+      <p>Please wait for them to arrive.</p>
+      <button id="cancel-wait-btn">CANCEL</button>
+    </div>
+  </div>
+
+  <header id="status-bar" role="banner" aria-label="System Status">
+    <div class="status-left">
+      <div class="blink-indicator" id="eye-icon" role="status" aria-live="polite" aria-label="Eye tracking active">
+      </div>
+      <div class="status-text" id="status-text" role="status" aria-live="polite">SYSTEM READY</div>
+    </div>
+    <div class="status-center"
+      style="text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+      <div id="clock-time"
+        style="color: #4fd1c5; font-size: 1.5rem; font-weight: bold; letter-spacing: 2px; line-height: 1;">--:--</div>
+      <div id="clock-date"
+        style="color: #a0aec0; font-size: 0.85rem; letter-spacing: 1px; margin-top: 4px; text-transform: uppercase;">--
       </div>
     </div>
-
-    <div id="caregiver-wait-overlay" class="hidden">
-      <div class="wait-content">
-        <div class="pulse-ring"></div>
-        <img src="assets/icons/sos.png" alt="Calling" class="wait-icon">
-        <h2>Calling Caregiver...</h2>
-        <p>Please wait for them to arrive.</p>
-        <button id="cancel-wait-btn">CANCEL</button>
-      </div>
+    <div class="status-right">
+      <span class="caregiver-id" aria-label="Caregiver ID number">CAREGIVER ID: 9527</span>
+      <button class="settings-trigger" aria-label="Open Settings" type="button">⚙️</button>
     </div>
+  </header>
 
-    <header id="status-bar" role="banner" aria-label="System Status">
-      <div class="status-left">
-        <div class="blink-indicator" id="eye-icon" role="status" aria-live="polite" aria-label="Eye tracking active"></div>
-        <div class="status-text" id="status-text" role="status" aria-live="polite">SYSTEM READY</div>
-      </div>
-      <div class="status-center"
-        style="text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-        <div id="clock-time"
-          style="color: #4fd1c5; font-size: 1.5rem; font-weight: bold; letter-spacing: 2px; line-height: 1;">--:--</div>
-        <div id="clock-date"
-          style="color: #a0aec0; font-size: 0.85rem; letter-spacing: 1px; margin-top: 4px; text-transform: uppercase;">--
-        </div>
-      </div>
-      <div class="status-right">
-        <span class="caregiver-id" aria-label="Caregiver ID number">CAREGIVER ID: 9527</span>
-        <button class="settings-trigger" aria-label="Open Settings" type="button">⚙️</button>
-      </div>
-    </header>
+  <div id="content-area">
+    <main id="main-grid" class="grid-container" role="main" aria-label="Communication Options"></main>
 
-    <div id="content-area">
-      <main id="main-grid" class="grid-container" role="main" aria-label="Communication Options"></main>
+    <section id="view-container" class="hidden" role="region" aria-label="Sub-menu View">
+      <div id="sub-grid" class="grid-container"></div>
+    </section>
 
-      <section id="view-container" class="hidden" role="region" aria-label="Sub-menu View">
-        <div id="sub-grid" class="grid-container"></div>
-      </section>
-
-      <div id="media-view" class="hidden">
+    <div id="media-view" class="hidden">
       <h2 id="media-status-text">MEDIA SYSTEM</h2>
-        
+
       <div id="media-content-area">
-            
+
         <div id="video-library-grid" class="hidden"></div>
-            
+
       </div>
+    </div>
+
+    <div id="video-player-container" class="hidden">
+      <video id="main-video" style="width: 100%; height: 100%; object-fit: contain;" src="" loop></video>
+
+      <iframe id="youtube-iframe" class="hidden" style="width: 100%; height: 100%; border: none;" src=""
+        allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+      <div id="video-toast" class="hidden"
+        style="position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: #4fd1c5; padding: 15px 25px; border-radius: 8px; font-size: 1.8rem; z-index: 70; transition: opacity 0.3s ease;">
       </div>
 
-      <div id="video-player-container" class="hidden">
-        <video id="main-video" style="width: 100%; height: 100%; object-fit: contain;" src="" loop></video>
+      <div id="video-control-overlay" class="hidden">
+        <div id="video-control-grid"></div>
+      </div>
+    </div>
 
-        <iframe id="youtube-iframe" class="hidden" style="width: 100%; height: 100%; border: none;" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    <div id="audio-player-container" class="hidden"
+      style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1a202c; border-radius: 12px; z-index: 40; display: flex; flex-direction: column; justify-content: center; align-items: center;">
 
-        <div id="video-toast" class="hidden" style="position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.9); color: #4fd1c5; padding: 15px 25px; border-radius: 8px; font-size: 1.8rem; z-index: 70; transition: opacity 0.3s ease;"></div>
+      <div style="text-align: center; margin-bottom: 40px;">
+        <img id="audio-cover" src="" alt="Cover"
+          style="width: 220px; height: 220px; border-radius: 20px; object-fit: cover; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+        <h2 id="audio-title" style="color: #4fd1c5; font-size: 2.5rem; margin: 20px 0 10px 0; letter-spacing: 2px;">
+          Song/Book Title</h2>
+        <p id="audio-sub" style="color: #a0aec0; font-size: 1.5rem; margin: 0;">Artist or Chapter</p>
+      </div>
 
-        <div id="video-control-overlay" class="hidden">
-          <div id="video-control-grid"></div>
+      <audio id="main-audio" src=""></audio>
+    </div>
+
+    <div id="audio-control-overlay" class="hidden">
+      <div id="audio-control-grid"></div>
+    </div>
+
+    <section id="keyboard-view" class="hidden">
+      <div class="kb-top-section">
+        <div class="kb-display-box">
+          <span id="kb-current-text"></span><span class="cursor">|</span>
         </div>
-      </div>
 
-      <div id="audio-player-container" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1a202c; border-radius: 12px; z-index: 40; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-          
-          <div style="text-align: center; margin-bottom: 40px;">
-              <img id="audio-cover" src="" alt="Cover" style="width: 220px; height: 220px; border-radius: 20px; object-fit: cover; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
-              <h2 id="audio-title" style="color: #4fd1c5; font-size: 2.5rem; margin: 20px 0 10px 0; letter-spacing: 2px;">Song/Book Title</h2>
-              <p id="audio-sub" style="color: #a0aec0; font-size: 1.5rem; margin: 0;">Artist or Chapter</p>
+        <div id="kb-prediction-bar">
+          <div class="kb-card predict-btn" id="pred-0"><span class="word"></span>
+            <div class="scan-bar"></div>
+            <div class="confirm-bar"></div>
           </div>
-
-          <audio id="main-audio" src=""></audio>
-      </div>
-
-      <div id="audio-control-overlay" class="hidden">
-        <div id="audio-control-grid"></div>
-      </div>
-
-      <section id="keyboard-view" class="hidden">
-        <div class="kb-top-section">
-          <div class="kb-display-box">
-            <span id="kb-current-text"></span><span class="cursor">|</span>
+          <div class="kb-card predict-btn" id="pred-1"><span class="word"></span>
+            <div class="scan-bar"></div>
+            <div class="confirm-bar"></div>
           </div>
-
-          <div id="kb-prediction-bar">
-            <div class="kb-card predict-btn" id="pred-0"><span class="word"></span><div class="scan-bar"></div><div class="confirm-bar"></div></div>
-            <div class="kb-card predict-btn" id="pred-1"><span class="word"></span><div class="scan-bar"></div><div class="confirm-bar"></div></div>
-            <div class="kb-card predict-btn" id="pred-2"><span class="word"></span><div class="scan-bar"></div><div class="confirm-bar"></div></div>
+          <div class="kb-card predict-btn" id="pred-2"><span class="word"></span>
+            <div class="scan-bar"></div>
+            <div class="confirm-bar"></div>
           </div>
         </div>
-
-        <div id="kb-grid" class="kb-matrix"></div>
-      </section>
-    </div>
-
-    <footer id="sos-bar" role="alert" aria-label="Emergency SOS Trigger">
-      <div class="sos-content">
-        <div class="sos-icon" aria-hidden="true">
-          <img src="assets/icons/sos.png" alt="SOS Icon" style="width: 48px; height: 48px" />
-        </div>
-        <div class="sos-text">
-          <span class="sos-title">EMERGENCY SOS</span>
-          <span class="sos-desc">CLOSE EYES FOR 2s TO TRIGGER</span>
-        </div>
       </div>
-      <div class="hazard-stripe" aria-hidden="true"></div>
-    </footer>
 
-    <div id="overlay-feedback" class="overlay" role="alert" aria-live="assertive" aria-label="Action confirmed">
-      <div class="feedback-icon" aria-hidden="true">✅</div>
-      <div class="feedback-text">SENT TO CAREGIVER</div>
-    </div>
+      <div id="kb-grid" class="kb-matrix"></div>
+    </section>
+  </div>
 
-    <div id="overlay-pre-sos" class="overlay" role="alert" aria-live="assertive" aria-label="Emergency alert preparing">
-      <div class="pre-sos-title">⚠️ PREPARING SOS ⚠️</div>
-      <p class="overlay-sub">OPEN EYES NOW TO TRIGGER</p>
-    </div>
-
-    <div id="overlay-sos" class="overlay" role="alert" aria-live="assertive" aria-label="Emergency alert sent">
-      <div class="sos-alert-box">
-        <h1>🚨 SOS SENT 🚨</h1>
-        <p>NOTIFYING EMERGENCY CONTACTS...</p>
+  <footer id="sos-bar" role="alert" aria-label="Emergency SOS Trigger">
+    <div class="sos-content">
+      <div class="sos-icon" aria-hidden="true">
+        <img src="assets/icons/sos.png" alt="SOS Icon" style="width: 48px; height: 48px" />
+      </div>
+      <div class="sos-text">
+        <span class="sos-title">EMERGENCY SOS</span>
+        <span class="sos-desc">CLOSE EYES FOR 2s TO TRIGGER</span>
       </div>
     </div>
+    <div class="hazard-stripe" aria-hidden="true"></div>
+  </footer>
 
-    <div id="overlay-sleep" class="overlay" role="status" aria-live="polite" aria-label="System in standby mode">
-      <div class="sleep-text">System Standby... Long Blink to Wake</div>
+  <div id="overlay-feedback" class="overlay" role="alert" aria-live="assertive" aria-label="Action confirmed">
+    <div class="feedback-icon" aria-hidden="true">✅</div>
+    <div class="feedback-text">SENT TO CAREGIVER</div>
+  </div>
+
+  <div id="overlay-pre-sos" class="overlay" role="alert" aria-live="assertive" aria-label="Emergency alert preparing">
+    <div class="pre-sos-title">⚠️ PREPARING SOS ⚠️</div>
+    <p class="overlay-sub">OPEN EYES NOW TO TRIGGER</p>
+  </div>
+
+  <div id="overlay-sos" class="overlay" role="alert" aria-live="assertive" aria-label="Emergency alert sent">
+    <div class="sos-alert-box">
+      <h1>🚨 SOS SENT 🚨</h1>
+      <p>NOTIFYING EMERGENCY CONTACTS...</p>
     </div>
+  </div>
 
-    <div id="sleep-overlay" class="sleep-overlay">
-      <div class="sleep-hint">STANDBY... LONG BLINK TO WAKE</div>
-    </div>
+  <div id="overlay-sleep" class="overlay" role="status" aria-live="polite" aria-label="System in standby mode">
+    <div class="sleep-text">System Standby... Long Blink to Wake</div>
+  </div>
 
-    <div id="sos-overlay" class="sos-overlay">
-      <div class="sos-text">EMERGENCY</div>
-      <div class="sos-timer" id="sos-timer">3</div>
-      <div class="sos-cancel-hint">CLOSE EYES TO CANCEL</div>
-    </div>
+  <div id="sleep-overlay" class="sleep-overlay">
+    <div class="sleep-hint">STANDBY... LONG BLINK TO WAKE</div>
+  </div>
 
-    <div id="feedback-overlay" class="feedback-overlay hidden">
-      <div class="feedback-icon" id="fb-icon">✅</div>
-      <div class="feedback-text" id="fb-text">SENT SUCCESSFULLY</div>
-    </div>
+  <div id="sos-overlay" class="sos-overlay">
+    <div class="sos-text">EMERGENCY</div>
+    <div class="sos-timer" id="sos-timer">3</div>
+    <div class="sos-cancel-hint">CLOSE EYES TO CANCEL</div>
+  </div>
 
-    <div id="feedback-container" 
-     style="position:fixed; top:20px; right:20px; z-index:9999; 
+  <div id="feedback-overlay" class="feedback-overlay hidden">
+    <div class="feedback-icon" id="fb-icon">✅</div>
+    <div class="feedback-text" id="fb-text">SENT SUCCESSFULLY</div>
+  </div>
+
+  <div id="feedback-container" style="position:fixed; top:20px; right:20px; z-index:9999; 
             background:#4fd1c5; color:#fff; padding:12px 20px; 
-            border-radius:8px; font-weight:bold; display:none;">
-    </div>
+            border-radius:8px; display:none;">
+  </div>
 
+  <script type="module" src="js/main.js"></script>
+  <script>
+    function updateSystemClock() {
+      const now = new Date();
 
-    <script type="module" src="js/main.js"></script>
-    <script>
-      function updateSystemClock() {
-        const now = new Date();
+      // Format Time (e.g., 10:30 AM)
+      const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
+      const timeString = now.toLocaleTimeString('en-US', timeOptions);
 
-        // Format Time (e.g., 10:30 AM)
-        const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
-        const timeString = now.toLocaleTimeString('en-US', timeOptions);
+      // Format Date (e.g., MONDAY, OCT 24, 2025)
+      const dateOptions = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+      const dateString = now.toLocaleDateString('en-US', dateOptions);
 
-        // Format Date (e.g., MONDAY, OCT 24, 2025)
-        const dateOptions = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
-        const dateString = now.toLocaleDateString('en-US', dateOptions);
+      const timeElement = document.getElementById('clock-time');
+      const dateElement = document.getElementById('clock-date');
 
-        const timeElement = document.getElementById('clock-time');
-        const dateElement = document.getElementById('clock-date');
+      if (timeElement) timeElement.textContent = timeString;
+      if (dateElement) dateElement.textContent = dateString;
+    }
 
-        if (timeElement) timeElement.textContent = timeString;
-        if (dateElement) dateElement.textContent = dateString;
-      }
+    // Update immediately, then start a 1-second interval loop
+    updateSystemClock();
+    setInterval(updateSystemClock, 1000);
+  </script>
+</body>
 
-      // Update immediately, then start a 1-second interval loop
-      updateSystemClock();
-      setInterval(updateSystemClock, 1000);
-    </script>
-  </body>
 </html>

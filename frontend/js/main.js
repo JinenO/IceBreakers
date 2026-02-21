@@ -12,6 +12,7 @@ import { ViewManager } from './modules/view-manager.js';
 import { renderMainGrid, showFeedback } from './modules/ui-utils.js';
 import { ActionController } from './core/action-controller.js';
 import { StatusService } from './api/status-service.js';
+import { SettingsService } from './api/settings-service.js';
 
 // ==========================================
 // 0. Render main menu
@@ -390,7 +391,6 @@ function initDevMode() {
         }
     }, true);
 }
-
 // ==========================================
 // 5. Entry point
 // ==========================================
@@ -410,6 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             console.log('🚀 System Initialized by User Interaction');
             await eyeEngine.init(handleEyeFrame);
+            SettingsService.init(); // Listen for caregiver remote config
             startScanning();
         } catch (err) {
             console.error('Init failed:', err);

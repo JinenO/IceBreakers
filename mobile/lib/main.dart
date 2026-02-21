@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
+import 'package:provider/provider.dart';
+import 'providers/settings_provider.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -22,7 +24,12 @@ void main() async {
   // Initialize notification service
   await NotificationService().init();
 
-  runApp(const IrisFlowApp());
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => SettingsProvider())],
+      child: const IrisFlowApp(),
+    ),
+  );
 }
 
 class IrisFlowApp extends StatelessWidget {
@@ -30,24 +37,36 @@ class IrisFlowApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'IRIS FLOW',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF64FFDA), // Scanner Halo / Active
-          surface: Color(0xFF1E1E1E), // Surface Dark
-          error: Color(0xFFD32F2F),
-          onSurface: Colors.white,
-        ),
-        textTheme: GoogleFonts.atkinsonHyperlegibleTextTheme(
-          ThemeData.dark().textTheme,
-        ).apply(bodyColor: Colors.white, displayColor: Colors.white),
-        useMaterial3: true,
-      ),
-      home: const HomeScreen(),
+    return Consumer<SettingsProvider>(
+      builder: (context, provider, child) {
+        return MaterialApp(
+          title: 'IRIS FLOW',
+          debugShowCheckedModeBanner: false,
+          theme: provider.currentTheme.copyWith(
+            textTheme:
+                GoogleFonts.atkinsonHyperlegibleTextTheme(
+                      ThemeData.dark().textTheme,
+                    )
+                    .apply(
+                      bodyColor: provider.highContrastMode
+                          ? Colors.yellow
+                          : Colors.white,
+                      displayColor: provider.highContrastMode
+                          ? Colors.yellow
+                          : Colors.white,
+                    )
+                    .copyWith(
+                      bodyLarge: TextStyle(
+                        fontSize: provider.largeTextMode ? 20 : 16,
+                      ),
+                      bodyMedium: TextStyle(
+                        fontSize: provider.largeTextMode ? 18 : 14,
+                      ),
+                    ),
+          ),
+          home: const HomeScreen(),
+        );
+      },
     );
   }
 }
