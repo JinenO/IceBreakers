@@ -68,10 +68,51 @@ IceBreakers/backend/serviceAccountKey.json
 ### Never upload this serviceAccountKey.json to github. Add to .gitignore file.
 
 4. Start Frontend & Backend Server by one command:
-```
-cd ..
+```bash
 npm start
 ```
+
+---
+
+## 📱 Mobile App (Flutter) Setup
+
+The Caregiver Dashboard is built with Flutter and requires basic environment setup.
+
+### Prerequisites
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) (v3.10.1 or newer)
+- [Android Studio](https://developer.android.com/studio) or [Xcode](https://developer.apple.com/xcode/) (for iOS)
+- A physical device or emulator for testing
+
+### Setup Instructions
+
+1.  **Navigate to the mobile directory**:
+    ```bash
+    cd mobile
+    ```
+
+2.  **Install Dependencies**:
+    ```bash
+    flutter pub get
+    ```
+
+3.  **Firebase Configuration (Critical)**:
+    Since Firebase configuration files are ignored by Git, you must manually add your project's config files:
+    
+    - **Android**: Place your `google-services.json` in:
+      `mobile/android/app/google-services.json`
+    
+    - **iOS**: Place your `GoogleService-Info.plist` in:
+      `mobile/ios/Runner/GoogleService-Info.plist` (and add it to the project using Xcode).
+
+4.  **Run the App**:
+    ```bash
+    # Ensure a device is connected or emulator is running
+    flutter run
+    ```
+
+### Troubleshooting
+- **Firebase Initialization Error**: Ensure the package name in your Firebase Console matches `iris_flow`.
+- **Missing Configuration**: If the app crashes on startup, double-check that `google-services.json` or `GoogleService-Info.plist` is in the correct directory.
 
 # Core Features
 
