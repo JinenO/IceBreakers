@@ -1,5 +1,7 @@
 import { MAIN_MENU_DATA } from '../data.js';
 
+let feedbackTimer = null; // ✨ FIX: Prevents messages from deleting each other
+
 export function showFeedback(message, type = 'success') {
     const overlay = document.getElementById('feedback-overlay');
     const text = document.getElementById('fb-text');
@@ -12,9 +14,12 @@ export function showFeedback(message, type = 'success') {
     overlay.classList.add(type);
     overlay.classList.remove('hidden');
 
-    setTimeout(() => {
+    // ✨ FIX: Clear the old timer so the new message stays for the full 6 seconds
+    if (feedbackTimer) clearTimeout(feedbackTimer);
+
+    feedbackTimer = setTimeout(() => {
         overlay.classList.add('hidden');
-    }, 3000);
+    }, 2000);
 }
 
 export function renderMainGrid() {
