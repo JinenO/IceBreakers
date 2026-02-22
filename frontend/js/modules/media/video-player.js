@@ -106,7 +106,7 @@ export class VideoPlayer {
         iframeEl.style.display = 'block';
         iframeEl.classList.remove("hidden");
         // Use nocookie domain to bypass some domain-based playback restrictions
-        const embedUrl = `https://www.youtube-nocookie.com/embed/${realId}?autoplay=1&controls=1&rel=0`;
+        const embedUrl = `https://www.youtube-nocookie.com/embed/${realId}?autoplay=1&controls=1&rel=0&enablejsapi=1&origin=${window.location.origin}`;
         console.log("Loading YouTube iframe with URL:", embedUrl);
         iframeEl.src = embedUrl;
       }
@@ -142,19 +142,21 @@ export class VideoPlayer {
     if (isYouTube) {
       this.isPaused = !this.isPaused;
       const cmd = this.isPaused ? 'pauseVideo' : 'playVideo';
+
       if (iframeEl.contentWindow) {
-        iframeEl.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
+        // This sends the signal through the "wall" of the IFrame
+        iframeEl.contentWindow.postMessage(JSON.stringify({
+          event: 'command',
+          func: cmd,
+          args: []
+        }), '*');
       }
       return this.isPaused ? "PAUSED" : "PLAYING";
     } else {
+      // ... (local video logic remains the same) ...
       if (!videoEl) return "ERROR";
-      if (videoEl.paused) {
-        videoEl.play();
-        return "PLAYING";
-      } else {
-        videoEl.pause();
-        return "PAUSED";
-      }
+      if (videoEl.paused) { videoEl.play(); return "PLAYING"; }
+      else { videoEl.pause(); return "PAUSED"; }
     }
   }
 

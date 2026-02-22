@@ -13,6 +13,7 @@ import { renderMainGrid, showFeedback } from './modules/ui-utils.js';
 import { ActionController } from './core/action-controller.js';
 import { StatusService } from './api/status-service.js';
 import { SettingsService } from './api/settings-service.js';
+import { AlertService } from './api/alert-service.js';
 
 // ==========================================
 // 0. Render main menu
@@ -31,6 +32,7 @@ const sleepManager = new SleepManager(
     () => stopScanning(),
     () => {
         if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(600, 'sine', 0.1);
+        gridUI.currentIndex = -1;
         startScanning();
     }
 );
@@ -44,7 +46,7 @@ let eyesClosedStartTime = 0;
 let isEyesClosed = false;
 let isProcessingAction = false;
 
-// ✨ FIX: Start keyboard scanner ONLY on the letters by default, not both zones
+// Scan Target Setup
 const KB_SCAN_SELECTOR = '#kb-grid .kb-card';
 const MAIN_SCAN_SELECTOR = '#main-grid .card';
 const SUB_SCAN_SELECTOR = '#sub-grid .card';
@@ -126,16 +128,28 @@ function stopScanning() {
 // ==========================================
 function openSubMenu(menuId) {
     const menuData = SUB_MENU_DATA[menuId];
-    if (!menuData) return;
+    if (!menuData) {
+        // ✨ SAFETY NET: Prevents system freeze if an invalid menu ID is passed
+        resetTriggerState();
+        startScanning();
+        return;
+    }
 
     gridUI.clearHighlights();
     const subGrid = document.getElementById('sub-grid');
     subGrid.innerHTML = '';
 
-    menuData.items.forEach((item) => {
+    menuData.items.forEach((item, index) => {
         const card = document.createElement('article');
         card.className = 'card';
-        card.id = item.id === 'back' ? 'btn-back' : `cmd-${item.id}`;
+
+        // Ensure nav back button is properly identified
+        let cardId = `cmd-${item.id}`;
+        if ((item.id === 'back' || item.label === 'BACK') && index === menuData.items.length - 1) {
+            cardId = 'btn-back';
+        }
+
+        card.id = cardId;
         card.innerHTML = `
             <div class="scan-bar"></div>
             <div class="icon"><img src="assets/icons/${item.icon}" alt=""></div>
@@ -147,9 +161,17 @@ function openSubMenu(menuId) {
     });
 
     viewManager.goSubMenu(menuData.title);
-    gridUI.refreshCards(SUB_SCAN_SELECTOR);
-    stopScanning();
-    setTimeout(startScanning, 500);
+
+    // ✨ FIX: Wait for DOM to draw cards before scanning
+    requestAnimationFrame(() => {
+        gridUI.refreshCards(SUB_SCAN_SELECTOR);
+        gridUI.currentIndex = -1;
+        stopScanning();
+        setTimeout(() => {
+            resetTriggerState();
+            startScanning();
+        }, 50);
+    });
 }
 
 async function handleSyncRequest(commandId) {
@@ -163,24 +185,35 @@ async function handleSyncRequest(commandId) {
     } catch (err) {
         console.error('Sync failed:', err);
         if (waitOverlay) waitOverlay.classList.add('hidden');
-        startScanning();
-    } finally {
         resetTriggerState();
+        startScanning();
     }
 }
 
 function openBodyDetailMenu(type) {
     const detailData = BODY_DETAILS_DATA[type];
-    if (!detailData) return;
+    if (!detailData) {
+        resetTriggerState();
+        startScanning();
+        return;
+    }
 
     gridUI.clearHighlights();
     const subGrid = document.getElementById('sub-grid');
     subGrid.innerHTML = '';
 
-    detailData.items.forEach((item) => {
+    detailData.items.forEach((item, index) => {
         const card = document.createElement('article');
         card.className = 'card';
-        card.id = item.id === 'back' ? 'body-back' : `detail-${item.id}`;
+
+        // ✨ BUG FIX: Prevent ID collision between body part "Back" and nav "Back"
+        // This ensures ONLY the last item gets the 'body-back' ID.
+        let cardId = `detail-${item.id}`;
+        if ((item.id === 'back' || item.label === 'BACK') && index === detailData.items.length - 1) {
+            cardId = 'body-back';
+        }
+
+        card.id = cardId;
         card.innerHTML = `
             <div class="scan-bar"></div>
             <div class="icon"><img src="assets/icons/${item.icon}" alt=""></div>
@@ -192,8 +225,17 @@ function openBodyDetailMenu(type) {
     });
 
     viewManager.currentView = 'body-details';
-    gridUI.refreshCards('#sub-grid .card');
-    startScanning();
+
+    // ✨ FIX: Wait for DOM to draw cards before scanning
+    requestAnimationFrame(() => {
+        gridUI.refreshCards('#sub-grid .card');
+        gridUI.currentIndex = -1;
+        stopScanning();
+        setTimeout(() => {
+            resetTriggerState();
+            startScanning();
+        }, 50);
+    });
 }
 
 function openKeyboard() {
@@ -201,21 +243,28 @@ function openKeyboard() {
     kbScanTarget = viewManager.goKeyboard('speak');
 
     stopScanning();
-    setTimeout(() => {
-        // ✨ FIX: Start scanner only on the Letters grid initially
+    requestAnimationFrame(() => {
         const selector = '#kb-grid .kb-card';
         gridUI.refreshCards(selector);
-        gridUI.currentIndex = 2;
+        gridUI.currentIndex = -1;
+        resetTriggerState();
         startScanning();
-    }, 100);
+    });
 }
 
 function backToMain() {
     gridUI.clearHighlights();
     viewManager.goMain();
-    gridUI.refreshCards(MAIN_SCAN_SELECTOR);
-    stopScanning();
-    setTimeout(startScanning, 500);
+
+    requestAnimationFrame(() => {
+        gridUI.refreshCards(MAIN_SCAN_SELECTOR);
+        gridUI.currentIndex = -1;
+        stopScanning();
+        setTimeout(() => {
+            resetTriggerState();
+            startScanning();
+        }, 50);
+    });
 }
 
 // ==========================================
@@ -230,10 +279,14 @@ function handleEyeFrame(data) {
     const isNowClosed = data.eyeOpenness < AppConfig.BLINK_THRESHOLD;
     const now = Date.now();
 
-    sosSystem.update(isNowClosed);
+    // ✨ FIX 1: Pause normal 3-second SOS while in Audio Rest Mode
+    if (viewManager.currentView === 'audio-playing') {
+        sosSystem.update(false); // Trick SOS into thinking eyes are open so patient can sleep
+    } else {
+        sosSystem.update(isNowClosed); // Normal SOS behavior everywhere else
+    }
 
-    // Update real-time eye-tracker status (e.g., if user is blinking/active)
-    if (now % 5000 < 100) { // Throttled update approx every 5s during the loop
+    if (now % 5000 < 100) {
         StatusService.updateStatus({ eyeTrackerActive: !isNowClosed });
     }
 
@@ -244,22 +297,23 @@ function handleEyeFrame(data) {
         } else {
             const elapsed = now - eyesClosedStartTime;
 
-            // A. Long Blink (Standard Click / Long Hold)
-            let holdTimeRequired = CLICK_HOLD_TIME; // Default 1000ms
+            let holdTimeRequired = CLICK_HOLD_TIME;
+
             if (viewManager.currentView === 'video-playing') {
-                holdTimeRequired = 2000; // 2 seconds to pop out settings
+                holdTimeRequired = 2000; // 2 seconds to pop out video settings
+            } else if (viewManager.currentView === 'audio-playing') {
+                holdTimeRequired = 9999999; // AUDIO REST MODE: Ignore held eyes
             }
 
             if (elapsed >= holdTimeRequired && !isProcessingAction) {
                 if (sosSystem.state === 'CHARGING' || sosSystem.state === 'IDLE') {
                     console.log('✅ Long Blink: Triggering Click');
-                    gridUI.updateConfirmBar(100); // Fill it up at trigger
+                    gridUI.updateConfirmBar(100);
                     triggerSelection();
                     isProcessingAction = true;
                     blinkCount = 0;
                 }
             } else {
-                // Update confirm bar visually as user holds eyes closed
                 const progress = Math.min((elapsed / holdTimeRequired) * 100, 100);
                 gridUI.updateConfirmBar(progress);
             }
@@ -273,6 +327,28 @@ function handleEyeFrame(data) {
 
             if (elapsed < 500) {
                 blinkCount++;
+
+                // ✨ FIX 2: SAFETY FEATURE: The Panic Flutter (4 rapid blinks = INSTANT SOS)
+                // ✨ UPDATED SAFETY: The Panic Flutter (Only active during Audio/Music)
+                // This prevents accidental SOS while the user is typing or browsing.
+                if (blinkCount >= 4 && viewManager.currentView === 'audio-playing') {
+                    console.log("🚨 AUDIO PANIC FLUTTER DETECTED!");
+                    if (blinkCommandTimer) clearTimeout(blinkCommandTimer);
+                    blinkCount = 0;
+
+                    // 1. Send Alert instantly to Caregiver Dashboard
+                    AlertService.sendSimpleAlert('sos', 'emergency');
+
+                    // 2. Show massive red feedback on the screen
+                    showFeedback("🚨 EMERGENCY ALARM SENT 🚨", "error");
+
+                    // 3. Scream for help out loud using the speakers
+                    window.speechSynthesis.cancel();
+                    window.speechSynthesis.speak(new SpeechSynthesisUtterance("Emergency! Caregiver needed immediately!"));
+
+                    return;
+                }
+
                 if (blinkCommandTimer) clearTimeout(blinkCommandTimer);
 
                 blinkCommandTimer = setTimeout(() => {
@@ -288,14 +364,30 @@ function handleEyeFrame(data) {
 // 3. EXECUTE COMMANDS (2x = Space, 3x = Toggle)
 // ==========================================
 function executeBlinkCommand(count) {
-    // Check if we are in video mode for single blink
+    // ✨ VIDEO MODE: 2 Blinks to Play/Pause
     if (viewManager.currentView === 'video-playing') {
-        if (count === 1) {
-            console.log("⚡ COMMAND: TOGGLE PLAY/PAUSE (Blink)");
+        if (count === 2) {
+            console.log("⚡ COMMAND: TOGGLE PLAY/PAUSE (Double Blink)");
             const state = mediaManager.videoPlayer.togglePlayPause();
             showFeedback(state, "info");
         }
-        return; // No other blink commands in video playing mode
+        return;
+    }
+
+    // ✨ AUDIO MODE (New!)
+    if (viewManager.currentView === 'audio-playing') {
+        if (count === 2) {
+            console.log("⚡ COMMAND: AUDIO PLAY/PAUSE");
+            const audioEl = document.getElementById('main-audio');
+            if (audioEl) {
+                if (audioEl.paused) { audioEl.play(); showFeedback("PLAYING", "success"); }
+                else { audioEl.pause(); showFeedback("PAUSED", "info"); }
+            }
+        } else if (count === 3) {
+            console.log("⚡ COMMAND: WAKE AUDIO MENU");
+            triggerSelection(); // Wakes up the UI panel
+        }
+        return;
     }
 
     if (viewManager.currentView !== 'keyboard') return;
@@ -305,8 +397,6 @@ function executeBlinkCommand(count) {
 
     if (count === 2) {
         console.log("⚡ COMMAND: SPACE");
-
-        // Add a safe beep sound so the user knows it registered
         if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(500, 'sine', 0.05);
 
         handleKeyboardAction('kb-space', kbManager, gridUI, (target) => {
@@ -315,8 +405,6 @@ function executeBlinkCommand(count) {
     }
     else if (count === 3) {
         console.log("⚡ COMMAND: TOGGLE ZONE");
-
-        // Add a distinct double beep to indicate a mode switch
         if (SoundUtils && SoundUtils.playBeep) {
             SoundUtils.playBeep(700, 'square', 0.05);
             setTimeout(() => SoundUtils.playBeep(900, 'square', 0.05), 100);
@@ -382,7 +470,7 @@ function initDevMode() {
         const target = e.target.closest('.card, .kb-card, .predict-btn');
         if (!target) return;
 
-        console.log(`鼠标点选: ${target.id}`);
+        console.log(`Mouse Clicked: ${target.id}`);
         const index = gridUI.cards.findIndex(card => card.id === target.id);
 
         if (index !== -1) {
@@ -396,6 +484,7 @@ function initDevMode() {
         }
     }, true);
 }
+
 // ==========================================
 // 5. Entry point
 // ==========================================
@@ -415,7 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             console.log('🚀 System Initialized by User Interaction');
             await eyeEngine.init(handleEyeFrame);
-            SettingsService.init(); // Listen for caregiver remote config
+            SettingsService.init();
             startScanning();
         } catch (err) {
             console.error('Init failed:', err);

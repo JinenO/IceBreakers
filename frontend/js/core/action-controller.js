@@ -55,7 +55,7 @@ export class ActionController {
             setTimeout(() => {
                 this.resetTriggerState();
                 this.startScanning();
-            }, 500);
+            }, 200); // ✨ Faster Response
             return;
         }
 
@@ -77,7 +77,7 @@ export class ActionController {
             setTimeout(() => {
                 this.resetTriggerState();
                 this.startScanning();
-            }, 500);
+            }, 200); // ✨ Faster Response
             return;
         }
 
@@ -92,6 +92,9 @@ export class ActionController {
         }
 
         SoundUtils.playBeep(880, 'sine', 0.1);
+
+        // ✨ FEATURE: Instantly speak the name of the button that was just clicked!
+        this._speakSelectionLabel(selectedId);
 
         // --- Audio Control Panel ---
         if (this.viewManager.currentView === 'audio-panel') {
@@ -141,7 +144,7 @@ export class ActionController {
         setTimeout(() => {
             this.resetTriggerState();
             if (!document.hidden && !this.sleepManager.isSleeping) this.startScanning();
-        }, 3000);
+        }, 1000); // ✨ Reduced from 3000ms
     }
 
     _handleKeyboardView(selectedId) {
@@ -168,34 +171,7 @@ export class ActionController {
                 this.mediaManager.youtubePlayer.searchAndRender(text, this.gridUI);
 
                 this.viewManager.currentView = 'media-library';
-                setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
-            } else {
-                this.resetTriggerState();
-                if (!this.sleepManager.isSleeping) this.startScanning();
-            }
-            return;
-        } else if (selectedId === 'kb-send') {
-            const text = this.kbManager.currentText;
-            if (text.trim().length > 0) {
-                console.log('🗣 Speaking:', text);
-                this.kbManager.speakText(text);
-
-                // Sync with Caregiver App
-                AlertService.sendSimpleAlert('MESSAGE', text);
-
-                this.kbManager.clear();
-                this.helpers.renderKeyboardMatrix(this.kbManager, this.gridUI);
-
-                if (window.showFeedback) window.showFeedback('SENT ✅', 'success');
-                this.helpers.backToMain();
-
-                this.sleepManager.resetTimer();
-                setTimeout(() => {
-                    this.resetTriggerState();
-                    if (!this.sleepManager.isSleeping) {
-                        this.startScanning();
-                    }
-                }, 500);
+                setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 200);
             } else {
                 this.resetTriggerState();
                 if (!this.sleepManager.isSleeping) this.startScanning();
@@ -203,7 +179,8 @@ export class ActionController {
             return;
         }
 
-        // 2. For ALL other keyboard actions, let keyboard-ui.js handle it!
+        // 2. For ALL other keyboard actions (including normal SEND), let keyboard-ui.js handle it!
+        // This makes sure your Gemini AI sentence formatter actually runs.
         this.helpers.handleKeyboardAction(selectedId, this.kbManager, this.gridUI, (newTarget) => {
             this.helpers.setKbScanTarget(newTarget);
         }, callbacks).then(() => {
@@ -216,7 +193,7 @@ export class ActionController {
                 if (!this.sleepManager.isSleeping) {
                     this.startScanning();
                 }
-            }, 800);
+            }, 600); // ✨ Faster UI Response
         });
     }
 
@@ -225,26 +202,21 @@ export class ActionController {
             this.kbManager.setMode('speak');
             const kbTarget = this.viewManager.goKeyboard('speak');
             this.helpers.setKbScanTarget(kbTarget);
-
+            showFeedback("Double blink: Space. Triple blink: Switch to Word List.", "info");
             this.sleepManager.resetTimer();
             setTimeout(() => {
                 this.resetTriggerState();
                 this.startScanning();
-            }, 500);
+            }, 50);
             return;
         }
 
         if (SUB_MENU_DATA[selectedId]) {
             this.helpers.openSubMenu(selectedId);
             this.sleepManager.resetTimer();
-            setTimeout(() => {
-                this.resetTriggerState();
-                this.startScanning();
-            }, 500);
-            return;
+            return; // ✨ openSubMenu in main.js handles the reset and startScanning now!
         }
 
-        // ✨ Default: Unknown main menu selection
         console.warn('Main Menu: Unknown selection', selectedId);
         this.resetTriggerState();
         if (!this.sleepManager.isSleeping) this.startScanning();
@@ -254,7 +226,7 @@ export class ActionController {
         if (selectedId === 'btn-back') {
             this.helpers.backToMain();
             this.sleepManager.resetTimer();
-            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
+            // ✨ backToMain in main.js handles the timeout/reset now!
             return;
         }
 
@@ -267,7 +239,7 @@ export class ActionController {
             setTimeout(() => {
                 this.resetTriggerState();
                 this.startScanning();
-            }, 500);
+            }, 200);
             return;
         }
 
@@ -277,7 +249,7 @@ export class ActionController {
             AlertService.sendSimpleAlert('need', needType);
             showFeedback(`${needType.toUpperCase()} SENT ✅`, 'success');
 
-            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
+            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 800);
             return;
         }
 
@@ -287,7 +259,7 @@ export class ActionController {
             this.mediaManager.open(appType, this.gridUI, this.sleepManager);
             this.viewManager.currentView = 'media-library';
 
-            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
+            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 200);
             return;
         }
 
@@ -302,8 +274,8 @@ export class ActionController {
             }
 
             // 2. Navigation / Special items
-            if (action === 'youtube' || action === 'back') return; // Handled separately or navigation
-            if (['local', 'music', 'audiobook', 'photos'].includes(action)) return; // Media handled above
+            if (action === 'youtube' || action === 'back') return;
+            if (['local', 'music', 'audiobook', 'photos'].includes(action)) return;
 
             // 3. Default: Send Alert to Caregiver
             console.log(`🚀 SYNCING COMMAND: ${action}`);
@@ -314,7 +286,7 @@ export class ActionController {
                 this.sleepManager.resetTimer();
                 this.resetTriggerState();
                 if (!this.sleepManager.isSleeping) this.startScanning();
-            }, 2000);
+            }, 1000); // ✨ Reduced waiting from 2000ms to 1000ms
             return;
         }
 
@@ -386,7 +358,7 @@ export class ActionController {
             if (!this.sleepManager.isSleeping) {
                 this.startScanning();
             }
-        }, 1000);
+        }, 800); // ✨ Faster UI Response
     }
 
     _handleMediaLibrary(selectedId) {
@@ -395,7 +367,7 @@ export class ActionController {
             const kbTarget = this.viewManager.goKeyboard('youtube-search');
             this.helpers.setKbScanTarget(kbTarget);
 
-            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
+            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 200);
             return;
         }
 
@@ -403,16 +375,25 @@ export class ActionController {
             this.mediaManager.exit();
             this.viewManager.currentView = 'sub';
             this.gridUI.refreshCards('#sub-grid .card');
-            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
+            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 200);
             return;
         }
 
         if (selectedId.startsWith('vid-') || selectedId.startsWith('yt-')) {
             console.log('🎥 Video Selected:', selectedId);
-            this.mediaManager.videoPlayer.playVideo(selectedId);
-            this.viewManager.currentView = 'video-playing';
-            this.stopScanning();
-            setTimeout(() => { this.resetTriggerState(); }, 500);
+
+            // 1. Show the instructions first
+            showFeedback("Close eyes for 2s to Exit. Double blink to Pause.", "info");
+
+            // 2. Wait for the feedback to finish (we set it to 6s in ui-utils.js) 
+            // before starting the video
+            setTimeout(() => {
+                this.mediaManager.videoPlayer.playVideo(selectedId);
+                this.viewManager.currentView = 'video-playing';
+                this.stopScanning();
+                this.resetTriggerState();
+            }, 4000); // ✨ Matches your 6-second feedback time
+
             return;
         }
 
@@ -421,7 +402,12 @@ export class ActionController {
             this.mediaManager.audioPlayer.openPlayer(selectedId, this.gridUI);
             this.viewManager.currentView = 'audio-playing';
             this.stopScanning();
-            setTimeout(() => { this.resetTriggerState(); }, 500);
+            AlertService.sendSimpleAlert('STATUS', 'Listening to audio. Patient may fall asleep.');
+            // ✨ ADDED: Tell the user it's safe to rest!
+            setTimeout(() => {
+                showFeedback("Rest safely. Double blink: Pause/Play. 3 blinks: Menu. 4 blinks: Emergency SOS", "info");
+            }, 1500);
+            setTimeout(() => { this.resetTriggerState(); }, 200);
             return;
         }
 
@@ -469,18 +455,18 @@ export class ActionController {
             console.log("🔄 Refreshing cards for Media Library...");
             this.gridUI.refreshCards('#video-library-grid .card');
 
-            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
+            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 200);
         });
 
         if (actionResult === 'RESUMED') {
             this.viewManager.currentView = 'video-playing';
             this.stopScanning();
-            setTimeout(() => { this.resetTriggerState(); }, 500);
+            setTimeout(() => { this.resetTriggerState(); }, 200);
             return;
         }
 
         if (actionResult === 'STAY_IN_PANEL') {
-            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
+            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 200);
             return;
         }
 
@@ -500,7 +486,7 @@ export class ActionController {
             if (libraryGrid) libraryGrid.classList.remove('hidden');
             this.stopScanning();
             this.gridUI.clearHighlights();
-            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
+            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 200);
         });
 
         if (actionResult === 'RESUMED') {
@@ -512,13 +498,13 @@ export class ActionController {
             }
             this.stopScanning();
             this.gridUI.clearHighlights();
-            setTimeout(() => { this.resetTriggerState(); }, 500);
+            setTimeout(() => { this.resetTriggerState(); }, 200);
             return;
         }
 
         if (actionResult === 'STAY') {
             this.stopScanning();
-            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 500);
+            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 200);
             return;
         }
 
@@ -531,5 +517,43 @@ export class ActionController {
         console.warn('Audio Player: Unknown action result', actionResult);
         this.resetTriggerState();
         if (!this.sleepManager.isSleeping) this.startScanning();
+    }
+
+    // ✨ TEXT TO SPEECH HELPER: Reads the label of the item the user just selected out loud
+    _speakSelectionLabel(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        let textToSpeak = "";
+
+        // 1. Look for the label text inside the button
+        const labelEl = el.querySelector('.label') || el.querySelector('.kb-label') || el.querySelector('.word');
+        if (labelEl) {
+            textToSpeak = labelEl.innerText.trim();
+        }
+        // 2. Fallback: If it's a typing character (e.g., 'char-A')
+        else if (id.startsWith('char-')) {
+            textToSpeak = id.split('-')[1];
+        }
+
+        if (textToSpeak) {
+            // Fix abbreviations so they sound natural
+            const pronunciationMap = {
+                'DEL': 'Delete',
+                'YT': 'YouTube',
+                'KB': 'Keyboard',
+                'SPACE': 'Space',
+                'SEND': 'Send Message'
+            };
+
+            // Apply pronunciation fix if it exists
+            const finalSpeech = pronunciationMap[textToSpeak.toUpperCase()] || textToSpeak;
+
+            // Stop any ongoing speech and say the new word immediately
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(finalSpeech.toLowerCase());
+            utterance.rate = 1.3; // Speak slightly faster for quick UI feedback
+            window.speechSynthesis.speak(utterance);
+        }
     }
 }
