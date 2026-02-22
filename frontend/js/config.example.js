@@ -7,6 +7,16 @@ export const AppConfig = {
     BLINK_THRESHOLD: 0.012,
     REQUIRED_BLINK_TIME: 1000,
     SOUND_ON: true,
+    // Paste your Firebase config object here from the Firebase Console
+    FIREBASE: {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    },
     // Get it from: https://aistudio.google.com/
     GEMINI_API_KEY: "PASTE_YOUR_GEMINI_KEY_HERE"
 };
