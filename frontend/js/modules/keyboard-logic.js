@@ -41,11 +41,15 @@ export class KeyboardManager {
 
     speakText(text) {
         if (!text) return;
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US';
-        utterance.rate = 0.9;
-        window.speechSynthesis.speak(utterance);
+        if (window.speakText) {
+            window.speakText(text);
+        } else {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
     }
 
     // ✨ GEMINI API IS BACK

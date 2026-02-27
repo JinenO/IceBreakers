@@ -38,7 +38,7 @@ export class ActionController {
         this.isTriggering = false;
     }
 
-    triggerSelection() {
+    async triggerSelection() {
         if (this.isProcessingAction || this.isTriggering) return;
 
         this.isProcessingAction = true;
@@ -106,7 +106,7 @@ export class ActionController {
 
         // --- Keyboard View ---
         if (this.viewManager.currentView === 'keyboard') {
-            this._handleKeyboardView(selectedId);
+            await this._handleKeyboardView(selectedId);
             return;
         }
 
@@ -118,13 +118,13 @@ export class ActionController {
 
         // --- Sub Menu ---
         if (this.viewManager.currentView === 'sub') {
-            this._handleSubMenu(selectedId);
+            await this._handleSubMenu(selectedId);
             return;
         }
 
         // --- Body Details ---
         if (this.viewManager.currentView === 'body-details') {
-            this._handleBodyDetails(selectedId);
+            await this._handleBodyDetails(selectedId);
             return;
         }
 
@@ -147,7 +147,7 @@ export class ActionController {
         }, 1000); // ✨ Reduced from 3000ms
     }
 
-    _handleKeyboardView(selectedId) {
+    async _handleKeyboardView(selectedId) {
         const callbacks = {
             onExit: () => {
                 if (this.viewManager.keyboardMode === 'youtube-search') {
@@ -172,6 +172,36 @@ export class ActionController {
 
                 this.viewManager.currentView = 'media-library';
                 setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 200);
+            } else {
+                this.resetTriggerState();
+                if (!this.sleepManager.isSleeping) this.startScanning();
+            }
+            return;
+        } else if (selectedId === 'kb-send') {
+            const text = this.kbManager.currentText;
+            if (text.trim().length > 0) {
+                console.log('🗣 Speaking:', text);
+
+                // Expand via Gemini AI before sending
+                const expandedText = await window.expandIntentWithAI(text);
+                this.kbManager.speakText(expandedText);
+
+                // Sync with Caregiver App (use expanded version)
+                AlertService.sendSimpleAlert('MESSAGE', expandedText);
+
+                this.kbManager.clear();
+                this.helpers.renderKeyboardMatrix(this.kbManager, this.gridUI);
+
+                if (window.showFeedback) window.showFeedback('SENT ✅', 'success');
+                this.helpers.backToMain();
+
+                this.sleepManager.resetTimer();
+                setTimeout(() => {
+                    this.resetTriggerState();
+                    if (!this.sleepManager.isSleeping) {
+                        this.startScanning();
+                    }
+                }, 200);
             } else {
                 this.resetTriggerState();
                 if (!this.sleepManager.isSleeping) this.startScanning();
@@ -222,7 +252,7 @@ export class ActionController {
         if (!this.sleepManager.isSleeping) this.startScanning();
     }
 
-    _handleSubMenu(selectedId) {
+    async _handleSubMenu(selectedId) {
         if (selectedId === 'btn-back') {
             this.helpers.backToMain();
             this.sleepManager.resetTimer();
@@ -246,7 +276,14 @@ export class ActionController {
         const needsCmds = ['cmd-water', 'cmd-food', 'cmd-toilet', 'cmd-meds', 'cmd-suction'];
         if (needsCmds.includes(selectedId)) {
             const needType = selectedId.replace('cmd-', '');
-            AlertService.sendSimpleAlert('need', needType);
+
+            // Expand via AI
+            const expandedText = await window.expandIntentWithAI(needType);
+
+            // Speak pre-send
+            window.speakText(expandedText);
+
+            AlertService.sendSimpleAlert('need', expandedText);
             showFeedback(`${needType.toUpperCase()} SENT ✅`, 'success');
 
             setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 800);
@@ -277,9 +314,16 @@ export class ActionController {
             if (action === 'youtube' || action === 'back') return;
             if (['local', 'music', 'audiobook', 'photos'].includes(action)) return;
 
-            // 3. Default: Send Alert to Caregiver
+            // 3. Default: Send Alert to Caregiver (Expanded via AI)
             console.log(`🚀 SYNCING COMMAND: ${action}`);
-            AlertService.sendSimpleAlert(action);
+
+            // Convert ID to a readable label first if possible, then expand
+            const expandedAction = await window.expandIntentWithAI(action);
+
+            // Speak pre-send
+            window.speakText(expandedAction);
+
+            AlertService.sendSimpleAlert(action, expandedAction);
             showFeedback(`${action.toUpperCase()} SENT ✅`, 'success');
 
             setTimeout(() => {
@@ -296,7 +340,7 @@ export class ActionController {
         if (!this.sleepManager.isSleeping) this.startScanning();
     }
 
-    _handleBodyDetails(selectedId) {
+    async _handleBodyDetails(selectedId) {
         // 1. Handle back button
         if (selectedId === 'body-back') {
             this.helpers.openSubMenu('c-body');
@@ -313,42 +357,16 @@ export class ActionController {
 
         const detailId = selectedId.replace('detail-', '');
 
-        // 3. Prepare speech content
-        const speechMap = {
-            'too-hot': 'I am too hot. Please help me cool down.',
-            'too-cold': 'I am too cold. Please help me warm up.',
-            'just-right': 'That is better. Thank you.',
-            'head': 'My head is itchy.',
-            'back': 'My back is itchy.',
-            'arm': 'My arm is itchy.',
-            'leg': 'My leg is itchy.'
-        };
+        // 5. Send alert (API) - Expanded via AI
+        const expandedDetail = await window.expandIntentWithAI(detailId);
 
-        const textToSpeak = speechMap[detailId] || detailId;
-        console.log(`🗣 Speaking Body Detail: ${textToSpeak}`);
+        // Speak expanded intent
+        window.speakText(expandedDetail);
 
-        // 4. Run speech (TTS)
-        try {
-            const utterance = new SpeechSynthesisUtterance(textToSpeak);
-            utterance.rate = 0.9;
-            utterance.pitch = 1.0;
-            utterance.volume = 1.0;
-
-            const voices = window.speechSynthesis.getVoices();
-            const enVoice = voices.find((voice) => voice.lang.includes('en'));
-            if (enVoice) utterance.voice = enVoice;
-
-            window.speechSynthesis.cancel();
-            window.speechSynthesis.speak(utterance);
-        } catch (e) {
-            console.error('TTS Error:', e);
-        }
-
-        // 5. Send alert (API)
         if (detailId === 'too-hot' || detailId === 'too-cold') {
-            AlertService.sendSimpleAlert('temp', detailId);
+            AlertService.sendSimpleAlert('temp', expandedDetail);
         } else if (['head', 'back', 'arm', 'leg'].includes(detailId)) {
-            AlertService.sendSimpleAlert('itch', detailId);
+            AlertService.sendSimpleAlert('itch', expandedDetail);
         }
         showFeedback(`SENT: ${detailId.toUpperCase()} ✅`, 'success');
 

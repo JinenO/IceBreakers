@@ -41,8 +41,10 @@ exports.sendAlertNotification = onValueCreated(
         // Notification payload
         const payload = {
             notification: {
-                title: commandId === 'SOS' ? '🚨 EMERGENCY SOS!' : '⚠️ Patient Alert!',
-                body: commandId === 'SOS' ? 'Patient needs immediate assistance!' : `Request: ${commandId} ${details ? `(${details})` : ''}`,
+                title: commandId === 'SOS' ? '🚨 EMERGENCY SOS!' : '⚠️ IRIS FLOW',
+                body: commandId === 'SOS'
+                    ? 'Patient needs immediate assistance!'
+                    : (details || `New Request: ${commandId.toUpperCase()}`),
             },
             data: {
                 alertId: alertId,

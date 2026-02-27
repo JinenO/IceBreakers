@@ -46,11 +46,15 @@ class PatientStatusCard extends StatelessWidget {
                 ],
               ),
               Text(
-                isOnline ? 'ONLINE' : 'OFFLINE',
+                isOnline
+                    ? (status.isResting ? 'RESTING' : 'ONLINE')
+                    : 'OFFLINE',
                 style: TextStyle(
                   color: isOnline
-                      ? const Color(0xFF64FFDA)
-                      : Colors.grey, // Teal
+                      ? (status.isResting
+                            ? Colors.orangeAccent
+                            : const Color(0xFF64FFDA))
+                      : Colors.grey,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -64,25 +68,31 @@ class PatientStatusCard extends StatelessWidget {
               _buildMetric(
                 context,
                 Icons.battery_charging_full,
-                '${status.batteryLevel}%',
+                '${status.batteryLevel.toInt()}%',
                 'BATTERY',
                 status.batteryLevel < 20
                     ? const Color(0xFFFFC107)
-                    : const Color(0xFF64FFDA), // Amber or Teal
+                    : const Color(0xFF64FFDA),
               ),
               _buildMetric(
                 context,
-                Icons.remove_red_eye_rounded,
-                status.eyeTrackerActive ? 'ACTIVE' : 'IDLE',
-                'EYE TRACKER',
+                status.isResting
+                    ? Icons.nights_stay_rounded
+                    : Icons.remove_red_eye_rounded,
+                status.isResting ? 'REST MODE' : 'SCANNERS',
+                'MODE',
+                status.isResting
+                    ? Colors.orangeAccent
+                    : const Color(0xFF64FFDA),
+              ),
+              _buildMetric(
+                context,
+                status.eyeTrackerActive
+                    ? Icons.visibility
+                    : Icons.visibility_off,
+                status.eyeTrackerActive ? 'TRACKING' : 'IDLE',
+                'EYE ENGINE',
                 status.eyeTrackerActive ? const Color(0xFF64FFDA) : Colors.grey,
-              ),
-              _buildMetric(
-                context,
-                Icons.history,
-                _formatTime(status.lastSeenDate),
-                'LAST SEEN',
-                const Color(0xFF64FFDA),
               ),
             ],
           ),
@@ -116,10 +126,6 @@ class PatientStatusCard extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _formatTime(DateTime dt) {
-    return "${dt.hour}:${dt.minute.toString().padLeft(2, '0')}";
   }
 }
 

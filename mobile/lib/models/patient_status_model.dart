@@ -3,6 +3,7 @@ class PatientStatusModel {
   final double batteryLevel;
   final bool isCharging;
   final bool eyeTrackerActive;
+  final bool isResting;
   final int lastSeen;
 
   PatientStatusModel({
@@ -10,6 +11,7 @@ class PatientStatusModel {
     required this.batteryLevel,
     required this.isCharging,
     required this.eyeTrackerActive,
+    required this.isResting,
     required this.lastSeen,
   });
 
@@ -20,6 +22,7 @@ class PatientStatusModel {
           (data['batteryLevel'] as num?)?.toDouble().roundToDouble() ?? 0.0,
       isCharging: data['isCharging'] as bool? ?? false,
       eyeTrackerActive: data['eyeTrackerActive'] as bool? ?? false,
+      isResting: data['isResting'] as bool? ?? false,
       lastSeen: data['lastSeen'] as int? ?? 0,
     );
   }

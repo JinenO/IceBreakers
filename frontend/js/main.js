@@ -1,4 +1,110 @@
-import { AppConfig } from './config.js';
+import { AppConfig, GEMINI_API_KEY } from './config.js';
+
+/**
+ * Gemini AI Intent Expansion
+ * Expands short text (e.g. "Cold") into a full intent (e.g. "I am too cold, please help me warm up")
+ */
+window.expandIntentWithAI = async function (text) {
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'PASTE_YOUR_GEMINI_KEY_HERE') {
+        console.warn("⚠️ Gemini API Key missing. Skipping expansion.");
+        return text;
+    }
+
+    console.log(`🤖 AI: Expanding intent for "${text}"...`);
+
+    // --- DEMO MODE FALLBACK ---
+    const demoMap = {
+        'water': 'I would like some water, please.',
+        'food': 'I am feeling hungry, could I have something to eat?',
+        'toilet': 'I need to use the bathroom, please help me.',
+        'meds': 'I am in pain, can I have my medication?',
+        'suction': 'My throat needs suctioning, I am having trouble breathing.',
+        'roll': 'I need to be rolled over to a different position.',
+        'legs': 'Could you please help me move my legs?',
+        'too-cold': 'I am too cold, please help me warm up.',
+        'too-hot': 'I am too hot, please help me cool down.',
+        'just-right': 'I am feeling much better now, thank you.',
+        'itch': 'I have an itch, could you help me scratch it?',
+        'head': 'My head is feeling itchy, could you please scratch it?',
+        'back': 'My back is itchy, please help me scratch it.',
+        'arm': 'My arm is itchy, please help me scratch it.',
+        'leg': 'My leg is itchy, please help me scratch it.',
+        'yes': 'Yes, that is correct.',
+        'no': 'No, thank you.',
+        'hello': 'Hello, how are you today?',
+        'thanks': 'Thank you so much for your help.',
+        'love': 'I love you!'
+    };
+    const key = text.toLowerCase().trim();
+    if (demoMap[key]) {
+        console.log(`✨ Demo expansion: "${demoMap[key]}"`);
+        return demoMap[key];
+    }
+
+    try {
+        // v1beta is often required for the latest flash models
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        console.log(`🔗 AI URL: ${url.replace(GEMINI_API_KEY, 'API_KEY_HIDDEN')}`);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: `You are an assistive communication assistant for a patient with severe motor impairment. 
+                        The patient has typed a short keyword or selected a category. 
+                        Expand this into a short, clear, and polite sentence describing their intent to a caregiver.
+                        Keep it under 15 words.
+                        
+                        Input: "Cold" -> Output: "I am feeling too cold, please help me warm up."
+                        Input: "Water" -> Output: "I would like some water, please."
+                        Input: "${text}" -> Output:`
+                    }]
+                }]
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error(`❌ Gemini API Error (${response.status}):`, JSON.stringify(errorData, null, 2));
+
+            // If 404, maybe the model name is different? Try a fallback if needed in future
+            return text;
+        }
+
+        const data = await response.json();
+        const expanded = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || text;
+        console.log(`✨ AI Expanded: "${expanded}"`);
+        return expanded;
+    } catch (err) {
+        console.error("❌ Gemini Error:", err);
+        return text;
+    }
+};
+/**
+ * Global TTS Helper
+ * Speaks the provided text using the Web Speech API
+ */
+window.speakText = function (text) {
+    if (!text) return;
+    try {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        const voices = window.speechSynthesis.getVoices();
+        const enVoice = voices.find((voice) => voice.lang.includes('en'));
+        if (enVoice) utterance.voice = enVoice;
+
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+    } catch (e) {
+        console.error('TTS Error:', e);
+    }
+};
+
 import { GridUI } from './modules/grid-ui.js';
 import { EyeEngine } from './core/eye-engine.js';
 import { SoundUtils } from './utils/sound.js';
@@ -29,11 +135,15 @@ const mediaManager = new MediaManager();
 const viewManager = new ViewManager(gridUI, kbManager, renderKeyboardMatrix);
 
 const sleepManager = new SleepManager(
-    () => stopScanning(),
+    () => {
+        stopScanning();
+        StatusService.updateStatus({ isResting: true });
+    },
     () => {
         if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(600, 'sine', 0.1);
         gridUI.currentIndex = -1;
         startScanning();
+        StatusService.updateStatus({ isResting: false });
     }
 );
 
@@ -275,7 +385,7 @@ let blinkCommandTimer = null;
 const BLINK_TIMEOUT = 600;
 const CLICK_HOLD_TIME = 1000;
 
-function handleEyeFrame(data) {
+async function handleEyeFrame(data) {
     const isNowClosed = data.eyeOpenness < AppConfig.BLINK_THRESHOLD;
     const now = Date.now();
 
@@ -309,7 +419,7 @@ function handleEyeFrame(data) {
                 if (sosSystem.state === 'CHARGING' || sosSystem.state === 'IDLE') {
                     console.log('✅ Long Blink: Triggering Click');
                     gridUI.updateConfirmBar(100);
-                    triggerSelection();
+                    await triggerSelection();
                     isProcessingAction = true;
                     blinkCount = 0;
                 }
@@ -441,6 +551,26 @@ function executeBlinkCommand(count) {
             document.getElementById('kb-grid').style.opacity = '0.4';
         }
     }
+    else if (count === 4) {
+        console.log("🚨 PANIC FLUTTER: High Priority SOS");
+
+        // Instant visual & audio feedback
+        if (SoundUtils && SoundUtils.playBeep) {
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => SoundUtils.playBeep(1200, 'square', 0.2), i * 150);
+            }
+        }
+
+        // Wake up system if resting
+        if (sleepManager.isSleeping) {
+            sleepManager.wakeUp();
+            showFeedback("WAKING UP - PANIC SOS", "emergency");
+        }
+
+        // Trigger high-priority alert
+        AlertService.sendSimpleAlert('SOS', 'PANIC FLUTTER: Immediate assistance required!');
+        showFeedback("PANIC ALERT SENT! 🚨", "emergency");
+    }
 }
 
 // ==========================================
@@ -448,8 +578,8 @@ function executeBlinkCommand(count) {
 // ==========================================
 let isTriggering = false;
 
-function triggerSelection() {
-    actionController.triggerSelection();
+async function triggerSelection() {
+    await actionController.triggerSelection();
 }
 
 function resetTriggerState() {
@@ -478,8 +608,8 @@ function initDevMode() {
             gridUI.currentIndex = index;
             gridUI.highlightCard(index);
 
-            setTimeout(() => {
-                triggerSelection();
+            setTimeout(async () => {
+                await triggerSelection();
             }, 10);
         }
     }, true);
