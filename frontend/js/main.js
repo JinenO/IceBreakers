@@ -156,6 +156,11 @@ let eyesClosedStartTime = 0;
 let isEyesClosed = false;
 let isProcessingAction = false;
 
+// Panic Flutter State
+let panicCountdownTimer = null;
+let panicCountdownValue = 0;
+let isPanicCountdownActive = false;
+
 // Scan Target Setup
 const KB_SCAN_SELECTOR = '#kb-grid .kb-card';
 const MAIN_SCAN_SELECTOR = '#main-grid .card';
@@ -389,6 +394,44 @@ async function handleEyeFrame(data) {
     const isNowClosed = data.eyeOpenness < AppConfig.BLINK_THRESHOLD;
     const now = Date.now();
 
+    // ✨ NEW: Panic Flutter Countdown Override
+    if (isPanicCountdownActive) {
+        if (isNowClosed) {
+            if (!isEyesClosed) {
+                isEyesClosed = true;
+                eyesClosedStartTime = now;
+            } else {
+                const elapsed = now - eyesClosedStartTime;
+                if (elapsed >= 1500) { // 1.5 seconds to cancel
+                    clearInterval(panicCountdownTimer);
+                    isPanicCountdownActive = false;
+                    
+                    const countdownOverlay = document.getElementById('sos-countdown-overlay');
+                    if (countdownOverlay) {
+                        countdownOverlay.classList.remove('active');
+                        setTimeout(() => countdownOverlay.classList.add('hidden'), 300);
+                    }
+                    
+                    window.speechSynthesis.cancel();
+                    window.speakText("Emergency call cancelled.");
+                    showFeedback("SOS CANCELLED", "info");
+                    
+                    isEyesClosed = false;
+                    gridUI.updateConfirmBar(0);
+                } else {
+                    const progress = Math.min((elapsed / 1500) * 100, 100);
+                    gridUI.updateConfirmBar(progress);
+                }
+            }
+        } else {
+            if (isEyesClosed) {
+                isEyesClosed = false;
+                gridUI.updateConfirmBar(0);
+            }
+        }
+        return; // Skip normal eye processing
+    }
+
     // ✨ FIX 1: Pause normal 3-second SOS while in Audio Rest Mode
     if (viewManager.currentView === 'audio-playing') {
         sosSystem.update(false); // Trick SOS into thinking eyes are open so patient can sleep
@@ -552,24 +595,57 @@ function executeBlinkCommand(count) {
         }
     }
     else if (count === 4) {
-        console.log("🚨 PANIC FLUTTER: High Priority SOS");
+        console.log("🚨 PANIC FLUTTER: Countdown Initiated");
 
-        // Instant visual & audio feedback
-        if (SoundUtils && SoundUtils.playBeep) {
-            for (let i = 0; i < 3; i++) {
-                setTimeout(() => SoundUtils.playBeep(1200, 'square', 0.2), i * 150);
+        isPanicCountdownActive = true;
+        panicCountdownValue = 3;
+        
+        const countdownOverlay = document.getElementById('sos-countdown-overlay');
+        const timerEl = document.getElementById('sos-countdown-timer');
+        
+        if (countdownOverlay) {
+            countdownOverlay.classList.remove('hidden');
+            setTimeout(() => countdownOverlay.classList.add('active'), 10);
+        }
+        if (timerEl) timerEl.innerText = panicCountdownValue;
+        
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance("Emergency call triggered, sending in 3 seconds. To cancel, please keep your eyes closed once for a long period."));
+        
+        if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(800, 'square', 0.2);
+
+        panicCountdownTimer = setInterval(() => {
+            panicCountdownValue--;
+            if (timerEl) timerEl.innerText = panicCountdownValue;
+            if (SoundUtils && SoundUtils.playBeep && panicCountdownValue > 0) SoundUtils.playBeep(800, 'square', 0.2);
+            
+            if (panicCountdownValue <= 0) {
+                clearInterval(panicCountdownTimer);
+                if (!isPanicCountdownActive) return; // Prevent race condition
+                isPanicCountdownActive = false;
+                
+                if (countdownOverlay) {
+                    countdownOverlay.classList.remove('active');
+                    setTimeout(() => countdownOverlay.classList.add('hidden'), 300);
+                }
+                
+                // Wake up system if resting
+                if (sleepManager.isSleeping) {
+                    sleepManager.wakeUp();
+                    showFeedback("WAKING UP - PANIC SOS", "emergency");
+                }
+
+                // Trigger high-priority alert
+                AlertService.sendSimpleAlert('SOS', 'PANIC FLUTTER: Immediate assistance required!');
+                showFeedback("PANIC ALERT SENT! 🚨", "emergency");
+                
+                if (SoundUtils && SoundUtils.playBeep) {
+                    for (let i = 0; i < 3; i++) {
+                        setTimeout(() => SoundUtils.playBeep(1200, 'square', 0.2), i * 150);
+                    }
+                }
             }
-        }
-
-        // Wake up system if resting
-        if (sleepManager.isSleeping) {
-            sleepManager.wakeUp();
-            showFeedback("WAKING UP - PANIC SOS", "emergency");
-        }
-
-        // Trigger high-priority alert
-        AlertService.sendSimpleAlert('SOS', 'PANIC FLUTTER: Immediate assistance required!');
-        showFeedback("PANIC ALERT SENT! 🚨", "emergency");
+        }, 1000);
     }
 }
 

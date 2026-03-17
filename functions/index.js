@@ -9,9 +9,16 @@
 
 const { onValueCreated } = require("firebase-functions/v2/database");
 const admin = require('firebase-admin');
+const twilio = require('twilio');
 
 // Initialize the app with the Admin SDK
 admin.initializeApp();
+
+// Twilio Setup (Using environment variables or placeholders for demo)
+const twilioClient = twilio(
+    process.env.TWILIO_ACCOUNT_SID || "AC_PLACEHOLDER_SID",
+    process.env.TWILIO_AUTH_TOKEN || "PLACEHOLDER_TOKEN"
+);
 
 /**
  * Triggered when a new alert is created in Realtime Database.
@@ -78,10 +85,61 @@ exports.sendAlertNotification = onValueCreated(
 
         try {
             const response = await admin.messaging().send(payload);
-            console.log("Successfully sent message:", response);
+            console.log("Successfully sent message (Tier 1):", response);
 
-            // Update the alert status to 'notified' if needed
-            // await event.data.ref.update({ status: 'notified' });
+            // TIERED ESCALATION FOR SOS
+            if (commandId === 'SOS') {
+                // Tier 2: 15 Seconds Unresponsive -> Smart Home / IoT Warning
+                setTimeout(async () => {
+                    try {
+                        const alertSnap = await admin.database().ref(`alerts/${alertId}`).once('value');
+                        const currentAlert = alertSnap.val();
+                        
+                        if (currentAlert && currentAlert.status !== 'acknowledged') {
+                            console.log(`[Tier 2] Alert ${alertId} unacknowledged after 15s. Triggering IoT Linkage.`);
+                            await admin.database().ref('iot/state').set({
+                                device: 'smart_bulb',
+                                light: 'red_flash',
+                                active: true,
+                                timestamp: Date.now()
+                            });
+                        }
+                    } catch (e) {
+                        console.error("[Tier 2] IoT Linkage failed:", e);
+                    }
+                }, 15000);
+
+                // Tier 3: 30 Seconds Unresponsive -> Third-Party SMS (Twilio)
+                setTimeout(async () => {
+                    try {
+                        const alertSnap = await admin.database().ref(`alerts/${alertId}`).once('value');
+                        const currentAlert = alertSnap.val();
+                        
+                        if (currentAlert && currentAlert.status !== 'acknowledged') {
+                            console.log(`[Tier 3] Alert ${alertId} unacknowledged after 30s. Triggering Twilio SMS.`);
+                            
+                            try {
+                                const message = await twilioClient.messages.create({
+                                    body: "URGENT SOS: Patient requires immediate assistance and Caregiver has not responded to the App alert!",
+                                    from: process.env.TWILIO_PHONE_NUMBER || "+1234567890",
+                                    to: process.env.EMERGENCY_CONTACT_PHONE || "+1987654321" 
+                                });
+                                console.log("[Tier 3] Twilio SMS sent with SID: ", message.sid);
+                                
+                                await admin.database().ref(`alerts/${alertId}`).update({
+                                    escalated: true,
+                                    escalationTier: 3,
+                                    escalationTime: Date.now()
+                                });
+                            } catch (twilioErr) {
+                                console.error("[Tier 3] Failed to send Twilio SMS:", twilioErr.message);
+                            }
+                        }
+                    } catch (e) {
+                        console.error("[Tier 3] Twilio check failed:", e);
+                    }
+                }, 30000);
+            }
 
         } catch (error) {
             console.log("Error sending message:", error);

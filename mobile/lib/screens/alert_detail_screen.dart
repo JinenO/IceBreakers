@@ -22,6 +22,20 @@ class AlertDetailScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _acknowledgeAlert(BuildContext context) async {
+    final DatabaseReference ref = FirebaseDatabase.instance.ref('alerts/${alert.key}');
+    await ref.update({
+      'status': 'ack',
+      'ackTimestamp': DateTime.now().millisecondsSinceEpoch,
+    });
+
+    await _sendResponse(context, 'ACKNOWLEDGED');
+
+    if (context.mounted) {
+      Navigator.pop(context); // Go back to home screen
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,6 +52,28 @@ class AlertDetailScreen extends StatelessWidget {
           children: [
             _buildInfoCard(),
             const SizedBox(height: 30),
+            if (!alert.isAck) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _acknowledgeAlert(context),
+                  icon: const Icon(Icons.check_circle, size: 24),
+                  label: const Text(
+                    'ACKNOWLEDGE ALERT',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+            ],
             const Text(
               'QUICK RESPONSES',
               style: TextStyle(

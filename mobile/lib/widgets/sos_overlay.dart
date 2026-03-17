@@ -1,11 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import '../models/alert_model.dart';
 
-class SosOverlay extends StatelessWidget {
+class SosOverlay extends StatefulWidget {
   final AlertModel alert;
   final VoidCallback onDismiss;
 
   const SosOverlay({super.key, required this.alert, required this.onDismiss});
+
+  @override
+  State<SosOverlay> createState() => _SosOverlayState();
+}
+
+class _SosOverlayState extends State<SosOverlay> {
+  @override
+  void initState() {
+    super.initState();
+    FlutterRingtonePlayer().playAlarm(volume: 1.0, looping: true);
+  }
+
+  @override
+  void dispose() {
+    FlutterRingtonePlayer().stop();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,12 +49,15 @@ class SosOverlay extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              alert.details.toUpperCase(),
+              widget.alert.details.toUpperCase(),
               style: const TextStyle(color: Colors.white70, fontSize: 20),
             ),
             const SizedBox(height: 60),
             ElevatedButton(
-              onPressed: onDismiss,
+              onPressed: () {
+                FlutterRingtonePlayer().stop();
+                widget.onDismiss();
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.red,
