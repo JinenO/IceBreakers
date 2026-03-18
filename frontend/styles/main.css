@@ -438,6 +438,7 @@ body {
     position: relative;
     overflow: hidden;
     box-shadow: 0 -10px 30px rgba(211, 47, 47, 0.2);
+    z-index: 150; /* Ensure visibility over media player overlays (z-index 90-100) */
 }
 
 .sos-content {

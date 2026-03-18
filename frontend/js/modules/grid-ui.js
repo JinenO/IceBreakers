@@ -11,8 +11,31 @@ export class GridUI {
 
     refreshCards(selector = '#main-grid .card', preserveIndex = false) {
         const previousId = preserveIndex ? this.getCurrentId() : null;
-        this.cards = Array.from(document.querySelectorAll(selector));
-        console.log(`Scanner found ${this.cards.length} cards for scanning.`);
+        
+        // 1. Get raw cards from DOM
+        const rawCards = Array.from(document.querySelectorAll(selector));
+        
+        // 2. 🧮 DETERMINISTIC SORTING
+        // Priority 1: data-index (explicit order from data array)
+        // Priority 2: Visual position (fallback for stability)
+        this.cards = rawCards.sort((a, b) => {
+            const indexA = parseInt(a.dataset.index);
+            const indexB = parseInt(b.dataset.index);
+            
+            if (!isNaN(indexA) && !isNaN(indexB)) {
+                return indexA - indexB;
+            }
+
+            const topA = a.offsetTop;
+            const topB = b.offsetTop;
+            
+            if (Math.abs(topA - topB) > 20) {
+                return topA - topB;
+            }
+            return a.offsetLeft - b.offsetLeft;
+        });
+
+        console.log(`Scanner found ${this.cards.length} cards. deterministic order:`, this.cards.map(c => c.id));
 
         if (preserveIndex && previousId) {
             const nextIndex = this.cards.findIndex(

@@ -28,10 +28,11 @@ export function renderMainGrid() {
 
     mainGrid.innerHTML = '';
 
-    MAIN_MENU_DATA.forEach((item) => {
+    MAIN_MENU_DATA.forEach((item, index) => {
         const card = document.createElement('article');
         card.className = 'card';
         card.id = item.id;
+        card.dataset.index = index;
         card.innerHTML = `
             <div class="scan-bar"></div>
             <div class="icon"><img src="assets/icons/${item.icon}" alt=""></div>

@@ -253,7 +253,7 @@ export class ActionController {
     }
 
     async _handleSubMenu(selectedId) {
-        if (selectedId === 'btn-back') {
+        if (selectedId === 'btn-back' || selectedId === 'back') {
             this.helpers.backToMain();
             this.sleepManager.resetTimer();
             // ✨ backToMain in main.js handles the timeout/reset now!

@@ -76,5 +76,21 @@ export const AlertService = {
       console.error("❌ Request Failed:", error);
       return { error: error.message };
     }
+  },
+
+  async toggleRoomLights(turnOn) {
+    try {
+      console.log(`💡 [IoT] Toggling Room Lights to: ${turnOn ? 'ON' : 'OFF'}`);
+      const lightRef = ref(db, 'iot/room_lights');
+      await set(lightRef, {
+        active: turnOn,
+        brightness: turnOn ? 100 : 0,
+        timestamp: Date.now()
+      });
+      return { success: true };
+    } catch (error) {
+      console.error("❌ IoT Light Toggle Failed:", error);
+      return { error: error.message };
+    }
   }
 };

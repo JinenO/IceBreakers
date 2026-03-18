@@ -48,6 +48,7 @@
       <div class="blink-indicator" id="eye-icon" role="status" aria-live="polite" aria-label="Eye tracking active">
       </div>
       <div class="status-text" id="status-text" role="status" aria-live="polite">SYSTEM READY</div>
+      <div id="system-mode" style="margin-left: 10px; padding: 2px 8px; border-radius: 4px; background: rgba(79, 209, 197, 0.1); color: #4fd1c5; font-size: 0.8rem; font-weight: bold; border: 1px solid rgba(79, 209, 197, 0.3);">SCANNING</div>
     </div>
     <div class="status-center"
       style="text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;">
@@ -147,7 +148,7 @@
       </div>
       <div class="sos-text">
         <span class="sos-title">EMERGENCY SOS</span>
-        <span class="sos-desc">CLOSE EYES FOR 2s TO TRIGGER</span>
+        <span class="sos-desc">CLOSE EYES FOR 2s OR RAPID BLINK 4x</span>
       </div>
     </div>
     <div class="hazard-stripe" aria-hidden="true"></div>
@@ -176,7 +177,9 @@
   <div id="web-settings-modal" class="hidden"
     style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; display:flex; justify-content:center; align-items:center;">
     <div
-      style="background:#1e1e1e; border: 2px solid #4fd1c5; border-radius: 12px; padding: 24px; width: 400px; color:#fff; display:flex; flex-direction:column; gap: 16px;">
+      style="background:#1e1e1e; border: 2px solid #4fd1c5; border-radius: 12px; padding: 24px; width: 400px; color:#fff; display:flex; flex-direction:column; gap: 16px; position:relative;">
+      <button id="x-close-settings"
+        style="position:absolute; top:12px; right:12px; background:none; border:none; color:#999; font-size:24px; cursor:pointer;">&times;</button>
       <h2 style="color:#4fd1c5; margin:0; text-align:center;">Global Configuration</h2>
 
       <div>
@@ -208,12 +211,13 @@
     </div>
   </div>
 
-  <div id="overlay-sleep" class="overlay" role="status" aria-live="polite" aria-label="System in standby mode">
-    <div class="sleep-text">System Standby... Long Blink to Wake</div>
-  </div>
-
-  <div id="sleep-overlay" class="sleep-overlay">
-    <div class="sleep-hint">STANDBY... LONG BLINK TO WAKE</div>
+  <div id="sleep-overlay" class="overlay" style="z-index: 10000; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white;">
+    <div style="font-size: 5rem; margin-bottom: 20px;">💤</div>
+    <h2 style="font-size: 3rem; margin: 0; color: #a0aec0;">STANDBY MODE</h2>
+    <p style="font-size: 1.5rem; color: #718096; margin: 0 0 30px 0;">System is resting to save energy.</p>
+    <div style="border: 2px solid #4fd1c5; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; background: rgba(79, 209, 197, 0.1); color: #4fd1c5; font-weight: bold;">
+        CLOSE EYES FOR 2s TO WAKE
+    </div>
   </div>
 
   <div id="sos-overlay" class="sos-overlay">
@@ -222,10 +226,14 @@
     <div class="sos-cancel-hint">CLOSE EYES TO CANCEL</div>
   </div>
 
-  <div id="sos-countdown-overlay" class="overlay hidden" style="background: rgba(230, 0, 0, 0.95); z-index: 2000; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center;">
+  <div id="sos-countdown-overlay" class="overlay hidden"
+    style="background: rgba(230, 0, 0, 0.95); z-index: 2000; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center;">
     <h1 style="font-size: 60px; font-weight: bold; margin-bottom: 20px;">🚨 EMERGENCY CALL 🚨</h1>
-    <p style="font-size: 30px; margin-bottom: 40px;">SENDING IN <br><span id="sos-countdown-timer" style="font-size: 100px; font-weight: bold; color: yellow; text-shadow: 0 0 20px rgba(0,0,0,0.5);">3</span><br> SECONDS...</p>
-    <p style="font-size: 24px; opacity: 0.9; background: rgba(0,0,0,0.5); padding: 15px 30px; border-radius: 10px;">TO CANCEL: Keep your eyes closed for 2 seconds.</p>
+    <p style="font-size: 30px; margin-bottom: 40px;">SENDING IN <br><span id="sos-countdown-timer"
+        style="font-size: 100px; font-weight: bold; color: yellow; text-shadow: 0 0 20px rgba(0,0,0,0.5);">3</span><br>
+      SECONDS...</p>
+    <p style="font-size: 24px; opacity: 0.9; background: rgba(0,0,0,0.5); padding: 15px 30px; border-radius: 10px;">TO
+      CANCEL: Keep your eyes closed for 2 seconds.</p>
   </div>
 
   <div id="feedback-overlay" class="feedback-overlay hidden">
