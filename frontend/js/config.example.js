@@ -28,3 +28,4 @@ export const AppConfig = {
 // 3. Create an API Key (Application type: Web browser)
 // 4. Paste the key below (DO NOT commit your real key to GitHub)
 export const YOUTUBE_API_KEY = "YOUR_YOUTUBE_API_KEY_HERE";
+export const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";

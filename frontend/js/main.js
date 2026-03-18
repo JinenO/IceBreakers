@@ -167,6 +167,27 @@ const MAIN_SCAN_SELECTOR = '#main-grid .card';
 const SUB_SCAN_SELECTOR = '#sub-grid .card';
 let kbScanTarget = KB_SCAN_SELECTOR;
 
+// ==========================================
+// ✨ NEW: IoT Device Control (Firebase Bridge)
+// ==========================================
+async function triggerIoTDevice() {
+    console.log("⚡ Sending IoT Command to Firebase...");
+    showFeedback("ACTIVATING DEVICE...", "info");
+
+    try {
+        // Send alert via your existing AlertService API to trigger the device
+        AlertService.sendSimpleAlert('IOT_TRIGGER', 'Activating physical servo motor');
+
+        if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(800, 'sine', 0.2);
+        showFeedback("DEVICE ACTIVATED", "success");
+        window.speakText("Device activated.");
+
+    } catch (err) {
+        console.error("❌ IoT Trigger Failed:", err);
+        showFeedback("FAILED TO CONNECT", "error");
+    }
+}
+
 // Initialize ActionController
 const actionController = new ActionController({
     gridUI,
@@ -184,6 +205,7 @@ const actionController = new ActionController({
         handleSyncRequest,
         renderKeyboardMatrix,
         handleKeyboardAction,
+        triggerIoTDevice, // ✨ ADDED IOT FUNCTION HERE
         setKbScanTarget: (target) => { kbScanTarget = target; },
         setEyeState: (closed, time) => {
             isEyesClosed = closed;
@@ -405,17 +427,17 @@ async function handleEyeFrame(data) {
                 if (elapsed >= 1500) { // 1.5 seconds to cancel
                     clearInterval(panicCountdownTimer);
                     isPanicCountdownActive = false;
-                    
+
                     const countdownOverlay = document.getElementById('sos-countdown-overlay');
                     if (countdownOverlay) {
                         countdownOverlay.classList.remove('active');
                         setTimeout(() => countdownOverlay.classList.add('hidden'), 300);
                     }
-                    
+
                     window.speechSynthesis.cancel();
                     window.speakText("Emergency call cancelled.");
                     showFeedback("SOS CANCELLED", "info");
-                    
+
                     isEyesClosed = false;
                     gridUI.updateConfirmBar(0);
                 } else {
@@ -599,36 +621,36 @@ function executeBlinkCommand(count) {
 
         isPanicCountdownActive = true;
         panicCountdownValue = 3;
-        
+
         const countdownOverlay = document.getElementById('sos-countdown-overlay');
         const timerEl = document.getElementById('sos-countdown-timer');
-        
+
         if (countdownOverlay) {
             countdownOverlay.classList.remove('hidden');
             setTimeout(() => countdownOverlay.classList.add('active'), 10);
         }
         if (timerEl) timerEl.innerText = panicCountdownValue;
-        
+
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(new SpeechSynthesisUtterance("Emergency call triggered, sending in 3 seconds. To cancel, please keep your eyes closed once for a long period."));
-        
+
         if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(800, 'square', 0.2);
 
         panicCountdownTimer = setInterval(() => {
             panicCountdownValue--;
             if (timerEl) timerEl.innerText = panicCountdownValue;
             if (SoundUtils && SoundUtils.playBeep && panicCountdownValue > 0) SoundUtils.playBeep(800, 'square', 0.2);
-            
+
             if (panicCountdownValue <= 0) {
                 clearInterval(panicCountdownTimer);
                 if (!isPanicCountdownActive) return; // Prevent race condition
                 isPanicCountdownActive = false;
-                
+
                 if (countdownOverlay) {
                     countdownOverlay.classList.remove('active');
                     setTimeout(() => countdownOverlay.classList.add('hidden'), 300);
                 }
-                
+
                 // Wake up system if resting
                 if (sleepManager.isSleeping) {
                     sleepManager.wakeUp();
@@ -638,7 +660,7 @@ function executeBlinkCommand(count) {
                 // Trigger high-priority alert
                 AlertService.sendSimpleAlert('SOS', 'PANIC FLUTTER: Immediate assistance required!');
                 showFeedback("PANIC ALERT SENT! 🚨", "emergency");
-                
+
                 if (SoundUtils && SoundUtils.playBeep) {
                     for (let i = 0; i < 3; i++) {
                         setTimeout(() => SoundUtils.playBeep(1200, 'square', 0.2), i * 150);

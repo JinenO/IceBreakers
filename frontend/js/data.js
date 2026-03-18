@@ -16,7 +16,7 @@ export const SUB_MENU_DATA = {
             { id: 'food', label: 'FOOD', sub: 'Hungry', icon: 'food.png' },
             { id: 'toilet', label: 'TOILET', sub: 'Bathroom', icon: 'toilet.png' },
             { id: 'meds', label: 'MEDS', sub: 'Pain / Pills', icon: 'medicine.png' },
-            { id: 'suction', label: 'SUCTION', sub: 'Clear throat', icon: 'suction.png' },
+            { id: 'iot-servo', label: 'DEVICE', sub: 'Activate', icon: 'setting.png' },
             { id: 'back', label: 'BACK', sub: 'Main Menu', icon: 'back.png' }
         ]
     },
