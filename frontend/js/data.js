@@ -32,9 +32,9 @@ export const SUB_MENU_DATA = {
         ]
     },
     'c-media': {
-        title: 'MEDIA ENTERTAINMENT', 
+        title: 'MEDIA ENTERTAINMENT',
         items: [
-            { id: 'local', label: 'LOCAL', sub: 'Local Movies', icon: 'tv.png' }, 
+            { id: 'local', label: 'LOCAL', sub: 'Local Movies', icon: 'tv.png' },
             { id: 'youtube', label: 'YOUTUBE', sub: 'Online', icon: 'youtube.png' },
             { id: 'music', label: 'MUSIC', sub: 'Local Playlist', icon: 'music.png' },
             { id: 'audiobook', label: 'BOOK', sub: 'Audiobook', icon: 'book.png' },

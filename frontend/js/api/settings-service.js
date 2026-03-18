@@ -5,9 +5,10 @@ export const SettingsService = {
     active: false,
     settingsRef: null,
 
-    init() {
+    init(onSave) {
         if (this.active) return;
         this.active = true;
+        this.onSave = onSave;
 
         console.log("⚙️ [SettingsService] Initializing Remote Configuration Sync...");
         this.settingsRef = ref(db, 'patient_settings');
@@ -22,6 +23,7 @@ export const SettingsService = {
                 if (data.requiredBlinkTime) AppConfig.REQUIRED_BLINK_TIME = parseInt(data.requiredBlinkTime);
 
                 this.updateUI(); // Sync the sliders strictly if the modal is open
+                if (this.onSave) this.onSave(); // Apply scan speed changes immediately
             }
         });
 
@@ -30,10 +32,10 @@ export const SettingsService = {
     },
 
     initUI() {
-        // Find the existing settings icon in the top right header (lines 62 of index.html)
         const btn = document.querySelector('.settings-trigger');
         const modal = document.getElementById('web-settings-modal');
-        const closeBtn = document.getElementById('close-settings-btn');
+        const saveBtn = document.getElementById('close-settings-btn');
+        const xBtn = document.getElementById('x-close-settings');
 
         if (!btn || !modal) return;
 
@@ -51,13 +53,20 @@ export const SettingsService = {
             modal.classList.remove('hidden');
         });
 
+        // X Close button (No save)
+        if (xBtn) {
+            xBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+        }
+
         // Live slider updates
         scanSlider.addEventListener('input', (e) => scanVal.innerText = e.target.value);
         holdSlider.addEventListener('input', (e) => holdVal.innerText = e.target.value);
         threshSlider.addEventListener('input', (e) => threshVal.innerText = e.target.value);
 
         // Save & Close
-        closeBtn.addEventListener('click', () => {
+        saveBtn.addEventListener('click', () => {
             // Update local config
             AppConfig.SCAN_SPEED = parseInt(scanSlider.value);
             AppConfig.REQUIRED_BLINK_TIME = parseInt(holdSlider.value);
@@ -65,6 +74,9 @@ export const SettingsService = {
 
             // Hide modal
             modal.classList.add('hidden');
+
+            // Restart scanning with new parameters if callback exists
+            if (this.onSave) this.onSave();
 
             // Send to Firebase so mobile picks it up
             if (this.settingsRef) {

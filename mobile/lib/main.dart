@@ -16,13 +16,19 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  // Set the background messaging handler
+  
+  // Set the background messaging handler as early as possible
+  // This registration does not depend on Firebase.initializeApp() completing in the main isolate.
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // Initialize notification service
-  await NotificationService().init();
+  // Start Firebase initialization
+  final firebaseInit = Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Start the app immediately after Firebase is ready
+  await firebaseInit;
+
+  // Initialize notification service in the background (Non-blocking for splash)
+  NotificationService().init();
 
   runApp(
     MultiProvider(

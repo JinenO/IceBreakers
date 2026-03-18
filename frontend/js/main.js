@@ -138,16 +138,68 @@ const sleepManager = new SleepManager(
     () => {
         stopScanning();
         StatusService.updateStatus({ isResting: true });
+        AlertService.toggleRoomLights(false);
+        updateSystemMode('RESTING');
     },
     () => {
         if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(600, 'sine', 0.1);
         gridUI.currentIndex = -1;
-        startScanning();
         StatusService.updateStatus({ isResting: false });
+        AlertService.toggleRoomLights(true);
+        updateSystemMode('SCANNING');
+
+        // ✨ FIX: Small delay for state (isEyesClosed) to settle after wake-up blink
+        setTimeout(() => {
+            startScanning();
+        }, 50);
     }
 );
 
 window.showFeedback = showFeedback;
+
+function updateSystemMode(mode) {
+    const modeEl = document.getElementById('system-mode');
+    const header = document.getElementById('status-bar');
+    const footer = document.getElementById('sos-bar');
+
+    if (!modeEl) return;
+    modeEl.innerText = mode.toUpperCase();
+
+    // Sync to Firebase for Mobile App
+    if (typeof StatusService !== 'undefined') {
+        StatusService.updateStatus({
+            isResting: (mode === 'RESTING'),
+            currentMode: mode
+        });
+    }
+
+    // ✨ GLOBAL UI COLOR MANAGEMENT (Fixes "Stuck Panic" UI)
+    if (mode === 'SOS' || mode === 'PANIC') {
+        modeEl.style.background = 'rgba(255, 0, 0, 0.2)';
+        modeEl.style.color = '#ff4d4d';
+        modeEl.style.borderColor = 'rgba(255, 0, 0, 0.5)';
+        if (header) header.style.background = '#8B0000'; // Dark Red
+        if (footer) footer.style.background = '#8B0000';
+    } else if (mode === 'RESTING') {
+        modeEl.style.background = 'rgba(160, 174, 192, 0.2)';
+        modeEl.style.color = '#a0aec0';
+        modeEl.style.borderColor = 'rgba(160, 174, 192, 0.5)';
+        if (header) header.style.background = '#0a0a0a';
+        if (footer) footer.style.background = 'rgba(40, 0, 0, 0.8)';
+    } else if (mode === 'FREEZE') {
+        modeEl.style.background = 'rgba(255, 100, 100, 0.2)';
+        modeEl.style.color = '#ff6464';
+        modeEl.style.borderColor = 'rgba(255, 100, 100, 0.5)';
+        if (header) header.style.background = 'rgba(100, 0, 0, 0.3)';
+    } else {
+        // Normal (SCANNING)
+        modeEl.style.background = 'rgba(79, 209, 197, 0.1)';
+        modeEl.style.color = '#4fd1c5';
+        modeEl.style.borderColor = 'rgba(79, 209, 197, 0.3)';
+        if (header) header.style.background = '#0a0a0a';
+        if (footer) footer.style.background = 'rgba(40, 0, 0, 0.8)';
+    }
+}
 
 // State
 let scanTimer = null;
@@ -155,6 +207,7 @@ let isScanning = false;
 let eyesClosedStartTime = 0;
 let isEyesClosed = false;
 let isProcessingAction = false;
+let isFrozen = false;
 
 // Panic Flutter State
 let panicCountdownTimer = null;
@@ -218,8 +271,12 @@ const actionController = new ActionController({
 // 1. Scanning control
 // ==========================================
 function startScanning() {
-    if (isScanning) return;
+    // 🛡️ SAFETY: Always clear old intervals before starting a new one
+    // This prevents the "stuck" or "duplicate" scanner bugs.
+    if (isScanning || scanTimer) stopScanning();
+
     isScanning = true;
+    updateSystemMode('SCANNING');
 
     runScanStep();
     scanTimer = setInterval(runScanStep, AppConfig.SCAN_SPEED);
@@ -287,6 +344,7 @@ function openSubMenu(menuId) {
         }
 
         card.id = cardId;
+        card.dataset.index = index;
         card.innerHTML = `
             <div class="scan-bar"></div>
             <div class="icon"><img src="assets/icons/${item.icon}" alt=""></div>
@@ -411,10 +469,72 @@ let blinkCount = 0;
 let blinkCommandTimer = null;
 const BLINK_TIMEOUT = 600;
 const CLICK_HOLD_TIME = 1000;
+let lastHeadMoveTime = 0;
+let smoothedBrightness = 100;
 
 async function handleEyeFrame(data) {
+    // --- GAZE & FACE LOSS FREEZE MODE ---
+    // If head is turned too far (Yaw > 25) or tilted too far (Pitch > 25), 
+    // it means the patient is looking AWAY from the screen.
+    const isLookingAway = data.headYaw !== undefined && (Math.abs(data.headYaw) > 25 || Math.abs(data.headPitch) > 20);
+
+    if (data.faceVisible === false || isLookingAway) {
+        if (!isFrozen) {
+            console.log(data.faceVisible === false ? "❄️ SYSTEM FROZEN: Face not detected" : "❄️ SYSTEM FROZEN: Looking away");
+            isFrozen = true;
+            stopScanning();
+            updateSystemMode('FREEZE');
+
+            // Hard Reset Alarms
+            sosSystem.reset();
+            isEyesClosed = false;
+            eyesClosedStartTime = 0;
+            blinkCount = 0;
+            gridUI.updateConfirmBar(0);
+
+            if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(200, 'sine', 0.2);
+        }
+        return;
+    }
+
+    // Unfreeze logic
+    if (isFrozen) {
+        console.log("☀️ SYSTEM UN-FROZEN");
+        isFrozen = false;
+        if (sleepManager.isSleeping) {
+            updateSystemMode('RESTING');
+        } else {
+            updateSystemMode('SCANNING');
+            startScanning();
+        }
+    }
+
     const isNowClosed = data.eyeOpenness < AppConfig.BLINK_THRESHOLD;
     const now = Date.now();
+
+    // --- 1. Auto-Brightness (Ward Lighting Compensation) ---
+    if (data.ambientLight !== undefined) {
+        // Smoothly interpolate brightness to prevent flickering
+        smoothedBrightness += (data.ambientLight - smoothedBrightness) * 0.05;
+        document.body.style.filter = `brightness(${smoothedBrightness.toFixed(1)}%)`;
+    }
+
+    // --- 2. Head Pose Navigation (For users with slight neck mobility) ---
+    if (data.headYaw !== undefined && viewManager.currentView === 'grid') {
+        if (now - lastHeadMoveTime > 800) { // 800ms cooldown
+            if (data.headYaw < -18) { // Turned Right
+                console.log("🗣️ Head Tilt Right: Next Item");
+                gridUI.navigate(1);
+                lastHeadMoveTime = now;
+                if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(400, 'sine', 0.05);
+            } else if (data.headYaw > 18) { // Turned Left
+                console.log("🗣️ Head Tilt Left: Prev Item");
+                gridUI.navigate(-1);
+                lastHeadMoveTime = now;
+                if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(300, 'sine', 0.05);
+            }
+        }
+    }
 
     // ✨ NEW: Panic Flutter Countdown Override
     if (isPanicCountdownActive) {
@@ -428,15 +548,21 @@ async function handleEyeFrame(data) {
                     clearInterval(panicCountdownTimer);
                     isPanicCountdownActive = false;
 
+
                     const countdownOverlay = document.getElementById('sos-countdown-overlay');
                     if (countdownOverlay) {
                         countdownOverlay.classList.remove('active');
                         setTimeout(() => countdownOverlay.classList.add('hidden'), 300);
                     }
 
+
                     window.speechSynthesis.cancel();
                     window.speakText("Emergency call cancelled.");
                     showFeedback("SOS CANCELLED", "info");
+
+
+                    // ✨ FIX: Revert from 'PANIC' mode back to normal
+                    updateSystemMode(sleepManager.isSleeping ? 'RESTING' : 'SCANNING');
 
                     isEyesClosed = false;
                     gridUI.updateConfirmBar(0);
@@ -481,6 +607,22 @@ async function handleEyeFrame(data) {
             }
 
             if (elapsed >= holdTimeRequired && !isProcessingAction) {
+                // ✨ SLEEP CANCELLATION LOGIC
+                // If eyes remain continuously closed for more than 8 seconds,
+                // assume sleep/fatigue and cancel SOS/enter Sleep Mode.
+                if (elapsed >= 8000) {
+                    console.log("💤 EXPLICIT SLEEP: Eyes closed for 8s");
+                    sosSystem.reset();
+                    sleepManager.enterSleep();
+
+                    // Reset local counters to prevent multiple triggers
+                    isEyesClosed = false;
+                    eyesClosedStartTime = 0;
+                    blinkCount = 0;
+                    gridUI.updateConfirmBar(0);
+                    return;
+                }
+
                 if (sosSystem.state === 'CHARGING' || sosSystem.state === 'IDLE') {
                     console.log('✅ Long Blink: Triggering Click');
                     gridUI.updateConfirmBar(100);
@@ -500,45 +642,100 @@ async function handleEyeFrame(data) {
             isProcessingAction = false;
             gridUI.updateConfirmBar(0);
 
-            if (elapsed < 500) {
+            // Debounce: A real human blink takes at least 100ms (tuned up from 60ms).
+            // Anything faster is usually 1-frame camera noise or jitter.
+            if (elapsed > 100 && elapsed < 500) {
                 blinkCount++;
 
-                // ✨ FIX 2: SAFETY FEATURE: The Panic Flutter (4 rapid blinks = INSTANT SOS)
-                // ✨ UPDATED SAFETY: The Panic Flutter (Only active during Audio/Music)
-                // This prevents accidental SOS while the user is typing or browsing.
-                if (blinkCount >= 4 && viewManager.currentView === 'audio-playing') {
-                    console.log("🚨 AUDIO PANIC FLUTTER DETECTED!");
+                // Immediate trigger for Panic Flutter on the 4th blink!
+                if (blinkCount === 4) {
                     if (blinkCommandTimer) clearTimeout(blinkCommandTimer);
+                    executeBlinkCommand(4);
                     blinkCount = 0;
-
-                    // 1. Send Alert instantly to Caregiver Dashboard
-                    AlertService.sendSimpleAlert('sos', 'emergency');
-
-                    // 2. Show massive red feedback on the screen
-                    showFeedback("🚨 EMERGENCY ALARM SENT 🚨", "error");
-
-                    // 3. Scream for help out loud using the speakers
-                    window.speechSynthesis.cancel();
-                    window.speechSynthesis.speak(new SpeechSynthesisUtterance("Emergency! Caregiver needed immediately!"));
-
                     return;
                 }
 
                 if (blinkCommandTimer) clearTimeout(blinkCommandTimer);
 
+                // Extended timeout to make stringing blinks easier
                 blinkCommandTimer = setTimeout(() => {
                     executeBlinkCommand(blinkCount);
                     blinkCount = 0;
-                }, BLINK_TIMEOUT);
+                }, 800); // Increased from 600ms to 800ms
             }
         }
     }
 }
 
 // ==========================================
-// 3. EXECUTE COMMANDS (2x = Space, 3x = Toggle)
+// 3. EXECUTE COMMANDS (2x = Space, 3x = Toggle, 4x = Panic Flutter)
 // ==========================================
 function executeBlinkCommand(count) {
+    if (count === 4) {
+        console.log("🚨 PANIC FLUTTER: Countdown Initiated");
+        updateSystemMode('PANIC');
+
+        isPanicCountdownActive = true;
+        panicCountdownValue = 3;
+
+
+        const countdownOverlay = document.getElementById('sos-countdown-overlay');
+        const timerEl = document.getElementById('sos-countdown-timer');
+
+
+        if (countdownOverlay) {
+            countdownOverlay.classList.remove('hidden');
+            setTimeout(() => countdownOverlay.classList.add('active'), 10);
+        }
+        if (timerEl) timerEl.innerText = panicCountdownValue;
+
+
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance("Emergency call triggered, sending in 3 seconds. To cancel, please keep your eyes closed once for a long period."));
+
+
+        if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(800, 'square', 0.2);
+
+        panicCountdownTimer = setInterval(() => {
+            panicCountdownValue--;
+            if (timerEl) timerEl.innerText = panicCountdownValue;
+            if (SoundUtils && SoundUtils.playBeep && panicCountdownValue > 0) SoundUtils.playBeep(800, 'square', 0.2);
+
+
+            if (panicCountdownValue <= 0) {
+                clearInterval(panicCountdownTimer);
+                if (!isPanicCountdownActive) return; // Prevent race condition
+                isPanicCountdownActive = false;
+
+
+                if (countdownOverlay) {
+                    countdownOverlay.classList.remove('active');
+                    setTimeout(() => countdownOverlay.classList.add('hidden'), 300);
+                }
+
+
+                // Wake up system if resting
+                if (sleepManager.isSleeping) {
+                    sleepManager.wakeUp();
+                    showFeedback("WAKING UP - PANIC SOS", "emergency");
+                }
+
+                // Trigger high-priority alert
+                AlertService.sendSimpleAlert('SOS', 'PANIC FLUTTER: Immediate assistance required!');
+                showFeedback("PANIC ALERT SENT! 🚨", "emergency");
+
+
+                if (SoundUtils && SoundUtils.playBeep) {
+                    for (let i = 0; i < 3; i++) {
+                        setTimeout(() => SoundUtils.playBeep(1200, 'square', 0.2), i * 150);
+                    }
+                }
+                updateSystemMode('SOS');
+            }
+        }, 1000);
+        return; // Exit here since we executed Panic Flutter
+    }
+
     // ✨ VIDEO MODE: 2 Blinks to Play/Pause
     if (viewManager.currentView === 'video-playing') {
         if (count === 2) {
@@ -549,7 +746,7 @@ function executeBlinkCommand(count) {
         return;
     }
 
-    // ✨ AUDIO MODE (New!)
+    // ✨ AUDIO MODE
     if (viewManager.currentView === 'audio-playing') {
         if (count === 2) {
             console.log("⚡ COMMAND: AUDIO PLAY/PAUSE");
@@ -565,8 +762,6 @@ function executeBlinkCommand(count) {
         return;
     }
 
-    if (viewManager.currentView !== 'keyboard') return;
-
     const ZONE_DOWN = '#kb-grid .kb-card';
     const ZONE_UP = '#kb-prediction-bar .predict-btn';
 
@@ -579,96 +774,39 @@ function executeBlinkCommand(count) {
         });
     }
     else if (count === 3) {
-        console.log("⚡ COMMAND: TOGGLE ZONE");
-        if (SoundUtils && SoundUtils.playBeep) {
-            SoundUtils.playBeep(700, 'square', 0.05);
-            setTimeout(() => SoundUtils.playBeep(900, 'square', 0.05), 100);
-        }
+        // Option A: KB Zone Toggle
+        if (viewManager.currentView === 'keyboard') {
+            console.log("⚡ COMMAND: TOGGLE ZONE");
+            if (kbScanTarget === ZONE_UP) {
+                kbScanTarget = ZONE_DOWN;
+                gridUI.refreshCards(ZONE_DOWN);
+                gridUI.currentIndex = -1;
 
-        document.querySelectorAll('.kb-card, .predict-btn').forEach(el => {
-            el.classList.remove('highlight', 'active');
-        });
-
-        if (kbScanTarget === ZONE_UP) {
-            kbScanTarget = ZONE_DOWN;
-            gridUI.refreshCards(ZONE_DOWN);
-            gridUI.currentIndex = -1;
-
-            const bar = document.getElementById('kb-prediction-bar');
-            if (bar) {
-                bar.style.borderColor = 'transparent';
-                bar.style.boxShadow = 'none';
+                const bar = document.getElementById('kb-prediction-bar');
+                if (bar) {
+                    bar.style.borderColor = 'transparent';
+                    bar.style.boxShadow = 'none';
+                }
+                document.getElementById('kb-grid').style.opacity = '1';
             }
-            document.getElementById('kb-grid').style.opacity = '1';
-        }
-        else {
-            if (document.querySelectorAll(ZONE_UP).length === 0) return;
+            else {
+                if (document.querySelectorAll(ZONE_UP).length === 0) return;
 
-            kbScanTarget = ZONE_UP;
-            gridUI.refreshCards(ZONE_UP);
-            gridUI.currentIndex = -1;
+                kbScanTarget = ZONE_UP;
+                gridUI.refreshCards(ZONE_UP);
+                gridUI.currentIndex = -1;
 
-            const bar = document.getElementById('kb-prediction-bar');
-            if (bar) {
-                bar.style.borderColor = '#4fd1c5';
-                bar.style.boxShadow = '0 0 15px #4fd1c5';
+                const bar = document.getElementById('kb-prediction-bar');
+                if (bar) {
+                    bar.style.borderColor = '#4fd1c5';
+                    bar.style.boxShadow = '0 0 15px #4fd1c5';
+                }
+                document.getElementById('kb-grid').style.opacity = '0.4';
             }
-            document.getElementById('kb-grid').style.opacity = '0.4';
         }
     }
-    else if (count === 4) {
-        console.log("🚨 PANIC FLUTTER: Countdown Initiated");
 
-        isPanicCountdownActive = true;
-        panicCountdownValue = 3;
 
-        const countdownOverlay = document.getElementById('sos-countdown-overlay');
-        const timerEl = document.getElementById('sos-countdown-timer');
-
-        if (countdownOverlay) {
-            countdownOverlay.classList.remove('hidden');
-            setTimeout(() => countdownOverlay.classList.add('active'), 10);
-        }
-        if (timerEl) timerEl.innerText = panicCountdownValue;
-
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(new SpeechSynthesisUtterance("Emergency call triggered, sending in 3 seconds. To cancel, please keep your eyes closed once for a long period."));
-
-        if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(800, 'square', 0.2);
-
-        panicCountdownTimer = setInterval(() => {
-            panicCountdownValue--;
-            if (timerEl) timerEl.innerText = panicCountdownValue;
-            if (SoundUtils && SoundUtils.playBeep && panicCountdownValue > 0) SoundUtils.playBeep(800, 'square', 0.2);
-
-            if (panicCountdownValue <= 0) {
-                clearInterval(panicCountdownTimer);
-                if (!isPanicCountdownActive) return; // Prevent race condition
-                isPanicCountdownActive = false;
-
-                if (countdownOverlay) {
-                    countdownOverlay.classList.remove('active');
-                    setTimeout(() => countdownOverlay.classList.add('hidden'), 300);
-                }
-
-                // Wake up system if resting
-                if (sleepManager.isSleeping) {
-                    sleepManager.wakeUp();
-                    showFeedback("WAKING UP - PANIC SOS", "emergency");
-                }
-
-                // Trigger high-priority alert
-                AlertService.sendSimpleAlert('SOS', 'PANIC FLUTTER: Immediate assistance required!');
-                showFeedback("PANIC ALERT SENT! 🚨", "emergency");
-
-                if (SoundUtils && SoundUtils.playBeep) {
-                    for (let i = 0; i < 3; i++) {
-                        setTimeout(() => SoundUtils.playBeep(1200, 'square', 0.2), i * 150);
-                    }
-                }
-            }
-        }, 1000);
-    }
 }
 
 // ==========================================
@@ -723,25 +861,42 @@ document.addEventListener('DOMContentLoaded', () => {
         SoundUtils.unlock();
         if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(440, 'sine', 0.1);
 
-        startOverlay.style.opacity = '0';
-        startOverlay.style.transition = 'opacity 0.5s ease';
-        setTimeout(() => {
-            startOverlay.classList.add('hidden');
-        }, 500);
-
         try {
-            console.log('🚀 System Initialized by User Interaction');
+            console.log('🚀 System Initializing AI Engine...');
             await eyeEngine.init(handleEyeFrame);
-            SettingsService.init();
+
+            // Pass a restart callback so remote setting changes take effect immediately
+            SettingsService.init(() => {
+                if (isScanning) {
+                    stopScanning();
+                    startScanning();
+                }
+            });
             startScanning();
+            console.log('✅ System Ready');
         } catch (err) {
             console.error('Init failed:', err);
+            updateSystemMode('ERROR');
             alert(`Camera Error: ${err.message}`);
+            throw err; // Re-throw to be caught by the click handler
         }
     };
 
-    startOverlay.addEventListener('click', initSystem, { once: true });
+    // Start Overlay Handler
+    document.getElementById('start-overlay').addEventListener('click', async () => {
+        const overlay = document.getElementById('start-overlay');
+        overlay.style.display = 'none'; // Hide immediately for snappy feel
+
+        try {
+            await initSystem();
+            updateSystemMode('SCANNING');
+        } catch (err) {
+            console.error(err);
+        }
+    }, { once: true }); // Use { once: true } to ensure it only runs once
 
     StatusService.startHeartbeat();
     initDevMode();
+
+    updateSystemMode('STANDBY');
 });

@@ -11,6 +11,12 @@ export class EyeEngine {
         this.running = false;
 
         this.GAZE_THRESHOLD = 0.45;
+
+        // Empathy Features: Ambient Light & Head Pose
+        this.lightCanvas = document.createElement('canvas');
+        this.lightCanvas.width = 32; // Low res for speed
+        this.lightCanvas.height = 32;
+        this.lightCtx = this.lightCanvas.getContext('2d', { willReadFrequently: true });
     }
 
     async init(onFrame) {
@@ -30,7 +36,8 @@ export class EyeEngine {
                 },
                 runningMode: 'VIDEO',
                 numFaces: 1,
-                refineLandmarks: true
+                refineLandmarks: true,
+                outputFacialTransformationMatrixes: true // Required for Head Pose (yaw/pitch)
             });
             console.log('EyeEngine: 2. AI Model Loaded!');
 
@@ -97,13 +104,66 @@ export class EyeEngine {
                 const eyeOpenness =
                     (Math.abs(leftEyeOpen) + Math.abs(rightEyeOpen)) / 2;
 
+                // --- 1. Ambience Tracker (Auto-Brightness) ---
+                let ambientLight = 100; // Default brightness percentage
+                if (this.video.readyState === this.video.HAVE_ENOUGH_DATA) {
+                    this.lightCtx.drawImage(this.video, 0, 0, 32, 32);
+                    const imgData = this.lightCtx.getImageData(0, 0, 32, 32).data;
+                    let colorSum = 0;
+                    // Sample every 4th pixel (r,g,b,a)
+                    for (let i = 0; i < imgData.length; i += 16) {
+                        // rgb average
+                        colorSum += (imgData[i] + imgData[i + 1] + imgData[i + 2]) / 3;
+                    }
+                    const brightness = Math.floor(colorSum / (imgData.length / 16));
+                    // Map 0-255 brightness to a safe UI percentage (min 65% floor)
+                    // High-gain: (brightness / 150) * 55 + 65. Max 120% for "Vivid" daylight.
+                    ambientLight = Math.max(65, Math.min(120, (brightness / 150) * 55 + 65));
+                }
+
+                // --- 2. Head Pose Tracker (Yaw/Pitch/Roll) ---
+                let headYaw = 0;
+                let headPitch = 0;
+                let headRoll = 0;
+
+                if (results.facialTransformationMatrixes && results.facialTransformationMatrixes.length > 0) {
+                    const matrix = results.facialTransformationMatrixes[0].data;
+                    
+                    // Yaw (Left/Right): Rotation around Y axis
+                    headYaw = Math.atan2(matrix[4], matrix[0]) * (180 / Math.PI);
+                    
+                    // Pitch (Up/Down): Rotation around X axis
+                    headPitch = Math.atan2(-matrix[9], matrix[10]) * (180 / Math.PI);
+
+                    // Roll (Tilt): Rotation around Z axis
+                    headRoll = Math.atan2(matrix[1], matrix[5]) * (180 / Math.PI);
+                }
+
                 if (this.onFrameCallback) {
                     this.onFrameCallback({
                         eyeOpenness: eyeOpenness,
-                        raw: mesh
+                        ambientLight: ambientLight,
+                        headYaw: headYaw,
+                        headPitch: headPitch,
+                        headRoll: headRoll,
+                        raw: mesh,
+                        faceVisible: true
+                    });
+                }
+            } else {
+                // Not enough light / face lost
+                if (this.onFrameCallback) {
+                    this.onFrameCallback({ 
+                        faceVisible: false,
+                        eyeOpenness: 1.0 // Force open to avoid accidental SOS in main.js
                     });
                 }
             }
+        } else if (!this.video || this.video.paused) {
+             // Camera disconnected or paused
+             if (this.onFrameCallback) {
+                this.onFrameCallback({ faceVisible: false, eyeOpenness: 1.0 });
+             }
         }
 
         requestAnimationFrame(() => this.predictLoop());

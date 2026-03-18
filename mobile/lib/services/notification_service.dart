@@ -184,7 +184,7 @@ class NotificationService {
       String commandChar = _isServoOpen ? '0' : '2';
       _isServoOpen = !_isServoOpen;
 
-      String finalCommand = commandChar + "\n";
+      String finalCommand = "$commandChar\n";
 
       print("📤 TERMINAL: Sending '$commandChar' to Arduino...");
       _bluetoothConnection!.output.add(

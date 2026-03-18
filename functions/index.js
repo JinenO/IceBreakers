@@ -95,7 +95,7 @@ exports.sendAlertNotification = onValueCreated(
                         const alertSnap = await admin.database().ref(`alerts/${alertId}`).once('value');
                         const currentAlert = alertSnap.val();
                         
-                        if (currentAlert && currentAlert.status !== 'acknowledged') {
+                        if (currentAlert && currentAlert.status !== 'ack') {
                             console.log(`[Tier 2] Alert ${alertId} unacknowledged after 15s. Triggering IoT Linkage.`);
                             await admin.database().ref('iot/state').set({
                                 device: 'smart_bulb',
@@ -115,7 +115,7 @@ exports.sendAlertNotification = onValueCreated(
                         const alertSnap = await admin.database().ref(`alerts/${alertId}`).once('value');
                         const currentAlert = alertSnap.val();
                         
-                        if (currentAlert && currentAlert.status !== 'acknowledged') {
+                        if (currentAlert && currentAlert.status !== 'ack') {
                             console.log(`[Tier 3] Alert ${alertId} unacknowledged after 30s. Triggering Twilio SMS.`);
                             
                             try {
