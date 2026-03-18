@@ -273,6 +273,13 @@ export class ActionController {
             return;
         }
 
+        if (selectedId === 'cmd-iot-servo') {
+            console.log("🚀 TRIGGERING IoT DEVICE...");
+            await this.helpers.triggerIoTDevice();
+            setTimeout(() => { this.resetTriggerState(); this.startScanning(); }, 1500);
+            return;
+        }
+
         const needsCmds = ['cmd-water', 'cmd-food', 'cmd-toilet', 'cmd-meds', 'cmd-suction'];
         if (needsCmds.includes(selectedId)) {
             const needType = selectedId.replace('cmd-', '');
