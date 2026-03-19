@@ -4,7 +4,7 @@
 
 export const AppConfig = {
     SCAN_SPEED: 2500,
-    BLINK_THRESHOLD: 0.012,
+    BLINK_THRESHOLD: 0.22,
     REQUIRED_BLINK_TIME: 1000,
     SOUND_ON: true,
     // Paste your Firebase config object here from the Firebase Console
