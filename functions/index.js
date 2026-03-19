@@ -9,6 +9,7 @@
 
 const { onValueCreated } = require("firebase-functions/v2/database");
 const admin = require('firebase-admin');
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const twilio = require('twilio');
 
 // Initialize the app with the Admin SDK
@@ -19,6 +20,31 @@ const twilioClient = twilio(
     process.env.TWILIO_ACCOUNT_SID || "AC_PLACEHOLDER_SID",
     process.env.TWILIO_AUTH_TOKEN || "PLACEHOLDER_TOKEN"
 );
+
+exports.cleanOldAlerts = onSchedule("every 24 hours", async (event) => {
+  const db = admin.database();
+  const ref = db.ref("alerts");
+
+  const snapshot = await ref.once("value");
+
+  const now = Date.now();
+  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+
+  let deleteCount = 0;
+
+  snapshot.forEach((child) => {
+    const data = child.val();
+
+    if (data.timestamp && now - data.timestamp > THIRTY_DAYS) {
+      child.ref.remove();
+      deleteCount++;
+    }
+  });
+
+  console.log(`Deleted ${deleteCount} old alerts`);
+
+  return null;
+});
 
 /**
  * Triggered when a new alert is created in Realtime Database.
