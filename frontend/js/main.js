@@ -592,10 +592,11 @@ async function handleEyeFrame(data) {
 
     const isNowClosed = data.eyeOpenness < AppConfig.BLINK_THRESHOLD;
     const now = Date.now();
+    console.log("Eye openness:", data.eyeOpenness, "Threshold:", AppConfig.BLINK_THRESHOLD, "Closed?", isNowClosed);
 
-    if (handleAIPredictionInput(isNowClosed)) {
-        return;
-    }
+    // if (handleAIPredictionInput(isNowClosed)) {
+    //     return;
+    // }
 
     // While resting, require continuously open eyes for 2 seconds to wake.
     if (sleepManager.isSleeping) {
@@ -771,7 +772,7 @@ async function handleEyeFrame(data) {
 // ==========================================
 // 3. EXECUTE COMMANDS (2x = Space, 3x = Toggle, 4x = Panic Flutter)
 // ==========================================
-function executeBlinkCommand(count) {
+async function executeBlinkCommand(count) {
     if (count === 4) {
         console.log("🚨 PANIC FLUTTER: Countdown Initiated");
         updateSystemMode('PANIC');
