@@ -469,8 +469,10 @@ let blinkCount = 0;
 let blinkCommandTimer = null;
 const BLINK_TIMEOUT = 600;
 const CLICK_HOLD_TIME = 1000;
+const WAKE_UP_OPEN_TIME = 2000;
 let lastHeadMoveTime = 0;
 let smoothedBrightness = 100;
+let wakeUpOpenStartTime = 0;
 
 async function handleEyeFrame(data) {
     // --- GAZE & FACE LOSS FREEZE MODE ---
@@ -511,6 +513,22 @@ async function handleEyeFrame(data) {
 
     const isNowClosed = data.eyeOpenness < AppConfig.BLINK_THRESHOLD;
     const now = Date.now();
+
+    // While resting, require continuously open eyes for 2 seconds to wake.
+    if (sleepManager.isSleeping) {
+        if (!isNowClosed) {
+            if (wakeUpOpenStartTime === 0) {
+                wakeUpOpenStartTime = now;
+            } else if (now - wakeUpOpenStartTime >= WAKE_UP_OPEN_TIME) {
+                sleepManager.wakeUp();
+                wakeUpOpenStartTime = 0;
+            }
+        } else {
+            // Any eye closure interrupts the wake-up cast.
+            wakeUpOpenStartTime = 0;
+        }
+        return;
+    }
 
     // --- 1. Auto-Brightness (Ward Lighting Compensation) ---
     if (data.ambientLight !== undefined) {
@@ -766,6 +784,11 @@ function executeBlinkCommand(count) {
     const ZONE_UP = '#kb-prediction-bar .predict-btn';
 
     if (count === 2) {
+        // Only inject space while keyboard is active to avoid accidental text edits.
+        if (viewManager.currentView !== 'keyboard') {
+            return;
+        }
+
         console.log("⚡ COMMAND: SPACE");
         if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(500, 'sine', 0.05);
 

@@ -5,7 +5,7 @@ export class SleepManager {
         this.overlay = document.getElementById('sleep-overlay');
         this.isSleeping = false;
         this.scanCount = 0;
-        this.maxRounds = 3;
+        this.maxRounds = 5;
 
         this.onSleep = onSleep;
         this.onWake = onWake;

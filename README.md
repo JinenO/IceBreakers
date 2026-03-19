@@ -386,7 +386,7 @@ Key parameters are configurable in `config.js`:
 ```javascript
 export const AppConfig = {
     SCAN_SPEED: 2500,        // Time per item (ms)
-    BLINK_THRESHOLD: 0.012,  // Sensitivity of eye closure
+    BLINK_THRESHOLD: 0.22,  // Sensitivity of eye closure
     REQUIRED_BLINK_TIME: 1000 // Duration to trigger selection (ms)
 };
 ```

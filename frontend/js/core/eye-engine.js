@@ -2,6 +2,10 @@
 
 import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js";
 
+function getDistance(p1, p2) {
+    return Math.hypot(p1.x - p2.x, p1.y - p2.y);
+}
+
 export class EyeEngine {
     constructor() {
         this.faceLandmarker = null;
@@ -99,10 +103,19 @@ export class EyeEngine {
             if (results.faceLandmarks && results.faceLandmarks.length > 0) {
                 const mesh = results.faceLandmarks[0];
 
-                const leftEyeOpen = mesh[145].y - mesh[159].y;
-                const rightEyeOpen = mesh[374].y - mesh[386].y;
-                const eyeOpenness =
-                    (Math.abs(leftEyeOpen) + Math.abs(rightEyeOpen)) / 2;
+                // Left eye landmarks: width (33,133), vertical pairs (160,144) and (158,153)
+                const leftV1 = getDistance(mesh[160], mesh[144]);
+                const leftV2 = getDistance(mesh[158], mesh[153]);
+                const leftH = getDistance(mesh[33], mesh[133]);
+                const leftEAR = (leftV1 + leftV2) / (2.0 * leftH);
+
+                // Right eye landmarks: width (362,263), vertical pairs (385,380) and (387,373)
+                const rightV1 = getDistance(mesh[385], mesh[380]);
+                const rightV2 = getDistance(mesh[387], mesh[373]);
+                const rightH = getDistance(mesh[362], mesh[263]);
+                const rightEAR = (rightV1 + rightV2) / (2.0 * rightH);
+
+                const eyeOpenness = (leftEAR + rightEAR) / 2;
 
                 // --- 1. Ambience Tracker (Auto-Brightness) ---
                 let ambientLight = 100; // Default brightness percentage
