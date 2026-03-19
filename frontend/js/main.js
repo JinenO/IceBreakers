@@ -590,7 +590,7 @@ async function handleEyeFrame(data) {
         }
     }
 
-    const isNowClosed = data.eyeOpenness < AppConfig.BLINK_THRESHOLD;
+    const isNowClosed = data.eyeOpenness < 0.22;
     const now = Date.now();
 
     if (handleAIPredictionInput(isNowClosed)) {
