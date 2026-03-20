@@ -628,8 +628,6 @@ async function handleEyeFrame(data) {
 
         // Apply
         document.body.style.filter = `brightness(${smoothedBrightness.toFixed(0)}% `;
-
-        console.log(`Ambient: ${light.toFixed(1)} -> Brightness: ${smoothedBrightness.toFixed(0)}%`)
     }
 
     // --- 2. Head Pose Navigation (For users with slight neck mobility) ---
