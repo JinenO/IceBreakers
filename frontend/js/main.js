@@ -409,6 +409,7 @@ function openBodyDetailMenu(type) {
         }
 
         card.id = cardId;
+        card.dataset.index = index;
         card.innerHTML = `
             <div class="scan-bar"></div>
             <div class="icon"><img src="assets/icons/${item.icon}" alt=""></div>

@@ -14,10 +14,11 @@ async function getSafePredictions(kbManager) {
     return words;
 }
 
-function createKbCard(className, id, label, sub, icon) {
+function createKbCard(className, id, label, sub, icon, index) {
     const div = document.createElement('div');
     div.className = className;
     div.id = id;
+    if (index !== undefined) div.dataset.index = index;
     const iconHtml = icon ? `<div class="kb-icon"><img src="assets/icons/${icon}" alt="${label}"></div>` : '';
     div.innerHTML = `
         ${iconHtml}
@@ -35,12 +36,12 @@ export function renderKeyboardMatrix(kbManager, gridUI) {
     if (!kbGrid) return;
     kbGrid.innerHTML = '';
 
-    FREQUENCY_GROUPS.forEach((group) => {
-        const card = createKbCard('kb-card group', group.id, group.label.toUpperCase(), '');
+    FREQUENCY_GROUPS.forEach((group, index) => {
+        const card = createKbCard('kb-card group', group.id, group.label.toUpperCase(), '', null, index);
         kbGrid.appendChild(card);
     });
 
-    const sendCard = createKbCard('kb-card send', 'kb-send', 'SEND', 'To Caregiver', 'send.png');
+    const sendCard = createKbCard('kb-card send', 'kb-send', 'SEND', 'To Caregiver', 'send.png', FREQUENCY_GROUPS.length);
     kbGrid.appendChild(sendCard);
 
     const bottomTools = [
@@ -49,8 +50,9 @@ export function renderKeyboardMatrix(kbManager, gridUI) {
         { id: 'kb-tools', label: 'TOOLS', sub: 'More', type: 'tool', icon: 'tools.png' }
     ];
 
-    bottomTools.forEach((tool) => {
-        const card = createKbCard(`kb-card ${tool.type}`, tool.id, tool.label, tool.sub, tool.icon);
+    bottomTools.forEach((tool, index) => {
+        const totalIdx = FREQUENCY_GROUPS.length + 1 + index;
+        const card = createKbCard(`kb-card ${tool.type}`, tool.id, tool.label, tool.sub, tool.icon, totalIdx);
         kbGrid.appendChild(card);
     });
 
@@ -70,9 +72,9 @@ export function renderLetters(groupId, kbManager, gridUI) {
     const kbGrid = document.getElementById('kb-grid');
     kbGrid.innerHTML = '';
 
-    group.letters.forEach((char) => {
+    group.letters.forEach((char, index) => {
         const upperChar = char.toUpperCase();
-        const card = createKbCard('kb-card group', `char-${upperChar}`, upperChar, '');
+        const card = createKbCard('kb-card group', `char-${upperChar}`, upperChar, '', null, index);
         kbGrid.appendChild(card);
     });
 
@@ -82,8 +84,9 @@ export function renderLetters(groupId, kbManager, gridUI) {
         { id: 'kb-delete', label: 'DEL', type: 'delete', icon: 'delete.png' }
     ];
 
-    actions.forEach((action) => {
-        const card = createKbCard(`kb-card ${action.type}`, action.id, action.label, '', action.icon);
+    actions.forEach((action, index) => {
+        const totalIdx = group.letters.length + index;
+        const card = createKbCard(`kb-card ${action.type}`, action.id, action.label, '', action.icon, totalIdx);
         kbGrid.appendChild(card);
     });
 
@@ -148,8 +151,8 @@ export function renderTools(kbManager, gridUI) {
         { id: 'tool-back', label: 'BACK', sub: 'To Keyboard', type: 'group', icon: 'back.png' }
     ];
 
-    tools.forEach((tool) => {
-        const card = createKbCard(`kb-card ${tool.type}`, tool.id, tool.label, tool.sub, tool.icon);
+    tools.forEach((tool, index) => {
+        const card = createKbCard(`kb-card ${tool.type}`, tool.id, tool.label, tool.sub, tool.icon, index);
         kbGrid.appendChild(card);
     });
 
