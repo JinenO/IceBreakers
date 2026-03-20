@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 final data =
                     snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
 
-                // Display the recent 30 days alerts
+                // Display the recent 30 days alerts only
                 _deleteOldAlerts(data);
 
                 final List<AlertModel> alerts = [];

@@ -592,11 +592,10 @@ async function handleEyeFrame(data) {
 
     const isNowClosed = data.eyeOpenness < AppConfig.BLINK_THRESHOLD;
     const now = Date.now();
-    console.log("Eye openness:", data.eyeOpenness, "Threshold:", AppConfig.BLINK_THRESHOLD, "Closed?", isNowClosed);
 
-    // if (handleAIPredictionInput(isNowClosed)) {
-    //     return;
-    // }
+    if (handleAIPredictionInput(isNowClosed)) {
+        return;
+    }
 
     // While resting, require continuously open eyes for 2 seconds to wake.
     if (sleepManager.isSleeping) {
@@ -616,9 +615,21 @@ async function handleEyeFrame(data) {
 
     // --- 1. Auto-Brightness (Ward Lighting Compensation) ---
     if (data.ambientLight !== undefined) {
-        // Smoothly interpolate brightness to prevent flickering
-        smoothedBrightness += (data.ambientLight - smoothedBrightness) * 0.05;
-        document.body.style.filter = `brightness(${smoothedBrightness.toFixed(1)}%)`;
+        const light = data.ambientLight;
+
+        // Map to brightness range (dark -> brighter UI, bright -> dim UI) 
+        const targetBrightness = 120 - (light / 255) * 40; 
+
+        // Smooth transition (prevents flicker)
+        smoothedBrightness += (targetBrightness - smoothedBrightness) * 0.1;
+
+        // Clamp to safe range
+        smoothedBrightness = Math.min(Math.max(smoothedBrightness, 90), 120);
+
+        // Apply
+        document.body.style.filter = `brightness(${smoothedBrightness.toFixed(0)}% `;
+
+        console.log(`Ambient: ${light.toFixed(1)} -> Brightness: ${smoothedBrightness.toFixed(0)}%`)
     }
 
     // --- 2. Head Pose Navigation (For users with slight neck mobility) ---
