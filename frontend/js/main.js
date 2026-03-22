@@ -213,6 +213,85 @@ let isFrozen = false;
 let panicCountdownTimer = null;
 let panicCountdownValue = 0;
 let isPanicCountdownActive = false;
+let lastPredictedHour = -1;
+
+const aiOverlay = document.getElementById('ai-prediction-overlay');
+const aiActionText = document.getElementById('ai-predicted-action');
+const aiProgress = document.getElementById('ai-confirm-progress');
+
+let isPredicting = false;
+let aiIgnoreTimer = null;
+let aiConfirmAccumulator = 0;
+let currentPredictedAction = '';
+
+function showAIPrediction(actionName) {
+    if (!aiOverlay || !aiActionText || !aiProgress) return;
+    if (isPredicting || sleepManager.isSleeping || !actionName) return;
+
+    currentPredictedAction = actionName;
+    aiActionText.innerText = actionName;
+    aiOverlay.classList.remove('hidden');
+    isPredicting = true;
+    aiConfirmAccumulator = 0;
+    aiProgress.style.width = '0%';
+
+    stopScanning();
+
+    const utterance = new SpeechSynthesisUtterance(`Do you need ${actionName}?`);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+
+    aiIgnoreTimer = setTimeout(() => {
+        closeAIPrediction();
+    }, 6000);
+}
+
+function closeAIPrediction() {
+    if (!aiOverlay || !aiProgress) return;
+
+    aiOverlay.classList.add('hidden');
+    isPredicting = false;
+    currentPredictedAction = '';
+    aiConfirmAccumulator = 0;
+    aiProgress.style.width = '0%';
+
+    clearTimeout(aiIgnoreTimer);
+    aiIgnoreTimer = null;
+
+    if (!sleepManager.isSleeping && !isPanicCountdownActive && !document.hidden) {
+        startScanning();
+    }
+}
+
+window.showAIPrediction = showAIPrediction;
+
+function handleAIPredictionInput(isNowClosed) {
+    if (!isPredicting || !aiProgress) return false;
+
+    if (isNowClosed) {
+        aiConfirmAccumulator += 33;
+
+        const percent = (aiConfirmAccumulator / 1000) * 100;
+        aiProgress.style.width = `${Math.min(percent, 100)}%`;
+
+        if (aiConfirmAccumulator >= 1000) {
+            const confirmedAction = currentPredictedAction;
+            closeAIPrediction();
+            console.log('AI prediction confirmed:', confirmedAction);
+
+            if (confirmedAction) {
+                AlertService.sendSimpleAlert('AI_PREDICTED', confirmedAction);
+                showFeedback(`PREDICTED: ${confirmedAction.toUpperCase()} ✅`, 'success');
+                window.speechSynthesis.speak(new SpeechSynthesisUtterance(`Confirmed. ${confirmedAction}`));
+            }
+        }
+    } else {
+        aiConfirmAccumulator = 0;
+        aiProgress.style.width = '0%';
+    }
+
+    return true;
+}
 
 // Scan Target Setup
 const KB_SCAN_SELECTOR = '#kb-grid .kb-card';
@@ -470,8 +549,10 @@ let blinkCount = 0;
 let blinkCommandTimer = null;
 const BLINK_TIMEOUT = 600;
 const CLICK_HOLD_TIME = 1000;
+const WAKE_UP_OPEN_TIME = 2000;
 let lastHeadMoveTime = 0;
 let smoothedBrightness = 100;
+let wakeUpOpenStartTime = 0;
 
 async function handleEyeFrame(data) {
     // --- GAZE & FACE LOSS FREEZE MODE ---
@@ -510,14 +591,44 @@ async function handleEyeFrame(data) {
         }
     }
 
-    const isNowClosed = data.eyeOpenness < AppConfig.BLINK_THRESHOLD;
+    const isNowClosed = data.eyeOpenness < 0.22;
     const now = Date.now();
+
+    if (handleAIPredictionInput(isNowClosed)) {
+        return;
+    }
+
+    // While resting, require continuously open eyes for 2 seconds to wake.
+    if (sleepManager.isSleeping) {
+        if (!isNowClosed) {
+            if (wakeUpOpenStartTime === 0) {
+                wakeUpOpenStartTime = now;
+            } else if (now - wakeUpOpenStartTime >= WAKE_UP_OPEN_TIME) {
+                sleepManager.wakeUp();
+                wakeUpOpenStartTime = 0;
+            }
+        } else {
+            // Any eye closure interrupts the wake-up cast.
+            wakeUpOpenStartTime = 0;
+        }
+        return;
+    }
 
     // --- 1. Auto-Brightness (Ward Lighting Compensation) ---
     if (data.ambientLight !== undefined) {
-        // Smoothly interpolate brightness to prevent flickering
-        smoothedBrightness += (data.ambientLight - smoothedBrightness) * 0.05;
-        document.body.style.filter = `brightness(${smoothedBrightness.toFixed(1)}%)`;
+        const light = data.ambientLight;
+
+        // Map to brightness range (dark -> brighter UI, bright -> dim UI) 
+        const targetBrightness = 120 - (light / 255) * 40; 
+
+        // Smooth transition (prevents flicker)
+        smoothedBrightness += (targetBrightness - smoothedBrightness) * 0.1;
+
+        // Clamp to safe range
+        smoothedBrightness = Math.min(Math.max(smoothedBrightness, 90), 120);
+
+        // Apply
+        document.body.style.filter = `brightness(${smoothedBrightness.toFixed(0)}% `;
     }
 
     // --- 2. Head Pose Navigation (For users with slight neck mobility) ---
@@ -671,7 +782,7 @@ async function handleEyeFrame(data) {
 // ==========================================
 // 3. EXECUTE COMMANDS (2x = Space, 3x = Toggle, 4x = Panic Flutter)
 // ==========================================
-function executeBlinkCommand(count) {
+async function executeBlinkCommand(count) {
     if (count === 4) {
         console.log("🚨 PANIC FLUTTER: Countdown Initiated");
         updateSystemMode('PANIC');
@@ -767,6 +878,11 @@ function executeBlinkCommand(count) {
     const ZONE_UP = '#kb-prediction-bar .predict-btn';
 
     if (count === 2) {
+        // Only inject space while keyboard is active to avoid accidental text edits.
+        if (viewManager.currentView !== 'keyboard') {
+            return;
+        }
+
         console.log("⚡ COMMAND: SPACE");
         if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(500, 'sine', 0.05);
 
@@ -824,6 +940,69 @@ function resetTriggerState() {
     isTriggering = false;
     actionController.isProcessingAction = false;
     actionController.isTriggering = false;
+}
+
+// Predict the most likely action for the current hour using local behavior logs.
+function getPredictedActionForCurrentTime() {
+    let aiHistory = [];
+
+    try {
+        aiHistory = JSON.parse(localStorage.getItem('iris_ai_history')) || [];
+    } catch (error) {
+        console.warn('AI prediction parse failed:', error);
+        return null;
+    }
+
+    if (aiHistory.length === 0) return null;
+
+    const currentHour = new Date().getHours();
+    const pastActionsInThisHour = aiHistory.filter((log) => log.hour === currentHour && typeof log.action === 'string');
+    if (pastActionsInThisHour.length === 0) return null;
+
+    const counts = {};
+    pastActionsInThisHour.forEach((log) => {
+        counts[log.action] = (counts[log.action] || 0) + 1;
+    });
+
+    let bestAction = null;
+    let maxCount = 0;
+    Object.entries(counts).forEach(([action, count]) => {
+        if (count > maxCount) {
+            maxCount = count;
+            bestAction = action;
+        }
+    });
+
+    const probability = maxCount / pastActionsInThisHour.length;
+    if (probability >= 0.5 && maxCount >= 2) {
+        console.log(
+            `AI predicts [${bestAction}] this hour (probability: ${Math.round(probability * 100)}%)`
+        );
+        return bestAction;
+    }
+
+    return null;
+}
+
+function startAIClock() {
+    console.log('AI prediction clock started. Checking once per minute...');
+
+    setInterval(() => {
+        const currentHour = new Date().getHours();
+        const canPredict =
+            currentHour !== lastPredictedHour &&
+            !isPredicting &&
+            !sleepManager.isSleeping &&
+            !isPanicCountdownActive;
+
+        if (!canPredict) return;
+
+        const predictedAction = getPredictedActionForCurrentTime();
+        if (predictedAction) {
+            showAIPrediction(predictedAction);
+            lastPredictedHour = currentHour;
+        }
+    }, 60000);
 }
 
 function initDevMode() {
@@ -898,6 +1077,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     StatusService.startHeartbeat();
     initDevMode();
+
+    startAIClock();
 
     updateSystemMode('STANDBY');
 });

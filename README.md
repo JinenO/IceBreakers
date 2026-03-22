@@ -23,6 +23,19 @@ The objective is simple:
 Enable critical communication using minimal motor control.
 
 ---
+76: 
+77: ## 🌳 Branching Workflow
+78: 
+79: To maintain a clean and stable codebase, we follow a simple branching strategy:
+80: 
+81: - **Main Branch (`main`)**: The source of truth for stable code. 
+82:   - Only merges from feature branches (like `sos`) are permitted.
+83:   - **Target for Merges**: `main` is the final destination for all completed work.
+84: - **Working Branches (e.g., `sos`)**: Used for active development.
+85:   - **Update from Main**: Keep your branch up to date by merging `main` into it regularly.
+86:   - **No Cross-Merging**: Avoid merging development branches into each other. Only merge back into `main`.
+87: 
+88: ---
 
 # Installation & Setup
 ### Requirements
@@ -386,7 +399,7 @@ Key parameters are configurable in `config.js`:
 ```javascript
 export const AppConfig = {
     SCAN_SPEED: 2500,        // Time per item (ms)
-    BLINK_THRESHOLD: 0.012,  // Sensitivity of eye closure
+    BLINK_THRESHOLD: 0.22,  // Sensitivity of eye closure
     REQUIRED_BLINK_TIME: 1000 // Duration to trigger selection (ms)
 };
 ```

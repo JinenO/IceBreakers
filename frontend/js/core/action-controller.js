@@ -94,7 +94,9 @@ export class ActionController {
         SoundUtils.playBeep(880, 'sine', 0.1);
 
         // ✨ FEATURE: Instantly speak the name of the button that was just clicked!
+        const selectedActionLabel = this._getSelectionLabel(selectedId);
         this._speakSelectionLabel(selectedId);
+        this.logActionForAI(selectedActionLabel);
 
         // --- Audio Control Panel ---
         if (this.viewManager.currentView === 'audio-panel') {
@@ -544,37 +546,62 @@ export class ActionController {
         if (!this.sleepManager.isSleeping) this.startScanning();
     }
 
+    // Local AI history logger used by prediction logic.
+    logActionForAI(actionLabel) {
+        if (!actionLabel) return;
+
+        try {
+            let aiHistory = JSON.parse(localStorage.getItem('iris_ai_history')) || [];
+            const currentHour = new Date().getHours();
+
+            aiHistory.push({
+                action: actionLabel,
+                hour: currentHour,
+                timestamp: Date.now()
+            });
+
+            if (aiHistory.length > 500) {
+                aiHistory = aiHistory.slice(-500);
+            }
+
+            localStorage.setItem('iris_ai_history', JSON.stringify(aiHistory));
+            console.log('AI learned action:', actionLabel, 'hour:', currentHour);
+        } catch (error) {
+            console.warn('AI logger failed:', error);
+        }
+    }
+
+    _getSelectionLabel(id) {
+        const el = document.getElementById(id);
+        if (!el) return null;
+
+        let labelText = '';
+        const labelEl = el.querySelector('.label') || el.querySelector('.kb-label') || el.querySelector('.word');
+
+        if (labelEl) {
+            labelText = labelEl.innerText.trim();
+        } else if (id.startsWith('char-')) {
+            labelText = id.split('-')[1];
+        }
+
+        if (!labelText) return null;
+
+        const pronunciationMap = {
+            'DEL': 'Delete',
+            'YT': 'YouTube',
+            'KB': 'Keyboard',
+            'SPACE': 'Space',
+            'SEND': 'Send Message'
+        };
+
+        return pronunciationMap[labelText.toUpperCase()] || labelText;
+    }
+
     // ✨ TEXT TO SPEECH HELPER: Reads the label of the item the user just selected out loud
     _speakSelectionLabel(id) {
-        const el = document.getElementById(id);
-        if (!el) return;
-
-        let textToSpeak = "";
-
-        // 1. Look for the label text inside the button
-        const labelEl = el.querySelector('.label') || el.querySelector('.kb-label') || el.querySelector('.word');
-        if (labelEl) {
-            textToSpeak = labelEl.innerText.trim();
-        }
-        // 2. Fallback: If it's a typing character (e.g., 'char-A')
-        else if (id.startsWith('char-')) {
-            textToSpeak = id.split('-')[1];
-        }
-
-        if (textToSpeak) {
-            // Fix abbreviations so they sound natural
-            const pronunciationMap = {
-                'DEL': 'Delete',
-                'YT': 'YouTube',
-                'KB': 'Keyboard',
-                'SPACE': 'Space',
-                'SEND': 'Send Message'
-            };
-
-            // Apply pronunciation fix if it exists
-            const finalSpeech = pronunciationMap[textToSpeak.toUpperCase()] || textToSpeak;
-
-            // Stop any ongoing speech and say the new word immediately
+        const finalSpeech = this._getSelectionLabel(id);
+        if (finalSpeech) {
+            // Stop any ongoing speech and say the new word immediately.
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(finalSpeech.toLowerCase());
             utterance.rate = 1.3; // Speak slightly faster for quick UI feedback

@@ -20,6 +20,24 @@ class _HomeScreenState extends State<HomeScreen> {
     'patient_status',
   );
 
+  Future<void> _deleteOldAlerts(Map<dynamic, dynamic> data) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+
+    for(var entry in data.entries) {
+      final key = entry.key;
+      final value = Map<String, dynamic>.from(entry.value);
+
+      if(value['timestamp'] != null) {
+        final timestamp = value['timestamp'];
+
+        if(now - timestamp > thirtyDays) {
+          await _alertsRef.child(key).remove();
+        }
+      }
+    }
+  }
+
   Future<void> _acknowledgeAlert(String key) async {
     // 1. Mark as acknowledged
     await _alertsRef.child(key).update({
@@ -103,6 +121,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 final data =
                     snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
+
+                // Display the recent 30 days alerts only
+                _deleteOldAlerts(data);
+
                 final List<AlertModel> alerts = [];
                 data.forEach((key, value) {
                   alerts.add(
