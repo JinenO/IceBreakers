@@ -101,7 +101,7 @@ export class SOSSystem {
     }
   }
 
-  sendSOS() {
+  sendSOS(customMessage = 'Emergency!') {
     if (this.state === 'SENT') return;
     this.state = 'SENT';
 
@@ -115,7 +115,7 @@ export class SOSSystem {
     console.log('SOS SENT');
 
     // Trigger real alert
-    AlertService.sendSimpleAlert('SOS', 'Emergency!');
+    AlertService.sendSimpleAlert('SOS', customMessage);
 
     setTimeout(() => this.reset(), 5000);
   }

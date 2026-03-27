@@ -122,6 +122,134 @@ import { SettingsService } from './api/settings-service.js';
 import { AlertService } from './api/alert-service.js';
 
 // ==========================================
+// ✨ NEW: Web Serial (USB) Setup & Reader
+// ==========================================
+let serialPort;
+let serialWriter;
+let isServoOpen = false;
+
+window.connectUsb = async function () {
+    try {
+        serialPort = await navigator.serial.requestPort();
+        await serialPort.open({ baudRate: 9600 });
+
+        const textEncoder = new TextEncoderStream();
+        textEncoder.readable.pipeTo(serialPort.writable);
+        serialWriter = textEncoder.writable.getWriter();
+
+        const textDecoder = new TextDecoderStream();
+        serialPort.readable.pipeTo(textDecoder.writable);
+        const reader = textDecoder.readable.getReader();
+
+        const usbStatusText = document.getElementById('usb-status-text');
+        const connectUsbBtn = document.getElementById('connect-usb-btn');
+        const sensorStatus = document.getElementById('sensor-status');
+
+        if (usbStatusText) {
+            usbStatusText.innerText = "Status: ✅ Connected";
+            usbStatusText.style.color = "#4fd1c5";
+        }
+        if (connectUsbBtn) {
+            connectUsbBtn.style.background = "rgba(79, 209, 197, 0.2)";
+        }
+        if (sensorStatus) {
+            sensorStatus.innerText = "System Ready. Waiting for sensor...";
+        }
+
+        if (window.showFeedback) showFeedback("USB CONNECTED", "success");
+        console.log("✅ USB Connected successfully!");
+
+        listenToArduino(reader);
+
+    } catch (e) {
+        console.error("❌ USB Connection failed:", e);
+        if (window.showFeedback) showFeedback("USB CONNECTION FAILED", "error");
+    }
+}
+
+async function listenToArduino(reader) {
+    let buffer = "";
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += value;
+        let lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (let line of lines) {
+            let cleanLine = line.trim();
+            if (cleanLine) processArduinoData(cleanLine);
+        }
+    }
+}
+
+function processArduinoData(line) {
+    if (line.includes("Avg BPM:")) {
+        const bpmValue = parseFloat(line.split(":")[1].trim());
+        const bpmDisplay = document.getElementById('bpm-display');
+
+        // ✨ THE FIX: Prioritize the window variables (manual sliders)
+        const lowLimit = window.BPM_LOW_LIMIT || AppConfig.BPM_LOW || 45;
+        const highLimit = window.BPM_HIGH_LIMIT || AppConfig.BPM_HIGH || 120;
+
+        if (bpmDisplay) {
+            bpmDisplay.innerText = bpmValue + " BPM";
+
+            // CHECK FOR ABNORMAL RATE
+            if (bpmValue > 0 && (bpmValue < lowLimit || bpmValue > highLimit)) {
+                biometricStrikeCount++; // Add a strike
+                console.log(`⚠️ Strike ${biometricStrikeCount}: Abnormal HR detected (${bpmValue})`);
+
+                bpmDisplay.style.color = "#ff4d4d"; // Red warning
+
+                // TRIGGER SOS ONLY ON THE 3RD CONSECUTIVE STRIKE
+                if (biometricStrikeCount >= 3) {
+                    if (sosSystem) {
+                        sosSystem.sendSOS(`BIOMETRIC EMERGENCY: Heart rate unstable at ${bpmValue} BPM!`);
+                    }
+                    biometricStrikeCount = 0; // Reset after sending
+                }
+            } else {
+                // Heart rate is back in the healthy manual range
+                biometricStrikeCount = 0;
+                bpmDisplay.style.color = "#4fd1c5"; // Healthy Teal
+            }
+
+            // Pulse Animation
+            bpmDisplay.style.transform = "scale(1.1)";
+            setTimeout(() => bpmDisplay.style.transform = "scale(1)", 200);
+        }
+    }
+
+    if (line.includes("Status:")) {
+        const statusText = line.split("Status:")[1].trim();
+        const sensorStatus = document.getElementById('sensor-status');
+        if (sensorStatus) sensorStatus.innerText = statusText;
+
+        if (statusText.includes("Please put hand")) {
+            const bpmDisplay = document.getElementById('bpm-display');
+            if (bpmDisplay) {
+                bpmDisplay.style.color = "#fff";
+                biometricStrikeCount = 0; // Reset if finger is removed
+            }
+        }
+    }
+}
+
+async function sendUsbCommand(command) {
+    if (serialWriter) {
+        await serialWriter.write(command);
+        console.log("📤 Sent to Arduino via USB: " + command);
+        return true;
+    } else {
+        console.warn("⚠️ USB not connected!");
+        if (window.showFeedback) showFeedback("CONNECT USB FIRST", "error");
+        return false;
+    }
+}
+
+// ==========================================
 // 0. Render main menu
 // ==========================================
 renderMainGrid();
@@ -208,6 +336,7 @@ let eyesClosedStartTime = 0;
 let isEyesClosed = false;
 let isProcessingAction = false;
 let isFrozen = false;
+let biometricStrikeCount = 0; // Tracks consecutive abnormal readings
 
 // Panic Flutter State
 let panicCountdownTimer = null;
@@ -305,23 +434,33 @@ const SUB_SCAN_SELECTOR = '#sub-grid .card';
 let kbScanTarget = KB_SCAN_SELECTOR;
 
 // ==========================================
-// ✨ NEW: IoT Device Control (Firebase Bridge)
+// ✨ UPDATED: IoT Device Control (Direct USB + Firebase)
 // ==========================================
 async function triggerIoTDevice() {
-    console.log("⚡ Sending IoT Command to Firebase...");
+    console.log("⚡ Sending IoT Command via USB...");
     showFeedback("ACTIVATING DEVICE...", "info");
 
     try {
-        // Send alert via your existing AlertService API to trigger the device
-        AlertService.sendSimpleAlert('IOT_TRIGGER', 'Activating physical servo motor');
+        // Toggle between 0 (90 degrees) and 2 (180 degrees)
+        const commandToSend = isServoOpen ? '0' : '2';
 
-        if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(800, 'sine', 0.2);
-        showFeedback("DEVICE ACTIVATED", "success");
-        window.speakText("Device activated.");
+        // Send the command directly to the Arduino
+        const success = await sendUsbCommand(commandToSend);
+
+        if (success) {
+            isServoOpen = !isServoOpen; // Flip the state for the next click
+
+            // Still log to Firebase as a backup/record
+            AlertService.sendSimpleAlert('IOT_TRIGGER', 'Activating physical servo motor');
+
+            if (SoundUtils && SoundUtils.playBeep) SoundUtils.playBeep(800, 'sine', 0.2);
+            showFeedback("DEVICE ACTIVATED", "success");
+            window.speakText("Device activated.");
+        }
 
     } catch (err) {
         console.error("❌ IoT Trigger Failed:", err);
-        showFeedback("FAILED TO CONNECT", "error");
+        showFeedback("ERROR COMMUNICATING WITH DEVICE", "error");
     }
 }
 
@@ -342,7 +481,7 @@ const actionController = new ActionController({
         handleSyncRequest,
         renderKeyboardMatrix,
         handleKeyboardAction,
-        triggerIoTDevice, // ✨ ADDED IOT FUNCTION HERE
+        triggerIoTDevice, // Now uses the updated USB logic above
         setKbScanTarget: (target) => { kbScanTarget = target; },
         setEyeState: (closed, time) => {
             isEyesClosed = closed;
@@ -672,7 +811,7 @@ async function handleEyeFrame(data) {
         const light = data.ambientLight;
 
         // Map to brightness range (dark -> brighter UI, bright -> dim UI) 
-        const targetBrightness = 120 - (light / 255) * 40; 
+        const targetBrightness = 120 - (light / 255) * 40;
 
         // Smooth transition (prevents flicker)
         smoothedBrightness += (targetBrightness - smoothedBrightness) * 0.1;
@@ -988,8 +1127,6 @@ async function executeBlinkCommand(count) {
             }
         }
     }
-
-
 }
 
 // ==========================================
@@ -1141,10 +1278,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, { once: true }); // Use { once: true } to ensure it only runs once
 
+    // ✨ NEW: Attach click event to the USB button in settings
+    const usbBtn = document.getElementById('connect-usb-btn');
+    if (usbBtn) {
+        usbBtn.addEventListener('click', window.connectUsb);
+    }
+
     StatusService.startHeartbeat();
     initDevMode();
 
     startAIClock();
 
     updateSystemMode('STANDBY');
+
+    // BPM Slider Listeners
+    const bpmLowSlider = document.getElementById('set-bpm-low-slider');
+    const bpmHighSlider = document.getElementById('set-bpm-high-slider');
+    const bpmLowVal = document.getElementById('set-bpm-low-val');
+    const bpmHighVal = document.getElementById('set-bpm-high-val');
+
+    bpmLowSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        bpmLowVal.innerText = val;
+        // Use window scope to ensure the values are accessible globally
+        window.BPM_LOW_LIMIT = val;
+    });
+
+    bpmHighSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        bpmHighVal.innerText = val;
+        window.BPM_HIGH_LIMIT = val;
+    });
+
+    // Initialize the window variables with the current slider values
+    window.BPM_LOW_LIMIT = parseInt(bpmLowSlider.value);
+    window.BPM_HIGH_LIMIT = parseInt(bpmHighSlider.value);
+
 });

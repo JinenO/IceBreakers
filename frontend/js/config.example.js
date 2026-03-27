@@ -3,6 +3,8 @@
 // Copy this file as config.js and insert your real API keys.
 
 // export const AppConfig = {
+//     BPM_LOW: 45,
+//      BPM_HIGH: 120,
 //     SCAN_SPEED: 2500,
 //     BLINK_THRESHOLD: 0.22,
 //     REQUIRED_BLINK_TIME: 1000,
