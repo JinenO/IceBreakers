@@ -1,0 +1,41 @@
+/* ============================================
+   🌟 IRIS FLOW: EXPLOSIVE FEATURES
+   ============================================ */
+
+/* --- 🌙 ICU NIGHT MODE --- */
+body.icu-night-mode {
+    --bg-primary: #000000;
+    --bg-secondary: #050505;
+    --bg-card: #0a0000;
+    --bg-card-hover: #1a0000;
+    --accent-primary: #ff3333;
+    --accent-active: #cc0000;
+    --accent-glow: rgba(255, 0, 0, 0.2);
+    --text-primary: #ffaaaa;
+    --text-secondary: #880000;
+    filter: brightness(80%) contrast(110%) !important;
+}
+
+body.icu-night-mode .card.active {
+    border-color: #ff0000 !important;
+    box-shadow: 0 0 40px rgba(255, 0, 0, 0.4) !important;
+    animation: scanner-halo-night 1.5s infinite !important;
+}
+
+@keyframes scanner-halo-night {
+    0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.5); }
+    70% { box-shadow: 0 0 0 20px rgba(255, 0, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+}
+
+body.icu-night-mode #status-bar {
+    background: #050000 !important;
+    border-color: #330000 !important;
+}
+
+/* --- 🚀 QUADRANT FEEDBACK --- */
+.card-focal-boost {
+    transition: all 0.3s ease;
+    border-width: 3px !important;
+    transform: scale(1.02);
+}

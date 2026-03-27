@@ -138,6 +138,7 @@ export class EyeEngine {
                 let headYaw = 0;
                 let headPitch = 0;
                 let headRoll = 0;
+                let focalQuadrant = 'center';
 
                 if (results.facialTransformationMatrixes && results.facialTransformationMatrixes.length > 0) {
                     const matrix = results.facialTransformationMatrixes[0].data;
@@ -150,6 +151,16 @@ export class EyeEngine {
 
                     // Roll (Tilt): Rotation around Z axis
                     headRoll = Math.atan2(matrix[1], matrix[5]) * (180 / Math.PI);
+
+                    // --- 3. Focal Quadrant Logic (Explosive Feature) ---
+                    // Yaw < -8: Right, Yaw > 8: Left
+                    // Pitch < -8: Down, Pitch > 8: Up
+                    const hDir = headYaw < -8 ? 'right' : (headYaw > 8 ? 'left' : '');
+                    const vDir = headPitch < -8 ? 'bottom' : (headPitch > 8 ? 'top' : '');
+                    
+                    if (hDir && vDir) focalQuadrant = `${vDir}-${hDir}`;
+                    else if (hDir) focalQuadrant = hDir;
+                    else if (vDir) focalQuadrant = vDir;
                 }
 
                 if (this.onFrameCallback) {
@@ -159,6 +170,7 @@ export class EyeEngine {
                         headYaw: headYaw,
                         headPitch: headPitch,
                         headRoll: headRoll,
+                        focalQuadrant: focalQuadrant,
                         raw: mesh,
                         faceVisible: true
                     });

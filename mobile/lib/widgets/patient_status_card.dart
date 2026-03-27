@@ -96,6 +96,39 @@ class PatientStatusCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 20),
+          const Divider(color: Colors.white10),
+          const SizedBox(height: 15),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildMetric(
+                context,
+                Icons.psychology,
+                status.stressLevel.toUpperCase(),
+                'STRESS LVL',
+                status.stressLevel == 'high'
+                    ? Colors.redAccent
+                    : (status.stressLevel == 'medium'
+                        ? Colors.orangeAccent
+                        : const Color(0xFF64FFDA)),
+              ),
+              _buildMetric(
+                context,
+                Icons.track_changes,
+                status.focalQuadrant.toUpperCase(),
+                'GAZE FOCUS',
+                const Color(0xFF64FFDA),
+              ),
+              _buildMetric(
+                context,
+                Icons.history,
+                'NORMAL', // Placeholder for "Trend"
+                'TREND',
+                const Color(0xFF64FFDA),
+              ),
+            ],
+          ),
         ],
       ),
     );

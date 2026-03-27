@@ -6,6 +6,9 @@ class PatientStatusModel {
   final bool isResting;
   final int lastSeen;
 
+  final String stressLevel;
+  final String focalQuadrant;
+
   PatientStatusModel({
     required this.isOnline,
     required this.batteryLevel,
@@ -13,6 +16,8 @@ class PatientStatusModel {
     required this.eyeTrackerActive,
     required this.isResting,
     required this.lastSeen,
+    required this.stressLevel,
+    required this.focalQuadrant,
   });
 
   factory PatientStatusModel.fromMap(Map<dynamic, dynamic> data) {
@@ -24,6 +29,8 @@ class PatientStatusModel {
       eyeTrackerActive: data['eyeTrackerActive'] as bool? ?? false,
       isResting: data['isResting'] as bool? ?? false,
       lastSeen: data['lastSeen'] as int? ?? 0,
+      stressLevel: data['stressLevel'] as String? ?? 'low',
+      focalQuadrant: data['focalQuadrant'] as String? ?? 'center',
     );
   }
 

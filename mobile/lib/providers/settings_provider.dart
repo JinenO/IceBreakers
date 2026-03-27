@@ -11,7 +11,7 @@ class SettingsProvider with ChangeNotifier {
 
   // Remote Settings (Synced to Firebase)
   int _scanSpeed = 2500;
-  double _blinkThreshold = 0.012;
+  double _blinkThreshold = 0.22;
   int _requiredBlinkTime = 1000;
   List<String> _emergencyContacts = [];
 

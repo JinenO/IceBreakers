@@ -215,6 +215,11 @@ let panicCountdownValue = 0;
 let isPanicCountdownActive = false;
 let lastPredictedHour = -1;
 
+// --- Explosive Features State ---
+let currentFocalQuadrant = 'center';
+let blinkHistory = []; // Timestamps of recent blinks
+let currentStressLevel = 'low'; // low, medium, high
+
 const aiOverlay = document.getElementById('ai-prediction-overlay');
 const aiActionText = document.getElementById('ai-predicted-action');
 const aiProgress = document.getElementById('ai-confirm-progress');
@@ -358,12 +363,46 @@ function startScanning() {
     updateSystemMode('SCANNING');
 
     runScanStep();
-    scanTimer = setInterval(runScanStep, AppConfig.SCAN_SPEED);
 }
 
 function runScanStep() {
+    if (!isScanning) return;
+    
     if (sleepManager.isSleeping || isEyesClosed || sosSystem.state === 'ARMING') {
+        scanTimer = setTimeout(runScanStep, 100); // Check again soon
         return;
+    }
+
+    // --- 🚀 QUADRANT-AWARE SPEED BOOST ---
+    let scanSpeed = AppConfig.SCAN_SPEED;
+    const currentCard = gridUI.cards[gridUI.currentIndex + 1] || gridUI.cards[0];
+    
+    if (currentCard && currentFocalQuadrant !== 'center') {
+        const rect = currentCard.getBoundingClientRect();
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        
+        const isLeft = rect.left < centerX;
+        const isRight = rect.right > centerX;
+        const isTop = rect.top < centerY;
+        const isBottom = rect.bottom > centerY;
+        
+        let match = false;
+        if (currentFocalQuadrant === 'top-left' && isTop && isLeft) match = true;
+        if (currentFocalQuadrant === 'top-right' && isTop && isRight) match = true;
+        if (currentFocalQuadrant === 'bottom-left' && isBottom && isLeft) match = true;
+        if (currentFocalQuadrant === 'bottom-right' && isBottom && isRight) match = true;
+        if (currentFocalQuadrant === 'top' && isTop) match = true;
+        if (currentFocalQuadrant === 'bottom' && isBottom) match = true;
+        if (currentFocalQuadrant === 'left' && isLeft) match = true;
+        if (currentFocalQuadrant === 'right' && isRight) match = true;
+
+        if (match) {
+            scanSpeed = Math.max(800, scanSpeed - 1200); // Boost speed by 1.2s
+            currentCard.style.boxShadow = '0 0 20px rgba(79, 209, 197, 0.6)';
+        } else {
+            currentCard.style.boxShadow = 'none';
+        }
     }
 
     let selector;
@@ -387,13 +426,17 @@ function runScanStep() {
 
     gridUI.refreshCards(selector, true);
     gridUI.highlightNext();
-    gridUI.startScanBarAnimation(AppConfig.SCAN_SPEED);
+    gridUI.startScanBarAnimation(scanSpeed);
     sleepManager.recordRound(gridUI.currentIndex, gridUI.cards.length);
+
+    // Schedule next step with dynamic speed
+    scanTimer = setTimeout(runScanStep, scanSpeed);
 }
 
 function stopScanning() {
     isScanning = false;
-    clearInterval(scanTimer);
+    clearTimeout(scanTimer);
+    scanTimer = null;
 }
 
 // ==========================================
@@ -598,6 +641,16 @@ async function handleEyeFrame(data) {
         return;
     }
 
+    // Update global quadrant for proactive scanning
+    currentFocalQuadrant = data.focalQuadrant || 'center';
+
+    // --- 🌙 ICU NIGHT MODE (Explosive Feature) ---
+    if (data.ambientLight !== undefined && data.ambientLight < 15) {
+        document.body.classList.add('icu-night-mode');
+    } else {
+        document.body.classList.remove('icu-night-mode');
+    }
+
     // While resting, require continuously open eyes for 2 seconds to wake.
     if (sleepManager.isSleeping) {
         if (!isNowClosed) {
@@ -700,7 +753,11 @@ async function handleEyeFrame(data) {
     }
 
     if (now % 5000 < 100) {
-        StatusService.updateStatus({ eyeTrackerActive: !isNowClosed });
+        StatusService.updateStatus({ 
+            eyeTrackerActive: !isNowClosed,
+            stressLevel: currentStressLevel,
+            focalQuadrant: currentFocalQuadrant
+        });
     }
 
     if (isNowClosed) {
@@ -758,6 +815,15 @@ async function handleEyeFrame(data) {
             // Anything faster is usually 1-frame camera noise or jitter.
             if (elapsed > 100 && elapsed < 500) {
                 blinkCount++;
+
+                // --- 🧠 BLINK SENTIMENT ANALYSIS (Explosive Feature) ---
+                blinkHistory.push(now);
+                // Keep only last 30 seconds
+                blinkHistory = blinkHistory.filter(ts => now - ts < 30000);
+                
+                if (blinkHistory.length > 15) currentStressLevel = 'high';
+                else if (blinkHistory.length > 8) currentStressLevel = 'medium';
+                else currentStressLevel = 'low';
 
                 // Immediate trigger for Panic Flutter on the 4th blink!
                 if (blinkCount === 4) {
