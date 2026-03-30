@@ -56,72 +56,7 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Widget _buildHealthMonitor(BuildContext context) {
-    final statusRef = FirebaseDatabase.instance.ref('patient_status');
-
-    return StreamBuilder(
-      stream: statusRef.onValue,
-      builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
-        bool isActive = false;
-        double batteryLevel = 0.0;
-
-        if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
-          final data = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
-          final status = PatientStatusModel.fromMap(data);
-          isActive = status.eyeTrackerActive;
-          batteryLevel = status.batteryLevel.toDouble();
-        }
-
-        return Card(
-          color: Theme.of(context).colorScheme.surface,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Device Health',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Icon(
-                      isActive ? Icons.videocam : Icons.videocam_off,
-                      color: isActive ? Colors.green : Colors.red,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.battery_charging_full,
-                      size: 20,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(width: 8),
-                    Text('Battery Level: ${batteryLevel.toInt()}%'),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.visibility, size: 20, color: Colors.grey[400]),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Scanner Status: ${isActive ? 'Linked' : 'Disconnected'}',
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    return const HealthMonitorCard();
   }
 
   Widget _buildRemoteSliders(BuildContext context, SettingsProvider provider) {
@@ -367,6 +302,91 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class HealthMonitorCard extends StatefulWidget {
+  const HealthMonitorCard({super.key});
+
+  @override
+  State<HealthMonitorCard> createState() => _HealthMonitorCardState();
+}
+
+class _HealthMonitorCardState extends State<HealthMonitorCard> {
+  late final Stream<DatabaseEvent> _statusStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _statusStream = FirebaseDatabase.instance.ref('patient_status').onValue.asBroadcastStream();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: _statusStream,
+      builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
+        bool isActive = false;
+        double batteryLevel = 0.0;
+
+        if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
+          final data = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
+          final status = PatientStatusModel.fromMap(data);
+          isActive = status.eyeTrackerActive;
+          batteryLevel = status.batteryLevel.toDouble();
+        }
+
+        return Card(
+          color: Theme.of(context).colorScheme.surface,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Device Health',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Icon(
+                      isActive ? Icons.videocam : Icons.videocam_off,
+                      color: isActive ? Colors.green : Colors.red,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.battery_charging_full,
+                      size: 20,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(width: 8),
+                    Text('Battery Level: ${batteryLevel.toInt()}%'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.visibility, size: 20, color: Colors.grey[400]),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Scanner Status: ${isActive ? 'Linked' : 'Disconnected'}',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -24,14 +24,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final now = DateTime.now().millisecondsSinceEpoch;
     const thirtyDays = 30 * 24 * 60 * 60 * 1000;
 
-    for(var entry in data.entries) {
+    for (var entry in data.entries) {
       final key = entry.key;
       final value = Map<String, dynamic>.from(entry.value);
 
-      if(value['timestamp'] != null) {
+      if (value['timestamp'] != null) {
         final timestamp = value['timestamp'];
 
-        if(now - timestamp > thirtyDays) {
+        if (now - timestamp > thirtyDays) {
           await _alertsRef.child(key).remove();
         }
       }
@@ -232,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       backgroundColor: Colors.white,
                                       foregroundColor: Colors.red,
                                     ),
-                                    child: const Text('ACK'),
+                                    child: const Text('ACKNOWLEDGE'),
                                   ),
                           ),
                         );

@@ -1,6 +1,6 @@
 /* frontend/js/modules/keyboard-logic.js */
 
-import { AppConfig } from '../config.js';
+import { AppConfig, GEMINI_API_KEY } from '../config.js';
 
 export const FREQUENCY_GROUPS = [
     { id: 'g1', label: 'E A I O T', letters: ['E', 'A', 'I', 'O', 'T'] },
@@ -58,7 +58,7 @@ export class KeyboardManager {
         console.log(`🧠 Gemini: Formatting keywords: "${keywords}"`);
 
         try {
-            const apiKey = AppConfig.GEMINI_API_KEY;
+            const apiKey = typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : AppConfig.GEMINI_API_KEY;
             const modelName = "gemini-2.5-flash";
 
             const prompt = `

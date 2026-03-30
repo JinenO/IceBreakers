@@ -262,9 +262,22 @@ export async function handleKeyboardAction(id, kbManager, gridUI, setScanTarget,
             gridUI.refreshCards(ZONE_DOWN);
             gridUI.currentIndex = -1;
 
-            getSafePredictions(kbManager).then(words => {
-                kbManager.currentPredictions = words;
-                updatePredictions(words);
+            // Instantly format into a full sentence using Gemini
+            if (window.showFeedback) window.showFeedback('FORMATTING... 🧠', 'info');
+            kbManager.formatMessageToSentence(kbManager.currentText).then(finalSentence => {
+                kbManager.currentText = finalSentence + ' ';
+                updateDisplay(kbManager);
+                
+                getSafePredictions(kbManager).then(words => {
+                    kbManager.currentPredictions = words;
+                    updatePredictions(words);
+                });
+            }).catch(() => {
+                // Fallback in case of error
+                getSafePredictions(kbManager).then(words => {
+                    kbManager.currentPredictions = words;
+                    updatePredictions(words);
+                });
             });
         }
         return;
