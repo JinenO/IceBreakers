@@ -23,21 +23,64 @@ The objective is simple:
 Enable critical communication using minimal motor control.
 
 ---
-76: 
-77: ## 🌳 Branching Workflow
-78: 
-79: To maintain a clean and stable codebase, we follow a simple branching strategy:
-80: 
-81: - **Main Branch (`main`)**: The source of truth for stable code. 
-82:   - Only merges from feature branches (like `sos`) are permitted.
-83:   - **Target for Merges**: `main` is the final destination for all completed work.
-84: - **Working Branches (e.g., `sos`)**: Used for active development.
-85:   - **Update from Main**: Keep your branch up to date by merging `main` into it regularly.
-86:   - **No Cross-Merging**: Avoid merging development branches into each other. Only merge back into `main`.
-87: 
-88: ---
+
+## 🌳 Branching Workflow
+
+To maintain a clean and stable codebase, we follow a simple branching strategy:
+
+- **Main Branch (`main`)**: The source of truth for stable code. 
+  - Only merges from feature branches (like `sos`) are permitted.
+  - **Target for Merges**: `main` is the final destination for all completed work.
+- **Working Branches (e.g., `sos`)**: Used for active development.
+  - **Update from Main**: Keep your branch up to date by merging `main` into it regularly.
+  - **No Cross-Merging**: Avoid merging development branches into each other. Only merge back into `main`.
+
+---
 
 # Installation & Setup
+
+> [!IMPORTANT]
+> **`config.js` is required to run the web app.**
+> The repository does **not** include a `config.js` file. You must create one yourself from the provided template (`frontend/js/config.example.js`) and fill in your own API keys and Firebase credentials. **The web app will not start without this file.**
+
+## ⚙️ Config Setup (Required Before First Run)
+
+1. Copy the example config file:
+   ```bash
+   cp frontend/js/config.example.js frontend/js/config.js
+   ```
+
+2. Open `frontend/js/config.js` and fill in your credentials:
+
+   **Firebase** — Get your config from the [Firebase Console](https://console.firebase.google.com/):
+   - Create / select a project → Project Settings → General → Your Apps → Firebase SDK snippet → Config
+   ```javascript
+   FIREBASE: {
+       apiKey: "YOUR_API_KEY",
+       authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+       databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+       projectId: "YOUR_PROJECT_ID",
+       storageBucket: "YOUR_PROJECT_ID.appspot.com",
+       messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+       appId: "YOUR_APP_ID"
+   }
+   ```
+
+   **Gemini API Key** — Get it from [Google AI Studio](https://aistudio.google.com/):
+   ```javascript
+   GEMINI_API_KEY: "YOUR_GEMINI_API_KEY"
+   ```
+
+   **YouTube Data API Key** — Get it from [Google Cloud Console](https://console.cloud.google.com/):
+   - Create a project → Enable **YouTube Data API v3** → Credentials → Create API Key
+   ```javascript
+   export const YOUTUBE_API_KEY = "YOUR_YOUTUBE_API_KEY";
+   ```
+
+3. `config.js` is listed in `.gitignore` — **never commit your real keys to GitHub.**
+
+---
+
 ### Requirements
 Make sure you have installed :
 - Node.js (v18 or newer recommended)
@@ -393,6 +436,9 @@ IRIS FLOW prioritizes robustness and safety over precision and speed.
 ---
 
 # Configuration
+
+> [!WARNING]
+> `config.js` is **not included** in this repository and is excluded by `.gitignore`. You must create it manually from `frontend/js/config.example.js` before running the app. See the [Config Setup](#️-config-setup-required-before-first-run) section above.
 
 Key parameters are configurable in `config.js`:
 
